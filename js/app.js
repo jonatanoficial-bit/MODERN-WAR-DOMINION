@@ -1,6 +1,6 @@
-const VERSION = "0.8.0";
-const PHASE = "Fase 8 — arsenal detalhado";
-const SAVE_KEY = "MWD_SAVE_V8";
+const VERSION = "0.9.0";
+const PHASE = "Fase 9 — manutenção, desgaste e reposição";
+const SAVE_KEY = "MWD_SAVE_V9";
 
 const $ = (sel, root = document) => root.querySelector(sel);
 const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
@@ -149,8 +149,11 @@ function makeInitialGame(countryId) {
     construction: [],
     production: [],
     units: [],
+    logisticsBudget: 100,
+    monthlyLosses: 0,
+    globalWar: makeGlobalWar(country),
     relations: seedRelations(country),
-    events: [eventText("sistema", `Campanha iniciada com ${country.name}. Agora sua prioridade é ocupar slots regionais com bases militares.`)],
+    events: [eventText("sistema", `Campanha iniciada com ${country.name}. Agora sua prioridade é ocupar slots regionais, produzir forças e sustentar a manutenção militar.`)],
     threats: generateThreats(country)
   };
 }
@@ -166,6 +169,45 @@ function makeRegions(country) {
     { id: "aircorridor", name: "Corredor aéreo militar", kind: "Aérea", terrain: "aeroportos e radares", coords: [lat - 2.2, lng + 2.4], slots: 3, defenseBonus: 5, logistics: 6, priority: 3 },
     { id: "reserve", name: "Zona de reserva estratégica", kind: "Reserva", terrain: "profundidade defensiva", coords: [lat + 3.0, lng + 3.1], slots: 2, defenseBonus: 7, logistics: 2, priority: 2 }
   ];
+}
+
+
+function makeGlobalWar(playerCountry) {
+  const blocs = summarizeBlocs(playerCountry.id);
+  return {
+    phase: "tensão armada",
+    defcon: playerCountry.nuclear ? 4 : 5,
+    nuclearRisk: playerCountry.nuclear ? 12 : 5,
+    warScore: 0,
+    sanctions: [],
+    ultimatums: [],
+    invasions: [],
+    blocPressure: blocs.map(b => ({ name: b.name, pressure: b.name === playerCountry.bloc ? 24 : clamp(30 + b.military / 8 + Math.random() * 16, 22, 86) })),
+    history: [eventText("warn", "O sistema de blocos globais entrou em monitoramento: alianças, sanções, ultimatos e crise nuclear podem escalar a qualquer mês.")]
+  };
+}
+
+function summarizeBlocs(playerId = null) {
+  const map = new Map();
+  state.countries.forEach(c => {
+    const key = c.bloc || "Não alinhado";
+    if (!map.has(key)) map.set(key, { name: key, members: 0, military: 0, economy: 0, nuclear: 0, flags: [] });
+    const b = map.get(key);
+    b.members += 1;
+    b.military += c.military;
+    b.economy += c.economy;
+    b.nuclear += c.nuclear ? 1 : 0;
+    if (b.flags.length < 6) b.flags.push(c.flag);
+  });
+  return [...map.values()].sort((a,b) => b.military - a.military);
+}
+
+function ensureGlobalWar() {
+  if (!state.game.globalWar) state.game.globalWar = makeGlobalWar(getPlayerCountry());
+  if (!Array.isArray(state.game.globalWar.history)) state.game.globalWar.history = [];
+  if (!Array.isArray(state.game.globalWar.sanctions)) state.game.globalWar.sanctions = [];
+  if (!Array.isArray(state.game.globalWar.ultimatums)) state.game.globalWar.ultimatums = [];
+  if (!Array.isArray(state.game.globalWar.invasions)) state.game.globalWar.invasions = [];
 }
 
 function seedRelations(playerCountry) {
@@ -210,6 +252,7 @@ function continueGame() {
   const raw = localStorage.getItem(SAVE_KEY);
   if (!raw) return;
   state.game = JSON.parse(raw);
+  ensureGlobalWar();
   $(".tab-btn[data-screen='screenWar']").disabled = false;
   renderGame();
   showScreen("screenWar");
@@ -228,6 +271,8 @@ function renderGame() {
   renderProduction();
   renderUnitList();
   renderArsenal();
+  renderMaintenance();
+  renderGlobalWar();
   renderTargetSelect();
   renderIntel();
   initMap();
@@ -238,7 +283,7 @@ function renderSummary() {
   const g = state.game;
   const c = getPlayerCountry();
   $("#monthLabel").textContent = `${monthNames[g.month % 12]}/${g.year}`;
-  $("#countrySummary").innerHTML = `<h2><span class="big-flag">${c.flag}</span> ${c.name}</h2><small>${c.capital} · ${c.doctrine}</small><div class="metrics"><div class="metric"><small>Finanças</small><strong>${g.finance}</strong></div><div class="metric"><small>Indústria</small><strong>${g.industry}</strong></div><div class="metric"><small>Energia</small><strong>${g.energy}</strong></div><div class="metric"><small>Soldados</small><strong>${formatSoldiers(g.soldiers)}</strong></div><div class="metric"><small>Poder</small><strong>${powerIndex()}</strong></div><div class="metric"><small>Bases</small><strong>${g.bases.length}</strong></div></div>`;
+  $("#countrySummary").innerHTML = `<h2><span class="big-flag">${c.flag}</span> ${c.name}</h2><small>${c.capital} · ${c.doctrine}</small><div class="metrics"><div class="metric"><small>Finanças</small><strong>${g.finance}</strong></div><div class="metric"><small>Indústria</small><strong>${g.industry}</strong></div><div class="metric"><small>Energia</small><strong>${g.energy}</strong></div><div class="metric"><small>Soldados</small><strong>${formatSoldiers(g.soldiers)}</strong></div><div class="metric"><small>Poder</small><strong>${powerIndex()}</strong></div><div class="metric"><small>DEFCON</small><strong>${state.game.globalWar?.defcon ?? 5}</strong></div></div>`;
 }
 
 function getSelectedRegion() {
@@ -345,7 +390,7 @@ function renderProduction() {
     const r = getRegion(job.regionId);
     const card = document.createElement("article");
     card.className = "queue-card";
-    card.innerHTML = `<img src="${u.image}" alt="${u.name}"><div><strong>${u.name}</strong><small>${r.name} · pronto em ${job.remaining} mês(es)</small></div>`;
+    card.innerHTML = `<img src="${u.image}" alt="${u.name}"><div><strong>${u.name}</strong><small>${r.name} · pronto em ${job.remaining} mês(es) · reposição ${job.replacement ? "sim" : "não"}</small></div>`;
     q.appendChild(card);
   });
 }
@@ -399,6 +444,91 @@ function renderArsenal() {
       </div>`;
     list.appendChild(card);
   });
+}
+
+
+function renderMaintenance() {
+  const summary = $("#maintenanceSummary");
+  const list = $("#maintenanceList");
+  if (!summary || !list || !state.game) return;
+  const g = state.game;
+  const upkeep = monthlyUpkeep();
+  const condition = forceCondition();
+  const readyClass = condition >= 72 ? "readiness-high" : condition >= 45 ? "readiness-mid" : "readiness-low";
+  summary.innerHTML = `
+    <div class="maintenance-kpi"><small>Custo mensal</small><strong>$${upkeep.finance}</strong></div>
+    <div class="maintenance-kpi"><small>Energia/combustível</small><strong>${upkeep.energy}</strong></div>
+    <div class="maintenance-kpi"><small>Peças/indústria</small><strong>${upkeep.industry}</strong></div>
+    <div class="maintenance-kpi"><small>Condição média</small><strong class="${readyClass}">${condition}%</strong></div>`;
+  list.innerHTML = "";
+  if (!g.units.length) {
+    list.innerHTML = '<div class="event queue-empty">Nenhuma unidade operacional ainda. Produza unidades para iniciar manutenção real.</div>';
+    return;
+  }
+  g.units.forEach((stack, index) => {
+    const u = getUnit(stack.id);
+    const r = getRegion(stack.regionId);
+    stack.condition = stack.condition ?? 100;
+    const repair = stackRepairCost(stack);
+    const replace = replacementCost(stack);
+    const canRepair = stack.condition < 100 && g.finance >= repair.finance && g.industry >= repair.industry && g.energy >= repair.energy;
+    const canReplace = hasOperationalBase(u.requires, stack.regionId, u.minBaseLevel || 1) && g.finance >= replace.finance && g.industry >= replace.industry && g.energy >= replace.energy;
+    const condClass = stack.condition >= 70 ? 'readiness-high' : stack.condition >= 40 ? 'readiness-mid' : 'readiness-low';
+    const card = document.createElement('article');
+    card.className = 'maintenance-card';
+    card.innerHTML = `
+      <img src="${u.image}" alt="${u.name}">
+      <div>
+        <div class="maintenance-title"><h3>${u.icon} ${u.name}</h3><span>${r.name}</span></div>
+        <div class="condition-bar"><i style="width:${stack.condition}%"></i></div>
+        <div class="maintenance-meta">
+          <span>Qtd ${stack.qty}</span><span>Condição <b class="${condClass}">${stack.condition}%</b></span><span>Manut. ${u.upkeep * stack.qty}/mês</span><span>Reparo $${repair.finance}/Ind.${repair.industry}/En.${repair.energy}</span>
+        </div>
+        <div class="maintenance-actions"><button class="repair-stack" ${canRepair ? '' : 'disabled'}>Manutenção</button><button class="replace-btn" ${canReplace ? '' : 'disabled'}>Repor lote</button></div>
+      </div>`;
+    card.querySelector('.repair-stack').addEventListener('click', () => maintainStack(index));
+    card.querySelector('.replace-btn').addEventListener('click', () => replaceStack(index));
+    list.appendChild(card);
+  });
+}
+
+
+function renderGlobalWar() {
+  const panel = $("#globalWarPanel");
+  if (!panel || !state.game) return;
+  ensureGlobalWar();
+  const g = state.game;
+  const gw = g.globalWar;
+  const player = getPlayerCountry();
+  const blocs = summarizeBlocs(player.id);
+  const targetId = $("#targetSelect")?.value || state.countries.find(c => c.id !== player.id)?.id;
+  const target = state.countries.find(c => c.id === targetId) || state.countries.find(c => c.id !== player.id);
+  const sanctions = gw.sanctions.slice(-4).map(s => `<div class="global-line"><strong>${s.sourceFlag || player.flag} Sanção</strong><span>${s.targetName} · ${s.remaining}m · pressão ${s.pressure}</span></div>`).join("") || '<div class="global-empty">Nenhuma sanção ativa.</div>';
+  const ultimatums = gw.ultimatums.slice(-4).map(u => `<div class="global-line danger"><strong>Ultimato</strong><span>${u.targetName} · vence em ${u.remaining}m · risco ${u.risk}</span></div>`).join("") || '<div class="global-empty">Nenhum ultimato ativo.</div>';
+  const invasions = gw.invasions.slice(-4).map(i => `<div class="global-line war"><strong>Frente aberta</strong><span>${i.attackerName} → ${i.targetName} · ${i.progress}% · ${i.remaining}m</span></div>`).join("") || '<div class="global-empty">Nenhuma invasão ativa.</div>';
+  const blocHtml = blocs.map(b => `<article class="bloc-card ${b.name === player.bloc ? 'is-player' : ''}"><strong>${b.flags.join(' ')} ${b.name}</strong><span>${b.members} países · poder ${Math.round(b.military)} · economia ${Math.round(b.economy)} · nuclear ${b.nuclear}</span></article>`).join("");
+  panel.innerHTML = `
+    <div class="global-kpis">
+      <div><small>Fase mundial</small><strong>${gw.phase}</strong></div>
+      <div><small>DEFCON</small><strong>${gw.defcon}</strong></div>
+      <div><small>Risco nuclear</small><strong>${gw.nuclearRisk}%</strong></div>
+      <div><small>Guerra global</small><strong>${gw.warScore}%</strong></div>
+    </div>
+    <div class="global-meter"><i style="width:${clamp(gw.nuclearRisk,0,100)}%"></i></div>
+    <label class="field-label">Alvo diplomático/militar</label>
+    <select id="globalTargetSelect">${state.countries.filter(c => c.id !== player.id).map(c => `<option value="${c.id}" ${target && c.id === target.id ? 'selected' : ''}>${c.flag} ${c.name} · ${c.bloc}</option>`).join("")}</select>
+    <div class="global-actions">
+      <button data-global-action="sanction">Aplicar sanção</button>
+      <button data-global-action="ultimatum">Emitir ultimato</button>
+      <button data-global-action="invasion" class="danger">Iniciar invasão</button>
+      <button data-global-action="deescalate">Desescalar crise</button>
+    </div>
+    <h3>Blocos militares</h3><div class="bloc-grid">${blocHtml}</div>
+    <h3>Sanções ativas</h3>${sanctions}
+    <h3>Ultimatos</h3>${ultimatums}
+    <h3>Frentes de invasão</h3>${invasions}
+  `;
+  panel.querySelectorAll("[data-global-action]").forEach(btn => btn.addEventListener("click", () => globalWarAction(btn.dataset.globalAction)));
 }
 
 function renderTargetSelect() {
@@ -525,6 +655,56 @@ function queueUnit(unitId) {
   renderGame();
 }
 
+
+function globalWarAction(kind) {
+  ensureGlobalWar();
+  const g = state.game;
+  const gw = g.globalWar;
+  const targetId = $("#globalTargetSelect")?.value || $("#targetSelect")?.value;
+  const target = state.countries.find(c => c.id === targetId);
+  if (!target) return;
+  if (kind === "sanction") {
+    if (g.finance < 24) { g.events.push(eventText("warn", "Orçamento insuficiente para sustentar nova rodada de sanções.")); renderGame(); return; }
+    g.finance -= 24;
+    gw.sanctions.push({ id: cryptoId(), targetId: target.id, targetName: target.name, sourceFlag: getPlayerCountry().flag, remaining: 6, pressure: clamp(18 + g.intel / 6 + Math.random() * 18, 12, 55) });
+    g.worldTension = clamp(g.worldTension + 3, 0, 100);
+    gw.warScore = clamp(gw.warScore + 2, 0, 100);
+    g.events.push(eventText("warn", `Sanções contra ${target.name} aumentaram pressão econômica e tensão diplomática.`));
+  }
+  if (kind === "ultimatum") {
+    if (g.readiness < 45) { g.events.push(eventText("warn", "Prontidão insuficiente para sustentar um ultimato crível.")); renderGame(); return; }
+    gw.ultimatums.push({ id: cryptoId(), targetId: target.id, targetName: target.name, remaining: 2, risk: clamp(30 + target.military / 3 + g.worldTension / 2, 20, 95) });
+    g.worldTension = clamp(g.worldTension + 7, 0, 100);
+    gw.warScore = clamp(gw.warScore + 6, 0, 100);
+    gw.nuclearRisk = clamp(gw.nuclearRisk + (target.nuclear ? 8 : 3), 0, 100);
+    g.events.push(eventText("danger", `Ultimato emitido contra ${target.name}. O risco de guerra aberta aumentou.`));
+  }
+  if (kind === "invasion") {
+    const invasionCost = 120;
+    if (g.finance < invasionCost || g.readiness < 55 || powerIndex() < 35) { g.events.push(eventText("warn", "Você precisa de mais orçamento, prontidão e poder militar para iniciar uma invasão.")); renderGame(); return; }
+    g.finance -= invasionCost;
+    g.readiness = clamp(g.readiness - 12, 0, 100);
+    gw.invasions.push({ id: cryptoId(), attackerId: g.countryId, attackerName: getPlayerCountry().name, targetId: target.id, targetName: target.name, progress: 8, remaining: 8, intensity: clamp(30 + powerIndex()/2, 20, 95) });
+    g.worldTension = clamp(g.worldTension + 16, 0, 100);
+    gw.warScore = clamp(gw.warScore + 18, 0, 100);
+    gw.nuclearRisk = clamp(gw.nuclearRisk + (target.nuclear ? 16 : 6), 0, 100);
+    g.events.push(eventText("danger", `Invasão iniciada contra ${target.name}. A guerra global entrou em nova fase.`));
+  }
+  if (kind === "deescalate") {
+    const cost = 42;
+    if (g.finance < cost) { g.events.push(eventText("warn", "Recursos diplomáticos insuficientes para desescalar a crise.")); renderGame(); return; }
+    g.finance -= cost;
+    g.worldTension = clamp(g.worldTension - 8, 0, 100);
+    gw.nuclearRisk = clamp(gw.nuclearRisk - 7, 0, 100);
+    gw.warScore = clamp(gw.warScore - 5, 0, 100);
+    g.stability = clamp(g.stability + 2, 0, 100);
+    g.events.push(eventText("sistema", "Canais diplomáticos reduziram a escalada mundial temporariamente."));
+  }
+  updateGlobalPhase();
+  saveGame();
+  renderGame();
+}
+
 function launchOperation(kind) {
   const targetId = $("#targetSelect").value;
   const target = state.countries.find(c => c.id === targetId);
@@ -564,6 +744,8 @@ function launchOperation(kind) {
     rel.tension = clamp(rel.tension + op.tension * 2, 0, 100);
     rel.relation = clamp(rel.relation - op.tension * 2, 0, 100);
   }
+  applyOperationalWear(kind, success);
+  if (state.game.globalWar) { state.game.globalWar.warScore = clamp(state.game.globalWar.warScore + Math.round(op.tension / 2), 0, 100); state.game.globalWar.nuclearRisk = clamp(state.game.globalWar.nuclearRisk + (target.nuclear ? 2 : 1), 0, 100); updateGlobalPhase(); }
   maybeCounterAttack(target, Math.round(op.tension * 1.5));
   saveGame();
   renderGame();
@@ -574,12 +756,13 @@ function advanceMonth() {
   const c = getPlayerCountry();
   g.month += 1;
   if (g.month % 12 === 0) g.year += 1;
-  const upkeep = g.units.reduce((sum, stack) => sum + (getUnit(stack.id)?.upkeep || 0) * stack.qty, 0);
-  g.finance += Math.round(45 + c.economy * 1.2 + g.stability / 3 - upkeep);
-  g.industry += Math.round(24 + c.industry * .65 - g.bases.length);
-  g.energy += Math.round(22 + c.oil * .55 - g.bases.length * 2 - Math.max(0, upkeep / 3));
+  const upkeep = monthlyUpkeep();
+  g.finance = Math.max(0, g.finance + Math.round(45 + c.economy * 1.2 + g.stability / 3) - upkeep.finance);
+  g.industry = Math.max(0, g.industry + Math.round(24 + c.industry * .65 - g.bases.length) - upkeep.industry);
+  g.energy = Math.max(0, g.energy + Math.round(22 + c.oil * .55 - g.bases.length * 2) - upkeep.energy);
   g.food += Math.round(15 + c.food * .4);
-  g.readiness = clamp(g.readiness + Math.round(g.logistics / 22) - Math.round(g.worldTension / 35), 0, 100);
+  applyMonthlyWear(upkeep);
+  g.readiness = clamp(g.readiness + Math.round(g.logistics / 24) - Math.round(g.worldTension / 36) - (forceCondition() < 45 ? 3 : 0), 0, 100);
   g.worldTension = clamp(g.worldTension + randomInt(-3, 5), 0, 100);
   progressConstruction();
   progressProduction();
@@ -621,12 +804,103 @@ function progressProduction() {
   finished.forEach(job => {
     const u = getUnit(job.unitId);
     const existing = g.units.find(x => x.id === u.id && x.regionId === job.regionId);
-    if (existing) existing.qty += 1;
-    else g.units.push({ id: u.id, regionId: job.regionId, qty: 1, veteran: 0 });
+    if (existing) {
+      existing.qty += 1;
+      existing.condition = clamp((existing.condition ?? 100) + 4, 0, 100);
+    } else {
+      g.units.push({ id: u.id, regionId: job.regionId, qty: 1, veteran: 0, condition: 100 });
+    }
     addUnitPower(u);
-    g.events.push(eventText("sistema", `${u.name} ficou operacional em ${getRegion(job.regionId).name}.`));
+    g.events.push(eventText("sistema", `${u.name} ${job.replacement ? "foi reposto" : "ficou operacional"} em ${getRegion(job.regionId).name}.`));
   });
 }
+
+
+function progressGlobalWar() {
+  ensureGlobalWar();
+  const g = state.game;
+  const gw = g.globalWar;
+  gw.sanctions.forEach(s => {
+    s.remaining -= 1;
+    const rel = g.relations.find(r => r.id === s.targetId);
+    if (rel) { rel.relation = clamp(rel.relation - 2, 0, 100); rel.tension = clamp(rel.tension + 3, 0, 100); }
+    g.finance += Math.round(s.pressure / 7);
+  });
+  gw.sanctions = gw.sanctions.filter(s => s.remaining > 0);
+  gw.ultimatums.forEach(u => {
+    u.remaining -= 1;
+    if (u.remaining <= 0) {
+      const target = state.countries.find(c => c.id === u.targetId);
+      if (target && Math.random() * 100 < u.risk) {
+        gw.invasions.push({ id: cryptoId(), attackerId: target.id, attackerName: target.name, targetId: g.countryId, targetName: getPlayerCountry().name, progress: 5, remaining: 6, intensity: clamp(target.military / 2, 20, 90) });
+        g.worldTension = clamp(g.worldTension + 10, 0, 100);
+        gw.warScore = clamp(gw.warScore + 12, 0, 100);
+        gw.nuclearRisk = clamp(gw.nuclearRisk + (target.nuclear ? 12 : 5), 0, 100);
+        g.events.push(eventText("danger", `${target.name} rejeitou o ultimato e abriu uma frente militar contra você.`));
+      } else if (target) {
+        g.finance += 30;
+        g.events.push(eventText("sistema", `${target.name} recuou após ultimato e aceitou concessões estratégicas.`));
+      }
+    }
+  });
+  gw.ultimatums = gw.ultimatums.filter(u => u.remaining > 0);
+  gw.invasions.forEach(front => {
+    front.remaining -= 1;
+    const attacker = state.countries.find(c => c.id === front.attackerId);
+    const againstPlayer = front.targetId === g.countryId;
+    const force = againstPlayer ? (attacker?.military || 45) + front.intensity : powerIndex() + regionalForceBonus();
+    const resistance = againstPlayer ? g.defense + regionalForceBonus() + forceCondition()/2 : (state.countries.find(c => c.id === front.targetId)?.military || 50) + Math.random() * 30;
+    front.progress = clamp(front.progress + Math.round((force - resistance) / 10) + randomInt(3, 11), 0, 100);
+    g.worldTension = clamp(g.worldTension + 2, 0, 100);
+    gw.warScore = clamp(gw.warScore + 2, 0, 100);
+    if (againstPlayer && Math.random() < .42) aiRaid();
+    if (front.progress >= 100) {
+      if (againstPlayer) {
+        g.stability = clamp(g.stability - 12, 0, 100);
+        g.finance = Math.max(0, g.finance - 90);
+        g.events.push(eventText("danger", `Frente inimiga rompeu defesas nacionais. Estabilidade e orçamento sofreram forte queda.`));
+      } else {
+        g.finance += 90;
+        g.stability = clamp(g.stability + 5, 0, 100);
+        g.events.push(eventText("sistema", `Operação contra ${front.targetName} alcançou vitória estratégica.`));
+      }
+      front.remaining = 0;
+    }
+  });
+  gw.invasions = gw.invasions.filter(f => f.remaining > 0 && f.progress < 100);
+  if (g.worldTension > 70) gw.nuclearRisk = clamp(gw.nuclearRisk + (g.worldTension > 88 ? 4 : 2), 0, 100);
+  if (gw.nuclearRisk > 75 && Math.random() < .18) nuclearIncident();
+  updateGlobalPhase();
+}
+
+function nuclearIncident() {
+  const g = state.game;
+  const gw = g.globalWar;
+  const contained = Math.random() < (g.intel + g.cyber + g.stability) / 280;
+  if (contained) {
+    gw.nuclearRisk = clamp(gw.nuclearRisk - 16, 0, 100);
+    g.events.push(eventText("warn", "Incidente nuclear foi contido por canais de emergência e comunicação militar."));
+  } else {
+    gw.defcon = Math.max(1, gw.defcon - 1);
+    gw.warScore = clamp(gw.warScore + 15, 0, 100);
+    g.worldTension = clamp(g.worldTension + 12, 0, 100);
+    g.stability = clamp(g.stability - 8, 0, 100);
+    g.events.push(eventText("danger", "Incidente nuclear elevou DEFCON e abalou a estabilidade global."));
+  }
+}
+
+function updateGlobalPhase() {
+  ensureGlobalWar();
+  const gw = state.game.globalWar;
+  const t = state.game.worldTension;
+  if (gw.nuclearRisk >= 85 || t >= 92 || gw.defcon <= 2) gw.phase = "crise nuclear";
+  else if (gw.warScore >= 70 || gw.invasions.length >= 3) gw.phase = "guerra mundial aberta";
+  else if (gw.invasions.length || gw.ultimatums.length) gw.phase = "guerra regionalizada";
+  else if (gw.sanctions.length || t > 55) gw.phase = "guerra fria ativa";
+  else gw.phase = "tensão armada";
+  gw.defcon = gw.phase === "crise nuclear" ? Math.min(gw.defcon, 2) : gw.phase === "guerra mundial aberta" ? Math.min(gw.defcon, 3) : gw.phase === "guerra regionalizada" ? Math.min(gw.defcon, 4) : Math.max(gw.defcon, 4);
+}
+
 
 function monthlyWorldEvent() {
   const g = state.game;
@@ -675,6 +949,7 @@ function aiRaid() {
     g.finance = Math.max(0, g.finance - loss);
     g.readiness = clamp(g.readiness - 5, 0, 100);
     const base = regionBases(region.id).sort((a, b) => a.condition - b.condition)[0];
+    damageRegionalUnits(region.id, intercepted ? 5 : 12, enemy.name);
     if (base) {
       const damage = intercepted ? randomInt(6, 14) : randomInt(12, 28);
       base.condition = clamp(base.condition - damage, 0, 100);
@@ -716,6 +991,129 @@ function maybeCounterAttack(target, pressure) {
   }
 }
 
+
+function monthlyUpkeep() {
+  const g = state.game;
+  return (g.units || []).reduce((sum, stack) => {
+    const u = getUnit(stack.id);
+    if (!u) return sum;
+    const condPenalty = (stack.condition ?? 100) < 45 ? 1.22 : 1;
+    sum.finance += Math.round(u.upkeep * stack.qty * condPenalty);
+    sum.energy += Math.max(1, Math.round((u.upkeep * stack.qty) / (u.class === 'Naval' || u.class === 'Aéreo' ? 1.6 : 3.2)));
+    sum.industry += Math.max(0, Math.round((u.upkeep * stack.qty) / 5));
+    return sum;
+  }, { finance: 0, energy: 0, industry: 0 });
+}
+
+function forceCondition() {
+  const units = state.game?.units || [];
+  const totalQty = units.reduce((s,u)=>s+u.qty,0);
+  if (!totalQty) return 100;
+  return clamp(units.reduce((s,u)=>s+(u.condition ?? 100)*u.qty,0)/totalQty,0,100);
+}
+
+function stackRepairCost(stack) {
+  const u = getUnit(stack.id);
+  const missing = Math.max(0, 100 - (stack.condition ?? 100));
+  return {
+    finance: Math.max(6, Math.round(missing * (u.upkeep || 4) * .55 * Math.max(1, stack.qty * .65))),
+    industry: Math.max(3, Math.round(missing * .35 * Math.max(1, stack.qty * .45))),
+    energy: Math.max(2, Math.round(missing * .18 * Math.max(1, stack.qty * .35)))
+  };
+}
+
+function replacementCost(stack) {
+  const u = getUnit(stack.id);
+  return { finance: Math.round(u.cost * .85), industry: Math.max(4, Math.round(u.cost * .22)), energy: Math.max(3, Math.round(u.upkeep * 2.2)) };
+}
+
+function maintainStack(index) {
+  const stack = state.game.units[index];
+  if (!stack) return;
+  const cost = stackRepairCost(stack);
+  if (stack.condition >= 100 || state.game.finance < cost.finance || state.game.industry < cost.industry || state.game.energy < cost.energy) return;
+  state.game.finance -= cost.finance;
+  state.game.industry -= cost.industry;
+  state.game.energy -= cost.energy;
+  stack.condition = clamp((stack.condition ?? 100) + randomInt(22, 38), 0, 100);
+  state.game.readiness = clamp(state.game.readiness + 2, 0, 100);
+  state.game.events.push(eventText('sistema', `${getUnit(stack.id).name} recebeu manutenção em ${getRegion(stack.regionId).name}. Condição: ${stack.condition}%.`));
+  saveGame(); renderGame();
+}
+
+function replaceStack(index) {
+  const stack = state.game.units[index];
+  if (!stack) return;
+  const u = getUnit(stack.id);
+  const cost = replacementCost(stack);
+  if (!hasOperationalBase(u.requires, stack.regionId, u.minBaseLevel || 1) || state.game.finance < cost.finance || state.game.industry < cost.industry || state.game.energy < cost.energy) return;
+  state.game.finance -= cost.finance;
+  state.game.industry -= cost.industry;
+  state.game.energy -= cost.energy;
+  state.game.production.push({ id: cryptoId(), unitId: u.id, regionId: stack.regionId, remaining: Math.max(1, (u.buildMonths || 2) - 1), replacement: true });
+  state.game.events.push(eventText('sistema', `Reposição de ${u.name} enviada para ${getRegion(stack.regionId).name}.`));
+  saveGame(); renderGame();
+}
+
+function applyMonthlyWear(upkeep) {
+  const g = state.game;
+  const shortage = (g.finance <= 4 || g.energy <= 4 || g.industry <= 3) ? 4 : 0;
+  (g.units || []).forEach(stack => {
+    const u = getUnit(stack.id);
+    if (!u) return;
+    const classWear = u.class === 'Naval' || u.class === 'Aéreo' ? 2 : 1;
+    const wear = randomInt(1, 2 + classWear) + Math.floor(g.worldTension / 45) + shortage;
+    stack.condition = clamp((stack.condition ?? 100) - wear, 0, 100);
+    if (stack.condition < 18 && stack.qty > 0 && Math.random() < .16) {
+      reduceStackQty(stack, 1, `${u.name} sofreu baixa por falta de manutenção.`);
+    }
+  });
+}
+
+function applyOperationalWear(kind, success) {
+  const r = getSelectedRegion();
+  const candidates = regionUnits(r.id).filter(stack => operationUsesUnit(kind, getUnit(stack.id)));
+  if (!candidates.length) return;
+  const wearBase = { recon: 4, airstrike: 10, naval: 10, combined: 14 }[kind] || 6;
+  candidates.slice(0, 4).forEach(stack => {
+    const u = getUnit(stack.id);
+    const wear = wearBase + (success ? randomInt(0, 4) : randomInt(5, 12));
+    stack.condition = clamp((stack.condition ?? 100) - wear, 0, 100);
+    if (!success && stack.condition < 28 && Math.random() < .24) reduceStackQty(stack, 1, `${u.name} sofreu perdas em operação.`);
+  });
+  state.game.events.push(eventText(success ? 'warn' : 'danger', `Operação gerou desgaste nas unidades de ${r.name}. Manutenção recomendada.`));
+}
+
+function operationUsesUnit(kind, u) {
+  if (!u) return false;
+  if (kind === 'recon') return ['Aéreo','Estratégico','Terrestre'].includes(u.class);
+  if (kind === 'airstrike') return u.class === 'Aéreo' || u.id === 'missile_battery';
+  if (kind === 'naval') return u.class === 'Naval' || u.class === 'Aéreo';
+  return true;
+}
+
+function damageRegionalUnits(regionId, severity, enemyName) {
+  const stacks = regionUnits(regionId).sort((a,b)=>(a.condition ?? 100)-(b.condition ?? 100)).slice(0,3);
+  if (!stacks.length) return;
+  stacks.forEach(stack => {
+    const u = getUnit(stack.id);
+    const damage = randomInt(Math.max(2, severity-3), severity+8);
+    stack.condition = clamp((stack.condition ?? 100) - damage, 0, 100);
+    if (stack.condition < 20 && Math.random() < .20) reduceStackQty(stack, 1, `${enemyName} causou baixa em ${u.name}.`);
+  });
+}
+
+function reduceStackQty(stack, qty, reason) {
+  const u = getUnit(stack.id);
+  const loss = Math.min(qty, stack.qty);
+  if (loss <= 0) return;
+  stack.qty -= loss;
+  state.game.monthlyLosses = (state.game.monthlyLosses || 0) + loss;
+  removeUnitPower(u, loss);
+  state.game.events.push(eventText('danger', reason || `${u.name} perdeu ${loss} lote(s).`));
+  if (stack.qty <= 0) state.game.units = state.game.units.filter(s => s !== stack);
+}
+
 function addUnitPower(u) {
   const g = state.game;
   if (u.class === "Terrestre") g.landPower += u.power;
@@ -723,6 +1121,15 @@ function addUnitPower(u) {
   if (u.class === "Naval") g.navalPower += u.power;
   if (u.class === "Estratégico") g.missilePower += u.power;
   g.readiness = clamp(g.readiness + 2, 0, 100);
+}
+
+function removeUnitPower(u, qty = 1) {
+  const g = state.game;
+  if (!u) return;
+  if (u.class === "Terrestre") g.landPower = Math.max(0, g.landPower - u.power * qty);
+  if (u.class === "Aéreo") g.airPower = Math.max(0, g.airPower - u.power * qty);
+  if (u.class === "Naval") g.navalPower = Math.max(0, g.navalPower - u.power * qty);
+  if (u.class === "Estratégico") g.missilePower = Math.max(0, g.missilePower - u.power * qty);
 }
 
 function applyEffects(effects) {

@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
   <meta name="theme-color" content="#050914">
   <meta name="description" content="Modern War Dominion — jogo mobile de dominação militar global com mapa real, bases regionais, produção de unidades e escalada de guerra mundial.">
-  <title>Modern War Dominion — Fase 8</title>
+  <title>Modern War Dominion — Fase 10</title>
   <link rel="manifest" href="manifest.json">
   <link rel="icon" href="assets/img/icon.svg" type="image/svg+xml">
   <link rel="preconnect" href="https://unpkg.com">
@@ -37,7 +37,7 @@
       <div class="top-actions">
         <button class="mini-btn" id="fullscreenBtn">Tela cheia</button>
         <button class="mini-btn" id="installBtn" hidden>Instalar</button>
-        <div class="build-chip">Fase 8 · v0.8.0</div>
+        <div class="build-chip">Fase 10 · v1.0.0</div>
       </div>
     </header>
 
@@ -45,22 +45,22 @@
       <section class="screen screen-active" id="screenHome">
         <div class="home-layout">
           <article class="hero-card glass-panel">
-            <p class="eyebrow">Fase 8 — Arsenal detalhado</p>
-            <h1>Arsenal detalhado com classes, níveis, alcance e desbloqueios.</h1>
-            <p>A nova fase adiciona catálogo militar mais profundo: blindados, artilharia, caças, bombardeiros, drones, helicópteros, navios, submarinos e porta-aviões com estatísticas, requisitos de base, tempo de produção, manutenção e função estratégica.</p>
+            <p class="eyebrow">Fase 10 — Terceira Guerra Mundial</p>
+            <h1>Blocos globais, ultimatos, sanções, invasões e crise nuclear.</h1>
+            <p>A Fase 10 abre a camada de guerra global: países entram em blocos, sanções aumentam pressão econômica, ultimatos podem iniciar invasões, alianças reagem e a crise nuclear passa a ser uma ameaça real conforme a tensão mundial sobe.</p>
             <div class="hero-actions">
               <button class="primary-btn" id="newGameBtn">Nova campanha militar</button>
               <button class="ghost-btn" id="continueBtn" disabled>Continuar campanha</button>
             </div>
             <div class="status-strip">
-              <span>Mapa real Leaflet/OpenStreetMap</span><span>Arsenal detalhado</span><span>Naval por classe</span><span>Aéreo por classe</span><span>Terrestre por classe</span><span>Desbloqueio por nível</span>
+              <span>Mapa real Leaflet/OpenStreetMap</span><span>Blocos militares</span><span>Sanções</span><span>Ultimatos</span><span>Invasões</span><span>Crise nuclear</span>
             </div>
           </article>
           <aside class="glass-panel doctrine-panel">
-            <h2>Novo arsenal jogável</h2>
-            <p>Agora cada unidade tem papel, custo, manutenção, alcance, ataque, defesa, tempo de produção e requisito de base. O jogador precisa melhorar bases para liberar armas mais poderosas.</p>
+            <h2>Escalada mundial</h2>
+            <p>Agora o conflito deixa de ser apenas regional: cada ação militar pode mover blocos inteiros, provocar retaliações econômicas, abrir frentes de invasão e empurrar o mundo para a Terceira Guerra Mundial.</p>
             <div class="doctrine-grid">
-              <span>🪖 Blindados</span><span>✈️ Caças</span><span>🚁 Helicópteros</span><span>🚢 Fragatas</span><span>🌊 Submarinos</span><span>🛳️ Porta-aviões</span>
+              <span>🌐 Blocos</span><span>⚠️ Ultimatos</span><span>💸 Sanções</span><span>🪖 Invasões</span><span>☢️ DEFCON</span><span>🚨 Guerra total</span>
             </div>
           </aside>
         </div>
@@ -108,6 +108,8 @@
               <button class="side-tab is-active" data-panel="panelBuild">Regiões</button>
               <button class="side-tab" data-panel="panelForces">Produção</button>
               <button class="side-tab" data-panel="panelArsenal">Arsenal</button>
+              <button class="side-tab" data-panel="panelMaintenance">Manut.</button>
+              <button class="side-tab" data-panel="panelGlobal">Mundo</button>
               <button class="side-tab" data-panel="panelOps">Atacar</button>
               <button class="side-tab" data-panel="panelIntel">Alerta</button>
             </div>
@@ -144,6 +146,19 @@
               <div id="arsenalList" class="arsenal-list"></div>
             </div>
 
+            <div class="side-panel" id="panelMaintenance">
+              <h2>Manutenção e reposição</h2>
+              <p class="muted">Unidades perdem condição com o tempo, em ataques e em operações. Mantenha suas forças prontas ou elas perderão desempenho e poderão sofrer baixas.</p>
+              <div id="maintenanceSummary" class="maintenance-summary"></div>
+              <div id="maintenanceList" class="maintenance-list"></div>
+            </div>
+
+            <div class="side-panel" id="panelGlobal">
+              <h2>Terceira Guerra Mundial</h2>
+              <p class="muted">Gerencie blocos, sanções, ultimatos, invasões e a crise nuclear. Cada decisão pode proteger sua nação ou empurrar o mundo para guerra total.</p>
+              <div id="globalWarPanel" class="global-war-panel"></div>
+            </div>
+
             <div class="side-panel" id="panelOps">
               <h2>Operações militares</h2>
               <p class="muted">Faça reconhecimento, ataque limitado ou operação combinada. Quanto maior o ataque, maior a escalada mundial.</p>
@@ -171,15 +186,15 @@
 
       <section class="screen" id="screenRoadmap">
         <div class="roadmap glass-panel">
-          <p class="eyebrow">Fase 7 em diante</p>
-          <h1>O arsenal agora tem leitura estratégica clara e prepara a loja militar completa das próximas fases.</h1>
+          <p class="eyebrow">Fase 10 em diante</p>
+          <h1>As forças agora têm custo real de manter, sofrem perdas e exigem planejamento logístico.</h1>
           <div class="roadmap-grid">
-            <article><strong>Fase 8</strong><span>Arsenal detalhado com classes, níveis de base, estatísticas, alcance, manutenção e tempo de produção.</span></article>
-            <article><strong>Fase 12</strong><span>Eventos globais maiores, missões especiais e diplomacia avançada em guerra aberta.</span></article>
-            <article><strong>Fase 12</strong><span>Eventos globais maiores, missões especiais e diplomacia avançada em guerra aberta.</span></article>
-            <article><strong>Fase 12</strong><span>Eventos globais maiores, missões especiais e diplomacia avançada em guerra aberta.</span></article>
-            <article><strong>Fase 12</strong><span>Eventos globais maiores, missões especiais e diplomacia avançada em guerra aberta.</span></article>
-            <article><strong>Fase 12</strong><span>Eventos globais maiores, missões especiais e diplomacia avançada em guerra aberta.</span></article>
+            <article><strong>Fase 9</strong><span>Manutenção, desgaste, baixas, reposição de lotes e custo real de guerra longa.</span></article>
+            <article><strong>Fase 10</strong><span>Terceira Guerra Mundial: blocos, ultimatos, sanções, invasões e crise nuclear.</span></article>
+            <article><strong>Fase 11</strong><span>Objetivos de campanha, vitórias por dominação, dissuasão e supremacia econômica.</span></article>
+            <article><strong>Fase 12</strong><span>Missões especiais, inteligência avançada, eventos globais e diplomacia em guerra aberta.</span></article>
+            <article><strong>Fase 13</strong><span>Arsenal visual por nação, fabricantes e modelos militares exclusivos.</span></article>
+            <article><strong>Fase 14</strong><span>Campanha mundial persistente com frentes, alianças e crises simultâneas.</span></article>
           </div>
         </div>
       </section>
