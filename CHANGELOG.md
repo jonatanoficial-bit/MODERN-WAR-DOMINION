@@ -1,31 +1,22 @@
 # Changelog
 
-## v0.1.0-F1-NUCLEO-ESCOLHA-NACAO — 2026-06-24
+## v0.2.0 — Fase 2 — Mapa Mundial e Países Imersivos
+
+### Corrigido
+- Corrigida a interpretação do mapa: não é mapa do país Ucrânia.
+- Removido o foco de teatro específico e adotado mapa mundial de dominação global.
 
 ### Adicionado
+- Mapa mundial gratuito estilo Leaflet/OpenStreetMap com fallback SVG autoral.
+- Bandeiras na seleção de países e no mapa.
+- Dados estatísticos ampliados por país.
+- Regiões globais clicáveis com tensão, influência, comércio e estabilidade.
+- Marcadores de países no mapa mundial.
+- Eventos mensais globais.
+- Ações de economia, defesa, diplomacia, inteligência e logística.
+- PWA e save local v2.
 
-- Criação da base completa do projeto Modern War Dominion.
-- Tela inicial com visual premium de centro de comando.
-- Seleção de 15 nações jogáveis.
-- Atributos por país: economia, militar, diplomacia, inteligência, logística, estabilidade e tecnologia.
-- Painel principal de campanha.
-- Sistema inicial de turnos mensais.
-- Ações estratégicas: economia, prontidão, diplomacia, inteligência e logística.
-- Eventos mensais fictícios.
-- Relatórios de conselheiros.
-- Registro de comando.
-- Save local via `localStorage`.
-- PWA básico.
-- Mapa tático gratuito da Ucrânia em SVG autoral.
-- Scripts de auditoria, smoke test e integridade.
-- Documentação de release, rollback, QA e licenças.
-
-### Corrigido / Ajustado
-
-- A primeira fase já nasce com a correção solicitada: mapa tático baseado na Ucrânia, em vez de mapa genérico simples.
-
-### Preservado
-
-- Estrutura leve compatível com GitHub Pages.
-- Ausência de backend obrigatório.
-- Ausência de imagens externas protegidas.
+### Mantido
+- Estrutura HTML/CSS/JS sem dependência paga.
+- Mobile first.
+- Build completa jogável.

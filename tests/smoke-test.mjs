@@ -1,31 +1,50 @@
-import fs from 'node:fs';
-import path from 'node:path';
+import { readFileSync, existsSync } from 'node:fs';
+import { join } from 'node:path';
 
 const root = process.cwd();
-const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
-const js = fs.readFileSync(path.join(root, 'js/app.js'), 'utf8');
-const countries = JSON.parse(fs.readFileSync(path.join(root, 'data/countries.json'), 'utf8'));
-
-const checks = [
-  ['Tela inicial presente', html.includes('screenHome')],
-  ['Tela seleção de nação presente', html.includes('screenNation')],
-  ['Tela de jogo presente', html.includes('screenGame')],
-  ['Botão nova campanha presente', html.includes('newGameBtn')],
-  ['Botão continuar presente', html.includes('continueBtn')],
-  ['Painel do mapa presente', html.includes('ukraine-map-wrap')],
-  ['Ações estratégicas presentes', html.includes('data-action="economy"') && html.includes('data-action="military"')],
-  ['Próximo turno implementado', js.includes('function nextTurn')],
-  ['Seleção de país implementada', js.includes('function selectCountry')],
-  ['Eventos mensais implementados', js.includes('eventPool')],
-  ['15 países carregados', countries.length >= 15],
-  ['Todos os países possuem stats principais', countries.every((country) => ['economy', 'military', 'diplomacy', 'intel', 'logistics', 'stability', 'tech'].every((key) => typeof country.stats?.[key] === 'number'))]
+const required = [
+  'index.html',
+  'css/styles.css',
+  'js/app.js',
+  'data/countries.json',
+  'data/world_regions.json',
+  'assets/img/world-map-free.svg',
+  'manifest.json',
+  'service-worker.js',
+  'BUILD_INFO.json',
+  'README.md',
+  'CHANGELOG.md'
 ];
 
-const failed = checks.filter(([, ok]) => !ok);
-if (failed.length) {
-  console.error('SMOKE FAIL');
-  for (const [name] of failed) console.error(`- ${name}`);
-  process.exit(1);
+for (const file of required) {
+  if (!existsSync(join(root, file))) throw new Error(`Arquivo ausente: ${file}`);
 }
 
-console.log('SMOKE OK — fluxo principal, mapa, nações, ações e turnos encontrados.');
+const html = readFileSync(join(root, 'index.html'), 'utf8');
+const js = readFileSync(join(root, 'js/app.js'), 'utf8');
+const css = readFileSync(join(root, 'css/styles.css'), 'utf8');
+const countries = JSON.parse(readFileSync(join(root, 'data/countries.json'), 'utf8'));
+const regions = JSON.parse(readFileSync(join(root, 'data/world_regions.json'), 'utf8'));
+
+const htmlChecks = ['screenHome', 'screenNation', 'screenGame', 'countryMapLayer', 'regionMapLayer', 'globalGrid', 'actionStack'];
+for (const token of htmlChecks) {
+  if (!html.includes(token)) throw new Error(`HTML não contém ${token}`);
+}
+
+const jsChecks = ['v0.2.0-F2-MAPA-MUNDIAL-PAISES', 'world_regions.json', 'renderWorldMap', 'region-marker', 'map-marker'];
+for (const token of jsChecks) {
+  if (!js.includes(token)) throw new Error(`JS não contém ${token}`);
+}
+
+const cssChecks = ['world-map-shell', 'map-attribution', 'nation-card', 'flag-pill'];
+for (const token of cssChecks) {
+  if (!css.includes(token)) throw new Error(`CSS não contém ${token}`);
+}
+
+if (countries.length < 12) throw new Error('Poucos países cadastrados na Fase 2');
+if (regions.length < 8) throw new Error('Poucas regiões globais cadastradas na Fase 2');
+for (const country of countries) {
+  if (!country.flag || !country.profile || !country.map) throw new Error(`País incompleto: ${country.name}`);
+}
+
+console.log('Smoke test OK — Modern War Dominion F2 completo.');

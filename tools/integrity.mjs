@@ -1,26 +1,25 @@
-import fs from 'node:fs';
-import path from 'node:path';
-import crypto from 'node:crypto';
+import { createHash } from 'node:crypto';
+import { readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
+import { join, relative } from 'node:path';
 
 const root = process.cwd();
-const ignored = new Set(['node_modules', '.git']);
-const manifest = [];
-
+const ignore = new Set(['docs/INTEGRITY_MANIFEST.json']);
+const entries = [];
 function walk(dir) {
-  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-    if (ignored.has(entry.name)) continue;
-    const absolute = path.join(dir, entry.name);
-    if (entry.isDirectory()) walk(absolute);
+  for (const item of readdirSync(dir)) {
+    const path = join(dir, item);
+    const stat = statSync(path);
+    if (stat.isDirectory()) walk(path);
     else {
-      const relative = path.relative(root, absolute).replaceAll('\\', '/');
-      const buffer = fs.readFileSync(absolute);
-      manifest.push({ file: relative, bytes: buffer.length, sha256: crypto.createHash('sha256').update(buffer).digest('hex') });
+      const rel = relative(root, path).replaceAll('\\', '/');
+      if (!ignore.has(rel)) {
+        const hash = createHash('sha256').update(readFileSync(path)).digest('hex');
+        entries.push({ file: rel, bytes: stat.size, sha256: hash });
+      }
     }
   }
 }
-
 walk(root);
-manifest.sort((a, b) => a.file.localeCompare(b.file));
-const out = path.join(root, 'docs', 'INTEGRITY_MANIFEST.json');
-fs.writeFileSync(out, `${JSON.stringify({ generatedAt: new Date().toISOString(), files: manifest }, null, 2)}\n`);
-console.log(`INTEGRITY OK — ${manifest.length} arquivos registrados em docs/INTEGRITY_MANIFEST.json`);
+entries.sort((a, b) => a.file.localeCompare(b.file));
+writeFileSync(join(root, 'docs/INTEGRITY_MANIFEST.json'), JSON.stringify({ generatedAt: new Date().toISOString(), entries }, null, 2));
+console.log(`Integridade OK — ${entries.length} itens no manifesto.`);

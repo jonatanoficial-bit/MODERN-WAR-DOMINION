@@ -1,20 +1,13 @@
 {
   "name": "Modern War Dominion",
-  "short_name": "MW Dominion",
-  "description": "Estratégia militar moderna, diplomacia, economia e dominação global.",
+  "short_name": "MWD",
+  "description": "Dominação Global: Guerra Moderna — Fase 2",
   "start_url": "./index.html",
-  "scope": "./",
   "display": "standalone",
+  "background_color": "#050b14",
+  "theme_color": "#07111f",
   "orientation": "any",
-  "background_color": "#050914",
-  "theme_color": "#08111f",
-  "lang": "pt-BR",
   "icons": [
-    {
-      "src": "assets/img/ukraine-map-free.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
-      "purpose": "any maskable"
-    }
+    { "src": "assets/img/world-map-free.svg", "sizes": "512x512", "type": "image/svg+xml", "purpose": "any maskable" }
   ]
 }

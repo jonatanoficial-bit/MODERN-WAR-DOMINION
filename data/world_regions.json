@@ -1,0 +1,10 @@
+[
+  { "id": "north-america", "name": "América do Norte", "x": 24, "y": 38, "tension": 31, "influence": 76, "trade": 84, "stability": 72, "resources": "Tecnologia, energia, indústria, finanças", "focus": "Rotas atlânticas, defesa continental e projeção aérea/naval" },
+  { "id": "south-america", "name": "América do Sul", "x": 34, "y": 71, "tension": 24, "influence": 48, "trade": 61, "stability": 58, "resources": "Alimentos, água, energia, minerais", "focus": "Crescimento regional, autonomia e proteção de recursos" },
+  { "id": "europe", "name": "Europa", "x": 53, "y": 38, "tension": 57, "influence": 72, "trade": 76, "stability": 63, "resources": "Indústria avançada, alianças, tecnologia", "focus": "Segurança continental, energia e diplomacia multilateral" },
+  { "id": "africa", "name": "África", "x": 57, "y": 59, "tension": 42, "influence": 45, "trade": 54, "stability": 49, "resources": "Minerais, rotas marítimas, energia, população jovem", "focus": "Influência externa, desenvolvimento e controle de gargalos logísticos" },
+  { "id": "middle-east", "name": "Oriente Médio", "x": 62, "y": 50, "tension": 74, "influence": 58, "trade": 67, "stability": 41, "resources": "Energia, estreitos, mísseis, diplomacia de crise", "focus": "Rotas energéticas, dissuasão, coalizões e instabilidade regional" },
+  { "id": "eurasia", "name": "Eurásia", "x": 66, "y": 35, "tension": 68, "influence": 64, "trade": 59, "stability": 50, "resources": "Energia, profundidade territorial, indústria pesada", "focus": "Corredores terrestres, fronteiras extensas e guerra de influência" },
+  { "id": "asia-pacific", "name": "Ásia-Pacífico", "x": 80, "y": 47, "tension": 63, "influence": 81, "trade": 88, "stability": 62, "resources": "Manufatura, chips, rotas marítimas, população", "focus": "Mar do Sul da China, comércio, tecnologia e defesa marítima" },
+  { "id": "oceania", "name": "Oceania", "x": 83, "y": 77, "tension": 29, "influence": 43, "trade": 52, "stability": 77, "resources": "Minérios, rotas do Pacífico, bases remotas", "focus": "Controle de rotas, inteligência oceânica e segurança do Pacífico" }
+]
