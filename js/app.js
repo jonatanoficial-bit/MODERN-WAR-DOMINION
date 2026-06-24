@@ -1,6 +1,6 @@
-const VERSION = "0.7.0";
-const PHASE = "Fase 7 — guerra, danos e reparo";
-const SAVE_KEY = "MWD_SAVE_V7";
+const VERSION = "0.8.0";
+const PHASE = "Fase 8 — arsenal detalhado";
+const SAVE_KEY = "MWD_SAVE_V8";
 
 const $ = (sel, root = document) => root.querySelector(sel);
 const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
@@ -12,7 +12,8 @@ const state = {
   selectedCountry: null,
   game: null,
   map: null,
-  layers: { countries: null, regions: null, bases: null, threats: null }
+  layers: { countries: null, regions: null, bases: null, threats: null },
+  arsenalFilter: "Todos"
 };
 
 const monthNames = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
@@ -68,6 +69,12 @@ function bindUi() {
   });
 
   $$(".op-btn").forEach(btn => btn.addEventListener("click", () => launchOperation(btn.dataset.op)));
+
+  $$(".arsenal-filter").forEach(btn => btn.addEventListener("click", () => {
+    state.arsenalFilter = btn.dataset.class;
+    $$(".arsenal-filter").forEach(b => b.classList.toggle("is-active", b === btn));
+    renderArsenal();
+  }));
 }
 
 function showScreen(id) {
@@ -220,6 +227,7 @@ function renderGame() {
   renderBuildList();
   renderProduction();
   renderUnitList();
+  renderArsenal();
   renderTargetSelect();
   renderIntel();
   initMap();
@@ -346,13 +354,49 @@ function renderUnitList() {
   const list = $("#unitList");
   const r = getSelectedRegion();
   list.innerHTML = "";
-  state.units.forEach(u => {
-    const hasBase = hasOperationalBase(u.requires, r.id);
+  const ordered = [...state.units].sort((a,b) => (a.tier - b.tier) || a.class.localeCompare(b.class));
+  ordered.forEach(u => {
+    const level = u.minBaseLevel || 1;
+    const hasBase = hasOperationalBase(u.requires, r.id, level);
     const canBuy = hasBase && state.game.finance >= u.cost;
     const card = document.createElement("article");
     card.className = "unit-card";
-    card.innerHTML = `${u.image ? `<img class="card-thumb" src="${u.image}" alt="${u.name}">` : ""}<div><h3>${u.icon} ${u.name}</h3><p>${u.role}</p><div class="cost-line">${u.class} · $${u.cost} · ${u.buildMonths}m · requer ${getBuilding(u.requires)?.name || u.requires} na região ativa</div></div><button ${canBuy ? "" : "disabled"}>Produzir</button>`;
+    card.innerHTML = `${u.image ? `<img class="card-thumb" src="${u.image}" alt="${u.name}">` : ""}<div><h3>${u.icon} ${u.name}</h3><p>${u.role}</p><div class="cost-line">${u.class} · Tier ${u.tier || 1} · Ataque ${u.attack ?? u.power} · Defesa ${u.defense ?? 0} · Alcance ${u.rangeKm || "—"} km</div><div class="cost-line">$${u.cost} · Manut. ${u.upkeep} · ${u.buildMonths}m · requer ${getBuilding(u.requires)?.name || u.requires} nível ${level} na região ativa</div></div><button ${canBuy ? "" : "disabled"}>Produzir</button>`;
     card.querySelector("button").addEventListener("click", () => queueUnit(u.id));
+    list.appendChild(card);
+  });
+}
+
+function renderArsenal() {
+  const list = $("#arsenalList");
+  if (!list) return;
+  const filter = state.arsenalFilter || "Todos";
+  list.innerHTML = "";
+  const units = state.units
+    .filter(u => filter === "Todos" || u.class === filter)
+    .sort((a,b) => (a.class.localeCompare(b.class)) || (a.tier - b.tier) || a.cost - b.cost);
+  units.forEach(u => {
+    const owned = ownedUnitQty(u.id);
+    const b = getBuilding(u.requires);
+    const caps = (u.capabilities || []).map(c => `<span>${c}</span>`).join("");
+    const card = document.createElement("article");
+    card.className = `arsenal-card class-${slug(u.class)}`;
+    card.innerHTML = `
+      <img src="${u.image}" alt="${u.name}">
+      <div class="arsenal-body">
+        <div class="arsenal-title"><h3>${u.icon} ${u.name}</h3><strong>${u.class} · Tier ${u.tier || 1}</strong></div>
+        <p>${u.role}</p>
+        <div class="arsenal-stats">
+          <span>Ataque <b>${u.attack ?? u.power}</b></span>
+          <span>Defesa <b>${u.defense ?? 0}</b></span>
+          <span>Poder <b>${u.power}</b></span>
+          <span>Alcance <b>${u.rangeKm || "—"} km</b></span>
+          <span>Produção <b>${u.buildMonths}m</b></span>
+          <span>Manutenção <b>${u.upkeep}</b></span>
+        </div>
+        <div class="arsenal-meta"><span>Requer: ${b?.name || u.requires} nível ${u.minBaseLevel || 1}</span><span>Possui: ${owned}</span><span>Tripulação/lote: ${u.crew || "—"}</span></div>
+        <div class="capability-line">${caps}</div>
+      </div>`;
     list.appendChild(card);
   });
 }
@@ -473,7 +517,7 @@ function queueUnit(unitId) {
   const u = getUnit(unitId);
   const r = getSelectedRegion();
   const g = state.game;
-  if (!u || !hasOperationalBase(u.requires, r.id) || g.finance < u.cost) return;
+  if (!u || !hasOperationalBase(u.requires, r.id, u.minBaseLevel || 1) || g.finance < u.cost) return;
   g.finance -= u.cost;
   g.production.push({ id: cryptoId(), unitId, regionId: r.id, remaining: u.buildMonths });
   g.events.push(eventText("sistema", `${u.name} entrou na fila de produção em ${r.name}.`));
@@ -700,7 +744,7 @@ function canAfford(cost) {
 }
 function regionBases(regionId) { return state.game.bases.filter(b => b.regionId === regionId); }
 function regionUnits(regionId) { return state.game.units.filter(u => u.regionId === regionId); }
-function hasOperationalBase(type, regionId) { return state.game.bases.some(b => b.type === type && b.regionId === regionId && b.condition > 20); }
+function hasOperationalBase(type, regionId, minLevel = 1) { return state.game.bases.some(b => b.type === type && b.regionId === regionId && b.condition > 20 && b.level >= minLevel); }
 function regionalDefense(regionId) { return regionBases(regionId).reduce((sum, b) => sum + ((getBuilding(b.type)?.effects?.defense || 0) * b.level * (b.condition / 100)), 0); }
 function regionalAirCover(regionId) { return regionBases(regionId).filter(b => b.type === 'air_base').reduce((sum, b) => sum + 16 * b.level * (b.condition / 100), 0); }
 function regionalRadarCover(regionId) { return regionBases(regionId).filter(b => b.type === 'radar_station').reduce((sum, b) => sum + 14 * b.level * (b.condition / 100), 0); }
@@ -711,6 +755,8 @@ function upgradeCost(base) { return { finance: Math.round(38 * base.level * 1.45
 function repairCost(base) { const missing = Math.max(0, 100 - base.condition); return { finance: Math.max(8, Math.round(missing * 1.6 * Math.max(1, base.level * .9))), industry: Math.max(4, Math.round(missing * .8)), energy: Math.max(2, Math.round(missing * .35)) }; }
 function repairBase(baseId) { const base = state.game.bases.find(b => b.id === baseId); if (!base) return; const cost = repairCost(base); if (base.condition >= 100 || state.game.finance < cost.finance || state.game.industry < cost.industry || state.game.energy < cost.energy) return; state.game.finance -= cost.finance; state.game.industry -= cost.industry; state.game.energy -= cost.energy; base.condition = clamp(base.condition + randomInt(18, 32), 0, 100); state.game.readiness = clamp(state.game.readiness + 1, 0, 100); state.game.events.push(eventText('sistema', `${getBuilding(base.type).name} recebeu manutenção em ${getRegion(base.regionId).name}. Condição atual: ${base.condition}%.`)); saveGame(); renderGame(); }
 function destroyBase(baseId, reason) { const idx = state.game.bases.findIndex(b => b.id === baseId); if (idx === -1) return; const base = state.game.bases[idx]; const building = getBuilding(base.type); const factor = 1 + Math.max(0, base.level - 1) * 0.45; const reverse = {}; Object.entries(building.effects).forEach(([key, value]) => reverse[key] = -Math.round(value * factor)); applyEffects(reverse); state.game.bases.splice(idx, 1); state.game.events.push(eventText('danger', reason || `${building.name} foi destruída.`)); }
+function ownedUnitQty(unitId) { return state.game?.units?.filter(u => u.id === unitId).reduce((sum,u)=>sum+u.qty,0) || 0; }
+function slug(text) { return String(text || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-"); }
 function getBuilding(id) { return state.buildings.find(b => b.id === id); }
 function getUnit(id) { return state.units.find(u => u.id === id); }
 function getRegion(id) { return state.game.regions.find(r => r.id === id) || state.game.regions[0]; }

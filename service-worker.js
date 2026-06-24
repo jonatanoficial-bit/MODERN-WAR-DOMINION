@@ -1,4 +1,4 @@
-const CACHE = "mwd-v0-6-0-f6";
+const CACHE = "mwd-v0-8-0-f8";
 const ASSETS = [
   "./",
   "./index.html",

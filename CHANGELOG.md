@@ -14,3 +14,10 @@
 - Bases com condição, reparo manual e destruição
 - Interceptação por radar e base aérea
 - Contra-ataques atingem regiões
+
+
+## Fase 8 — Arsenal detalhado
+- Painel Arsenal adicionado ao comando
+- Unidade por classe com ataque, defesa, alcance, manutenção, tripulação e requisitos
+- Produção agora respeita nível mínimo da base
+- Catálogo naval, aéreo, terrestre e estratégico expandido

@@ -1,7 +1,7 @@
 {
   "project": "Modern War Dominion",
-  "version": "0.7.0",
-  "phase": "Fase 7 — guerra, danos e reparo",
+  "version": "0.8.0",
+  "phase": "Fase 8 — arsenal detalhado",
   "generated_at": "2026-06-24",
   "base": "Fase 5 assets integrados",
   "features": [
@@ -12,9 +12,9 @@
     "mapa real preservado"
   ],
   "notes": [
-    "Fundos com camada azul reduzida para aparecer melhor no PC",
-    "Bases agora sofrem dano, podem ser reparadas e até destruídas",
-    "Interceptação regional por radar e base aérea",
-    "Contra-ataques danificam regiões ativas"
+    "Catálogo expandido com unidades terrestres, aéreas, navais e estratégicas",
+    "Requisitos por nível de base",
+    "Painel Arsenal com estatísticas completas",
+    "Produção bloqueada por nível de infraestrutura"
   ]
 }
