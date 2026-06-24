@@ -1,0 +1,22 @@
+{
+  "project": "Modern War Dominion",
+  "subtitle": "Dominação Global: Guerra Moderna",
+  "phase": 1,
+  "phaseName": "Núcleo do Jogo e Escolha de Nação",
+  "version": "v0.1.0-F1-NUCLEO-ESCOLHA-NACAO",
+  "buildDate": "2026-06-24",
+  "deliveryType": "ZIP completo funcional",
+  "mapMode": "Mapa tático gratuito da Ucrânia em SVG autoral",
+  "platforms": ["Mobile", "Desktop", "Tablet", "PWA", "GitHub Pages"],
+  "requiredFiles": [
+    "index.html",
+    "css/styles.css",
+    "js/app.js",
+    "data/countries.json",
+    "assets/img/ukraine-map-free.svg",
+    "manifest.json",
+    "service-worker.js",
+    "README.md",
+    "CHANGELOG.md"
+  ]
+}

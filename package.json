@@ -1,0 +1,16 @@
+{
+  "name": "modern-war-dominion",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Modern War Dominion — Fase 1: núcleo, escolha de nação, mapa Ucrânia gratuito e PWA.",
+  "type": "module",
+  "scripts": {
+    "test": "node tools/audit.mjs && node tests/smoke-test.mjs",
+    "audit": "node tools/audit.mjs",
+    "smoke": "node tests/smoke-test.mjs",
+    "integrity": "node tools/integrity.mjs"
+  },
+  "keywords": ["strategy", "war-game", "pwa", "github-pages", "pt-br"],
+  "author": "Vale Games",
+  "license": "UNLICENSED"
+}

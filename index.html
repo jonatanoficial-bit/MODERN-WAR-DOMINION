@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#08111f">
+  <meta name="description" content="Modern War Dominion — jogo de estratégia militar moderna, diplomacia, economia e dominação global.">
+  <title>Modern War Dominion — Fase 1</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="assets/img/ukraine-map-free.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <div class="app-shell" id="app">
+    <header class="topbar">
+      <div class="brand-block">
+        <span class="brand-mark" aria-hidden="true">◆</span>
+        <div>
+          <strong>Modern War Dominion</strong>
+          <small>Dominação Global: Guerra Moderna</small>
+        </div>
+      </div>
+      <div class="build-chip" id="buildChip">Fase 1 · v0.1.0</div>
+    </header>
+
+    <main>
+      <section class="screen screen-active" id="screenHome" aria-labelledby="homeTitle">
+        <div class="hero-grid">
+          <article class="hero-card glass-panel">
+            <p class="eyebrow">Centro de Comando Estratégico</p>
+            <h1 id="homeTitle">Escolha uma nação. Comande economia, diplomacia, inteligência e forças modernas.</h1>
+            <p class="hero-copy">Uma simulação fictícia de estratégia geopolítica. Cada turno representa um mês e suas escolhas alteram estabilidade, prontidão, influência e orçamento nacional.</p>
+            <div class="hero-actions">
+              <button class="primary-btn" id="newGameBtn">Iniciar nova campanha</button>
+              <button class="ghost-btn" id="continueBtn" disabled>Continuar save</button>
+            </div>
+            <div class="status-strip">
+              <span>Mobile first</span>
+              <span>PWA</span>
+              <span>Save local</span>
+              <span>Mapa Ucrânia gratuito</span>
+            </div>
+          </article>
+
+          <aside class="intel-card glass-panel">
+            <div class="radar-orb" aria-hidden="true"><span></span></div>
+            <h2>Briefing inicial</h2>
+            <p>O mapa tático desta fase usa uma arte vetorial própria inspirada no contorno da Ucrânia, sem imagem externa paga ou protegida. Ele funciona como teatro operacional visual para dar realidade ao painel sem representar instruções reais.</p>
+            <ul class="brief-list">
+              <li>15 nações jogáveis com atributos distintos</li>
+              <li>Mapa com setores, bases, portos e waypoints</li>
+              <li>Ações de economia, defesa, diplomacia e inteligência</li>
+              <li>Relatórios de conselheiros a cada turno</li>
+            </ul>
+          </aside>
+        </div>
+      </section>
+
+      <section class="screen" id="screenNation" aria-labelledby="nationTitle">
+        <div class="section-head">
+          <button class="back-btn" id="backHomeBtn">← voltar</button>
+          <div>
+            <p class="eyebrow">Fase 1 — Escolha de Nação</p>
+            <h1 id="nationTitle">Selecione seu país inicial</h1>
+          </div>
+        </div>
+        <div class="nation-toolbar glass-panel">
+          <label for="nationSearch">Filtro estratégico</label>
+          <input id="nationSearch" type="search" placeholder="Buscar país, doutrina ou bloco...">
+        </div>
+        <div class="nation-grid" id="nationGrid" aria-live="polite"></div>
+      </section>
+
+      <section class="screen" id="screenGame" aria-labelledby="commandTitle">
+        <div class="command-layout">
+          <section class="command-main">
+            <div class="section-head game-head">
+              <div>
+                <p class="eyebrow">Sala de Situação</p>
+                <h1 id="commandTitle">Painel nacional</h1>
+                <p class="muted" id="campaignMeta">Turno 1 · Janeiro de 2026</p>
+              </div>
+              <button class="ghost-btn danger" id="resetBtn">Resetar campanha</button>
+            </div>
+
+            <div class="country-profile glass-panel" id="countryProfile"></div>
+
+            <div class="resource-grid" id="resourceGrid"></div>
+
+            <article class="map-panel glass-panel">
+              <div class="map-head">
+                <div>
+                  <p class="eyebrow">Mapa operacional gratuito</p>
+                  <h2>Teatro Ucrânia — setores estratégicos</h2>
+                </div>
+                <span class="map-badge">SVG autoral · sem asset pago</span>
+              </div>
+              <div class="ukraine-map-wrap" id="mapWrap">
+                <img class="ukraine-map" src="assets/img/ukraine-map-free.svg" alt="Mapa vetorial gratuito inspirado no contorno da Ucrânia com setores estratégicos fictícios">
+                <button class="map-node capital" style="--x:55%;--y:38%;" data-sector="Comando Kyiv" aria-label="Setor Comando Kyiv"><span>Kyiv</span></button>
+                <button class="map-node air" style="--x:73%;--y:39%;" data-sector="Setor Kharkiv" aria-label="Setor Kharkiv"><span>Air</span></button>
+                <button class="map-node conflict" style="--x:78%;--y:58%;" data-sector="Zona Donbas" aria-label="Zona Donbas"><span>Hot</span></button>
+                <button class="map-node naval" style="--x:48%;--y:76%;" data-sector="Porto Odesa" aria-label="Porto Odesa"><span>Port</span></button>
+                <button class="map-node logistics" style="--x:27%;--y:43%;" data-sector="Hub Lviv" aria-label="Hub Lviv"><span>Log</span></button>
+                <button class="map-node maritime" style="--x:65%;--y:83%;" data-sector="Corredor Mar Negro" aria-label="Corredor Mar Negro"><span>Sea</span></button>
+                <svg class="waypoint-lines" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+                  <path d="M27 43 L55 38 L73 39 L78 58 L65 83 L48 76 L27 43" />
+                  <path d="M55 38 L48 76" />
+                </svg>
+              </div>
+              <div class="sector-panel" id="sectorPanel">Toque em um setor do mapa para receber leitura operacional.</div>
+            </article>
+          </section>
+
+          <aside class="command-side">
+            <article class="advisor-card glass-panel">
+              <div class="advisor-head">
+                <span class="advisor-avatar">⌁</span>
+                <div>
+                  <p class="eyebrow">Conselheiro</p>
+                  <h2 id="advisorTitle">Chefe do Estado-Maior</h2>
+                </div>
+              </div>
+              <p id="advisorText" class="advisor-text"></p>
+              <button class="primary-btn full" id="ackBtn">OK / RECEBIDO</button>
+            </article>
+
+            <article class="actions-card glass-panel">
+              <p class="eyebrow">Decisões do mês</p>
+              <h2>Ações estratégicas</h2>
+              <div class="action-list">
+                <button data-action="economy">Fortalecer economia</button>
+                <button data-action="military">Aumentar prontidão</button>
+                <button data-action="diplomacy">Missão diplomática</button>
+                <button data-action="intel">Operação de inteligência</button>
+                <button data-action="logistics">Reforçar logística</button>
+              </div>
+              <button class="primary-btn full next-turn" id="nextTurnBtn">Encerrar turno</button>
+            </article>
+
+            <article class="log-card glass-panel">
+              <p class="eyebrow">Registro do Comando</p>
+              <div class="event-log" id="eventLog"></div>
+            </article>
+          </aside>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <noscript>Este jogo precisa de JavaScript habilitado para funcionar.</noscript>
+  <script src="js/app.js" defer></script>
+</body>
+</html>

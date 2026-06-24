@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 760" role="img" aria-labelledby="title desc">
+  <title id="title">Mapa vetorial gratuito da Ucrânia para jogo estratégico</title>
+  <desc id="desc">Arte original em SVG inspirada no contorno geográfico da Ucrânia, criada para Modern War Dominion sem uso de imagem externa protegida.</desc>
+  <defs>
+    <linearGradient id="uaFill" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1d4ed8" stop-opacity="0.78"/>
+      <stop offset="0.52" stop-color="#214b9b" stop-opacity="0.86"/>
+      <stop offset="0.53" stop-color="#facc15" stop-opacity="0.78"/>
+      <stop offset="1" stop-color="#b7791f" stop-opacity="0.9"/>
+    </linearGradient>
+    <filter id="glow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="9" result="blur"/>
+      <feColorMatrix in="blur" type="matrix" values="0 0 0 0 0.4  0 0 0 0 0.85  0 0 0 0 1  0 0 0 0.55 0" result="glow"/>
+      <feMerge><feMergeNode in="glow"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <pattern id="grid" width="36" height="36" patternUnits="userSpaceOnUse">
+      <path d="M36 0H0V36" fill="none" stroke="#93c5fd" stroke-opacity="0.16" stroke-width="1"/>
+    </pattern>
+    <radialGradient id="sea" cx="66%" cy="92%" r="52%">
+      <stop offset="0" stop-color="#0ea5e9" stop-opacity="0.34"/>
+      <stop offset="1" stop-color="#0f172a" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="1200" height="760" fill="transparent"/>
+  <ellipse cx="730" cy="710" rx="390" ry="155" fill="url(#sea)"/>
+
+  <g opacity="0.74">
+    <path d="M176 186 L250 170 L320 190 L377 168 L445 189 L505 151 L589 178 L658 168 L727 204 L810 190 L884 236 L978 226 L1060 282 L1015 338 L1084 390 L1028 442 L1040 506 L948 532 L875 510 L813 552 L747 537 L690 604 L600 584 L538 627 L445 591 L376 608 L329 552 L248 536 L221 468 L151 442 L178 373 L126 321 L154 256 Z" fill="url(#uaFill)" stroke="#bae6fd" stroke-width="4" filter="url(#glow)"/>
+    <path d="M176 186 L250 170 L320 190 L377 168 L445 189 L505 151 L589 178 L658 168 L727 204 L810 190 L884 236 L978 226 L1060 282 L1015 338 L1084 390 L1028 442 L1040 506 L948 532 L875 510 L813 552 L747 537 L690 604 L600 584 L538 627 L445 591 L376 608 L329 552 L248 536 L221 468 L151 442 L178 373 L126 321 L154 256 Z" fill="url(#grid)" opacity="0.5"/>
+  </g>
+
+  <g fill="none" stroke="#e0f2fe" stroke-opacity="0.36" stroke-width="2" stroke-dasharray="8 10">
+    <path d="M250 170 C298 262 354 312 420 362 C490 416 555 477 600 584"/>
+    <path d="M505 151 C570 270 630 384 747 537"/>
+    <path d="M810 190 C735 310 729 441 813 552"/>
+    <path d="M151 442 C318 430 532 445 1028 442"/>
+    <path d="M445 189 C540 300 682 357 1015 338"/>
+  </g>
+
+  <g font-family="Inter, Arial, sans-serif" font-size="30" font-weight="800" fill="#f8fafc" opacity="0.96">
+    <text x="618" y="313" text-anchor="middle">KYIV</text>
+    <text x="842" y="318" text-anchor="middle">KHARKIV</text>
+    <text x="920" y="457" text-anchor="middle">DONBAS</text>
+    <text x="520" y="568" text-anchor="middle">ODESA</text>
+    <text x="305" y="327" text-anchor="middle">LVIV</text>
+    <text x="720" y="690" text-anchor="middle" fill="#bae6fd">MAR NEGRO</text>
+  </g>
+
+  <g>
+    <circle cx="618" cy="284" r="12" fill="#38bdf8" stroke="#ffffff" stroke-width="3"/>
+    <circle cx="842" cy="288" r="12" fill="#22c55e" stroke="#ffffff" stroke-width="3"/>
+    <circle cx="920" cy="428" r="13" fill="#ef4444" stroke="#ffffff" stroke-width="3"/>
+    <circle cx="520" cy="538" r="12" fill="#0ea5e9" stroke="#ffffff" stroke-width="3"/>
+    <circle cx="305" cy="298" r="12" fill="#f59e0b" stroke="#ffffff" stroke-width="3"/>
+  </g>
+
+  <g opacity="0.38" stroke="#f8fafc" stroke-width="3" fill="none">
+    <path d="M505 636 C650 670 790 660 916 610"/>
+    <path d="M585 674 C705 704 846 694 1012 636"/>
+  </g>
+
+  <text x="36" y="724" font-family="Inter, Arial, sans-serif" font-size="18" fill="#93c5fd" opacity="0.76">Arte SVG autoral inspirada na Ucrânia — uso livre no projeto Modern War Dominion</text>
+</svg>
