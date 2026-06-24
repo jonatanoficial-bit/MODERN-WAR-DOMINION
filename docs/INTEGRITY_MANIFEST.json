@@ -1,105 +1,95 @@
 {
-  "generatedAt": "2026-06-24T15:09:59.021Z",
-  "entries": [
-    {
-      "file": "assets/img/world-map-free.svg",
-      "bytes": 3569,
-      "sha256": "11c47fd82a6abf66c11eb29910c1a10e65f24affb4eb6aca5466023f06936935"
-    },
+  "project": "Modern War Dominion",
+  "version": "0.4.0",
+  "generated_utc": "2026-06-24T15:47:16.461Z",
+  "files": [
     {
       "file": "BUILD_INFO.json",
-      "bytes": 502,
-      "sha256": "e9130fc72e75784ccccd4a2533361da96bed03bf96e172202dba3d9e3d71b4ab"
+      "sha256": "146effa583a22c2376341aa5c12f3dac886611ac8e6a00f48abb39e48f7ac3a2"
     },
     {
       "file": "CHANGELOG.md",
-      "bytes": 775,
-      "sha256": "ecaedb39c8533bac6f6d4e1c6e8b6cefd2a515ab1adf14a3f521079657307b5b"
-    },
-    {
-      "file": "css/styles.css",
-      "bytes": 16188,
-      "sha256": "86cf37cda1313ad1ee8de88851ea87e89544504597bf537062a4ae94faaa734f"
-    },
-    {
-      "file": "data/countries.json",
-      "bytes": 12934,
-      "sha256": "de4ae0b699ae8c77b422b48d7179c8660ae981f0fb8dc791df6062a4bf762bc0"
-    },
-    {
-      "file": "data/world_regions.json",
-      "bytes": 2147,
-      "sha256": "1c78e9e313f338e27ef289ddd18be8e04c3585743477b7abe29ed79a5f95a006"
-    },
-    {
-      "file": "docs/ASSET_LICENSES.md",
-      "bytes": 418,
-      "sha256": "e4710378efcdae76d1831819712682a82b7fa227a183bbeb42f5cbd2a1385407"
-    },
-    {
-      "file": "docs/KNOWN_ISSUES_F2.md",
-      "bytes": 397,
-      "sha256": "9c36b30233d9723835372f65f54d69b57e3444e00d116104dd5e636e970ce82e"
-    },
-    {
-      "file": "docs/QA_CHECKLIST_F2.md",
-      "bytes": 552,
-      "sha256": "01ac5a80f2dd4213cdce6442ee07c9dea814baf1215bc6bf07b1be390d15f946"
-    },
-    {
-      "file": "docs/RELEASE_NOTES_F2.md",
-      "bytes": 580,
-      "sha256": "397b6536b7f785105dada0347c177741a9426ca890cb823fd76ff4104b5d7e75"
-    },
-    {
-      "file": "docs/ROLLBACK_F2.md",
-      "bytes": 331,
-      "sha256": "170bb2003bba24ed5edb42394a926709036000a2a1bdddf5e71873d2b3d83e7e"
-    },
-    {
-      "file": "index.html",
-      "bytes": 7591,
-      "sha256": "570bd39e11a49912c606a559b468c1cf0f2ca81d6bcb415700616f9347bed4f9"
-    },
-    {
-      "file": "js/app.js",
-      "bytes": 23227,
-      "sha256": "d28756d6cc96bfea9d750c12ab663a48ba1ff1c18f52602aa2a3412cc814b87e"
-    },
-    {
-      "file": "manifest.json",
-      "bytes": 405,
-      "sha256": "9f655c09eb3612a988ddb02304e20a19162258fe955f776c05fbaa944c72bcab"
-    },
-    {
-      "file": "package.json",
-      "bytes": 365,
-      "sha256": "41c4b36efd47baf692cdf93c509677a4ec1546e5e499b4a1cc439df070cad185"
+      "sha256": "17056a07e726478e13f98a48d44eff929c60f1991637d6e88103ce8ef49d16f4"
     },
     {
       "file": "README.md",
-      "bytes": 1498,
-      "sha256": "5783a793bedde02a97ba4b82c36de522c0b0f2bba7fb0ccf3077cd93f38d8bcb"
+      "sha256": "a4248911225db9476a98d407e4845c268834fa622eda2db4045f6e2fb57fd007"
+    },
+    {
+      "file": "assets/img/fallback-world.svg",
+      "sha256": "b1ee08c07d7c22d0de9ff188fa913275f67a5fc6c081c6f039d77842ab7bff42"
+    },
+    {
+      "file": "assets/img/icon.svg",
+      "sha256": "8639402ed092db19c3dfc79afe7193b699071cbc0aedb2f983c22cd724780896"
+    },
+    {
+      "file": "css/styles.css",
+      "sha256": "9183fee30b098667a479748e95e49a849d9c16f574c7db5f7e9e54eb7327647d"
+    },
+    {
+      "file": "data/buildings.json",
+      "sha256": "eac13f5ac17dc2b6b6f69af4e534b24083450200c2ecdeaa2daaf160333b9a96"
+    },
+    {
+      "file": "data/countries.json",
+      "sha256": "8656ea058611e60fe780c03d1c75ac96dc17413b17e43c1d1825a49b805a8bfd"
+    },
+    {
+      "file": "data/units_catalog.json",
+      "sha256": "ad8efc9f0c5722da3da830b783037cfb707a4211379421ae9f21c25132a64789"
+    },
+    {
+      "file": "docs/ASSET_LICENSES.md",
+      "sha256": "1b841019783d8ca11fcdbdd86eae9f2bc46ff6d5d7eed28a4fd28e1b4d0ed22a"
+    },
+    {
+      "file": "docs/KNOWN_ISSUES_F4.md",
+      "sha256": "873bef14230b19a0e708bbcd0c42acdf94ba14ccdfc65eb1c6ce7d4040c5d513"
+    },
+    {
+      "file": "docs/QA_CHECKLIST_F4.md",
+      "sha256": "38920da592c43977171d898e0dc71619b6da3f941d84f2474f8d28161248aa5e"
+    },
+    {
+      "file": "docs/RELEASE_NOTES_F4.md",
+      "sha256": "2cc8c70bc9055bb81f634901078b32119493f49f6ea330df26695f582adf2f6d"
+    },
+    {
+      "file": "docs/ROLLBACK_F4.md",
+      "sha256": "613ac22bc364692c86d8a777f6b97c15d6519691d5587767741dd725a8235847"
+    },
+    {
+      "file": "index.html",
+      "sha256": "bfd5cdd27c800b0db5005dfe9606dfda59b06595ba38d4dd9c567e41a845eb21"
+    },
+    {
+      "file": "js/app.js",
+      "sha256": "788f13b36bcd408902c6c7a3184429d88bf1b4c25b6915cb7999d9590b5e46eb"
+    },
+    {
+      "file": "manifest.json",
+      "sha256": "3d96800de649b0d8eb2657c2b5976b56e8ea4e3aa910e91b81492ab4f967b9a3"
+    },
+    {
+      "file": "package.json",
+      "sha256": "0de268d2c2e78620de4eb760d958a78209cb66dffb54a4164cab3ddaca2389c8"
     },
     {
       "file": "service-worker.js",
-      "bytes": 822,
-      "sha256": "f1881817b6b67f77c1af1552337071a78eb51a765275b5785ef3ccfca865b39b"
+      "sha256": "6fc574223529c81b78b32b11fb448b94249504e27bc70776d2572b56e4e38467"
     },
     {
       "file": "tests/smoke-test.mjs",
-      "bytes": 1909,
-      "sha256": "b2d5f2d48f8b1535a558215b873e5f233d08dee5dbfd387839d71f6ef3e5b2a8"
+      "sha256": "b459bcbf8d0bedbcd16f137df32f6823314e3c85eba4bb3b18c0f2bd06d28f97"
     },
     {
       "file": "tools/audit.mjs",
-      "bytes": 1069,
-      "sha256": "d460dab29e75c89ae3b05929942a1b63c480331aeb987febc72796072f68b552"
+      "sha256": "b74753e0bcde6975375324014b99d4742445cf8954918f278cc94016943dde36"
     },
     {
       "file": "tools/integrity.mjs",
-      "bytes": 991,
-      "sha256": "117bd29c262c6c8ed954672ab3624c256393403eb0ac1e766cb6bee683b8a383"
+      "sha256": "1bc010e79d9d29d1713db8ca985e8ec7b3b3ada479186121ff96bc689c9dde7f"
     }
   ]
 }

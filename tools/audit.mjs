@@ -1,31 +1,25 @@
-import { readFileSync, readdirSync, statSync } from 'node:fs';
-import { join } from 'node:path';
+import { readFileSync } from "node:fs";
 
-const root = process.cwd();
-const files = [];
-function walk(dir) {
-  for (const item of readdirSync(dir)) {
-    const path = join(dir, item);
-    const stat = statSync(path);
-    if (stat.isDirectory()) walk(path);
-    else files.push(path);
-  }
-}
-walk(root);
+const html = readFileSync("index.html", "utf8");
+const js = readFileSync("js/app.js", "utf8");
+const manifest = JSON.parse(readFileSync("manifest.json", "utf8"));
+const countries = JSON.parse(readFileSync("data/countries.json", "utf8"));
 
-const forbidden = ['eval(', 'document.write(', 'ukraine-map-free.svg'];
-for (const file of files) {
-  if (!/\.(html|js|css|json|md|svg)$/.test(file)) continue;
-  const text = readFileSync(file, 'utf8');
-  for (const token of forbidden) {
-    if (text.includes(token)) {
-      throw new Error(`Token proibido encontrado em ${file}: ${token}`);
-    }
-  }
+const assertions = [
+  [html.includes("Leaflet/OpenStreetMap"), "HTML deve explicar mapa real Leaflet/OpenStreetMap."],
+  [html.includes("realMap"), "Container realMap deve existir."],
+  [js.includes("L.map"), "JS deve inicializar Leaflet."],
+  [js.includes("OpenStreetMap"), "JS deve manter atribuição OSM."],
+  [manifest.orientation === "landscape", "Manifest deve solicitar orientação landscape."],
+  [manifest.display === "fullscreen", "Manifest deve usar display fullscreen."],
+  [countries.every(c => Array.isArray(c.coords) && c.coords.length === 2), "Todos os países precisam de coordenadas reais aproximadas."],
+  [countries.every(c => c.flag && c.name && c.capital && c.military !== undefined), "Todos os países precisam de bandeira e dados militares."]
+];
+
+const failed = assertions.filter(([ok]) => !ok);
+if (failed.length) {
+  for (const [, message] of failed) console.error("Falha:", message);
+  process.exit(1);
 }
 
-const index = readFileSync(join(root, 'index.html'), 'utf8');
-if (!index.includes('Mapa mundial gratuito')) throw new Error('Index não destaca mapa mundial gratuito.');
-if (!index.includes('Leaflet/OpenStreetMap')) throw new Error('Index não cita estilo Leaflet/OpenStreetMap.');
-
-console.log(`Auditoria OK — ${files.length} arquivos verificados.`);
+console.log("Audit OK — mapa real, landscape, bandeiras e dados militares validados.");

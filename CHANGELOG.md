@@ -1,22 +1,25 @@
-# Changelog
+# Changelog — Modern War Dominion
 
-## v0.2.0 — Fase 2 — Mapa Mundial e Países Imersivos
+## v0.4.0 — Fase 4 — Real Map Military Foundation
 
 ### Corrigido
-- Corrigida a interpretação do mapa: não é mapa do país Ucrânia.
-- Removido o foco de teatro específico e adotado mapa mundial de dominação global.
+- Removida a dependência do mapa SVG autoral como mapa principal.
+- Substituído por mapa real Leaflet/OpenStreetMap.
+- Corrigida a direção do projeto: o jogo não deve parecer apenas painel, mas sim jogo de dominação militar.
 
 ### Adicionado
-- Mapa mundial gratuito estilo Leaflet/OpenStreetMap com fallback SVG autoral.
-- Bandeiras na seleção de países e no mapa.
-- Dados estatísticos ampliados por país.
-- Regiões globais clicáveis com tensão, influência, comércio e estabilidade.
-- Marcadores de países no mapa mundial.
-- Eventos mensais globais.
-- Ações de economia, defesa, diplomacia, inteligência e logística.
-- PWA e save local v2.
+- Fullscreen e tentativa de lock de orientação landscape.
+- Guard de rotação para mobile em modo retrato.
+- Países com bandeiras grandes e dados estatísticos estratégicos.
+- Construção de bases terrestres, portos militares, bases aéreas, radar, mísseis, logística e cyber.
+- Marcadores de bases no mapa real.
+- Compra inicial de unidades com pré-requisito de infraestrutura.
+- Operações militares e possibilidade de contra-ataque.
+- Ameaça global, tensão mundial, escalada e eventos mensais.
+- Roadmap interno do jogo para catálogo futuro navio por navio, avião por avião e embarcação por embarcação.
 
-### Mantido
-- Estrutura HTML/CSS/JS sem dependência paga.
-- Mobile first.
-- Build completa jogável.
+### Preservado
+- Save local.
+- PWA.
+- Seleção de nação.
+- Diplomacia de base para evolução posterior.

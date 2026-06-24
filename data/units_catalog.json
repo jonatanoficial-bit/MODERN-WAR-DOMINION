@@ -1,0 +1,9 @@
+[
+  {"id":"infantry_brigade","class":"Terrestre","name":"Brigada mecanizada","icon":"🪖","requires":"army_base","cost":42,"upkeep":4,"power":12,"role":"Segurar território e avançar em ofensiva terrestre."},
+  {"id":"armor_battalion","class":"Terrestre","name":"Batalhão blindado","icon":"🛡️","requires":"army_base","cost":58,"upkeep":6,"power":18,"role":"Romper linhas e aumentar choque terrestre."},
+  {"id":"fighter_squadron","class":"Aéreo","name":"Esquadrão de caças","icon":"✈️","requires":"air_base","cost":82,"upkeep":9,"power":22,"role":"Superioridade aérea e interceptação."},
+  {"id":"drone_wing","class":"Aéreo","name":"Ala de drones","icon":"🛩️","requires":"air_base","cost":36,"upkeep":3,"power":10,"role":"Reconhecimento, apoio aéreo e baixo custo."},
+  {"id":"frigate","class":"Naval","name":"Fragata de escolta","icon":"🚢","requires":"naval_port","cost":88,"upkeep":8,"power":24,"role":"Proteger rotas marítimas e escoltar frotas."},
+  {"id":"submarine","class":"Naval","name":"Submarino de ataque","icon":"🌊","requires":"naval_port","cost":130,"upkeep":11,"power":34,"role":"Dissuasão, patrulha oceânica e interdição."},
+  {"id":"missile_battery","class":"Estratégico","name":"Bateria móvel de mísseis","icon":"🚀","requires":"missile_site","cost":96,"upkeep":10,"power":28,"role":"Ataque de longo alcance e dissuasão regional."}
+]

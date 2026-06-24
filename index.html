@@ -2,151 +2,171 @@
 <html lang="pt-BR">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#07111f">
-  <meta name="description" content="Modern War Dominion — estratégia militar moderna, diplomacia, economia e dominação global com mapa mundial estilo Leaflet/OpenStreetMap.">
-  <title>Modern War Dominion — Fase 2</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+  <meta name="theme-color" content="#050914">
+  <meta name="description" content="Modern War Dominion — jogo mobile de dominação militar global com mapa real, bases, portos, aeroportos e escalada de guerra mundial.">
+  <title>Modern War Dominion — Fase 4</title>
   <link rel="manifest" href="manifest.json">
-  <link rel="icon" href="assets/img/world-map-free.svg" type="image/svg+xml">
+  <link rel="icon" href="assets/img/icon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://unpkg.com">
+  <link rel="preconnect" href="https://tile.openstreetmap.org">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
   <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
+  <div id="rotateGuard" class="rotate-guard" aria-live="polite">
+    <div class="rotate-card">
+      <strong>Vire o celular deitado</strong>
+      <p>Modern War Dominion foi refeito para funcionar como jogo mobile em tela deitada/fullscreen.</p>
+      <button id="forceLandscapeBtn">Entrar em tela cheia</button>
+    </div>
+  </div>
+
   <div class="app-shell" id="app">
     <header class="topbar">
-      <div class="brand-block">
-        <span class="brand-mark" aria-hidden="true">MWD</span>
-        <div>
-          <strong>Modern War Dominion</strong>
-          <small>Dominação Global: Guerra Moderna</small>
-        </div>
-      </div>
+      <button class="brand-block" id="homeLogoBtn" aria-label="Voltar ao comando inicial">
+        <span class="brand-mark">MWD</span>
+        <span><strong>Modern War Dominion</strong><small>Dominação Global: Guerra Moderna</small></span>
+      </button>
+      <nav class="top-tabs" aria-label="Navegação principal">
+        <button class="tab-btn is-active" data-screen="screenHome">Início</button>
+        <button class="tab-btn" data-screen="screenNation">País</button>
+        <button class="tab-btn" data-screen="screenWar" disabled>Comando</button>
+        <button class="tab-btn" data-screen="screenRoadmap">Plano</button>
+      </nav>
       <div class="top-actions">
+        <button class="mini-btn" id="fullscreenBtn">Tela cheia</button>
         <button class="mini-btn" id="installBtn" hidden>Instalar</button>
-        <div class="build-chip" id="buildChip">Fase 2 · v0.2.0</div>
+        <div class="build-chip">Fase 4 · v0.4.0</div>
       </div>
     </header>
 
     <main>
-      <section class="screen screen-active" id="screenHome" aria-labelledby="homeTitle">
-        <div class="hero-grid">
+      <section class="screen screen-active" id="screenHome">
+        <div class="home-layout">
           <article class="hero-card glass-panel">
-            <p class="eyebrow">Centro de Comando Estratégico</p>
-            <h1 id="homeTitle">Mapa mundial gratuito, seleção de países com bandeiras e dados de simulação.</h1>
-            <p class="hero-copy">A Fase 2 corrige o conceito do mapa: agora o jogo usa um mapa global imersivo estilo Leaflet/OpenStreetMap, com créditos visíveis, fallback offline autoral e leitura estratégica por regiões do mundo.</p>
+            <p class="eyebrow">Correção de direção da Fase 4</p>
+            <h1>Mapa real, tela deitada e foco militar de verdade.</h1>
+            <p>Esta fase troca o mapa desenhado por um mapa mundial real via Leaflet/OpenStreetMap, prepara o jogo para celular em landscape e inicia o núcleo militar: construir bases terrestres, portos, bases aéreas, radar, mísseis, logística e comando cyber.</p>
             <div class="hero-actions">
-              <button class="primary-btn" id="newGameBtn">Iniciar nova campanha</button>
-              <button class="ghost-btn" id="continueBtn" disabled>Continuar save</button>
+              <button class="primary-btn" id="newGameBtn">Nova campanha militar</button>
+              <button class="ghost-btn" id="continueBtn" disabled>Continuar campanha</button>
             </div>
             <div class="status-strip">
-              <span>Mapa mundial</span>
-              <span>Bandeiras</span>
-              <span>Dados estatísticos</span>
-              <span>PWA</span>
-              <span>Save local</span>
+              <span>Mapa real online</span><span>Fallback offline</span><span>Bases militares</span><span>Portos</span><span>Bases aéreas</span><span>Fullscreen mobile</span>
             </div>
           </article>
-
-          <aside class="intel-card glass-panel">
-            <div class="radar-orb" aria-hidden="true"><span></span></div>
-            <h2>Briefing da Fase 2</h2>
-            <p>O foco saiu de um país específico e virou dominação global. Cada nação tem perfil, estatísticas, força relativa, recursos, doutrina e posição no mapa.</p>
-            <ul class="brief-list">
-              <li>Mapa mundial tático com pontos de nações e regiões.</li>
-              <li>Seleção de país com bandeira grande e perfil estatístico.</li>
-              <li>Regiões globais clicáveis com tensão, comércio e influência.</li>
-              <li>Ações de economia, diplomacia, inteligência, logística e defesa.</li>
-            </ul>
+          <aside class="glass-panel doctrine-panel">
+            <h2>Nova visão do jogo</h2>
+            <p>O objetivo agora é crescer poderio militar em um mundo à beira da Terceira Guerra: expandir infraestrutura, comprar frotas, ser atacado, reagir, atacar e controlar a escalada global.</p>
+            <div class="doctrine-grid">
+              <span>🪖 Exército</span><span>⚓ Marinha</span><span>✈️ Força aérea</span><span>📡 Defesa</span><span>🚀 Mísseis</span><span>🧬 Cyber</span>
+            </div>
           </aside>
         </div>
       </section>
 
-      <section class="screen" id="screenNation" aria-labelledby="nationTitle">
-        <div class="section-head">
-          <button class="back-btn" id="backHomeBtn">← voltar</button>
+      <section class="screen" id="screenNation">
+        <div class="section-head compact">
           <div>
-            <p class="eyebrow">Fase 2 — Escolha da Nação</p>
-            <h1 id="nationTitle">Selecione seu país inicial</h1>
-            <p class="muted">Agora cada país exibe bandeira, capital, bloco, doutrina, população aproximada de jogo, economia, orçamento militar e perfil estratégico.</p>
+            <p class="eyebrow">Escolha da Nação</p>
+            <h1>Escolha o país inicial</h1>
+            <p class="muted">Agora a seleção tem bandeiras maiores e dados estratégicos mais úteis para um jogo militar.</p>
           </div>
+          <input id="nationSearch" class="search-box" type="search" placeholder="Buscar país, região, doutrina...">
         </div>
-        <div class="nation-toolbar glass-panel">
-          <label for="nationSearch">Filtro estratégico</label>
-          <input id="nationSearch" type="search" placeholder="Buscar país, bloco, doutrina ou região...">
-        </div>
-        <div class="nation-grid" id="nationGrid" aria-live="polite"></div>
+        <div class="nation-grid" id="nationGrid"></div>
       </section>
 
-      <section class="screen" id="screenGame" aria-labelledby="commandTitle">
-        <div class="command-layout">
-          <section class="command-main">
-            <div class="section-head game-head">
+      <section class="screen" id="screenWar">
+        <div class="war-layout">
+          <section class="map-stack glass-panel">
+            <div class="map-head">
               <div>
-                <p class="eyebrow">Sala de Situação Global</p>
-                <h1 id="commandTitle">Painel de comando</h1>
-                <p class="muted" id="campaignMeta">Turno 1 · Janeiro de 2026</p>
+                <p class="eyebrow">Mapa Real de Operações Globais</p>
+                <h1 id="commandTitle">Teatro de dominação mundial</h1>
               </div>
-              <button class="danger-btn" id="resetBtn">Nova campanha</button>
+              <div class="war-clock">
+                <small>Mês</small><strong id="monthLabel">Jan/2027</strong>
+              </div>
             </div>
-
-            <article class="country-profile glass-panel" id="countryProfile"></article>
-            <section class="resource-grid" id="resourceGrid" aria-label="Indicadores nacionais"></section>
-
-            <section class="world-panel glass-panel">
-              <div class="map-head">
-                <div>
-                  <p class="eyebrow">Mapa mundial gratuito</p>
-                  <h2>Teatro de dominação global</h2>
-                </div>
-                <div class="map-mode-pill">Leaflet/OpenStreetMap style · fallback offline</div>
-              </div>
-              <div class="world-map-shell" id="worldMapShell">
-                <img class="world-map" src="assets/img/world-map-free.svg" alt="Mapa mundial vetorial gratuito estilo Leaflet/OpenStreetMap">
-                <svg class="route-lines" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
-                  <path d="M25 39 C44 22, 60 21, 78 43"></path>
-                  <path d="M34 70 C48 56, 57 49, 64 47"></path>
-                  <path d="M53 38 C61 48, 69 53, 80 47"></path>
-                  <path d="M58 49 C70 60, 78 71, 83 77"></path>
-                </svg>
-                <div class="map-layer" id="countryMapLayer" aria-label="Marcadores de países"></div>
-                <div class="map-layer" id="regionMapLayer" aria-label="Marcadores de regiões globais"></div>
-                <div class="map-attribution">Leaflet/OpenStreetMap style · mapa vetorial autoral offline · preparado para tiles OSM com atribuição</div>
-              </div>
-            </section>
-
-            <section class="global-grid" id="globalGrid" aria-label="Regiões globais"></section>
+            <div id="realMap" class="real-map" role="application" aria-label="Mapa mundial real"></div>
+            <div id="mapFallback" class="map-fallback" hidden>
+              <img src="assets/img/fallback-world.svg" alt="Mapa mundial offline simplificado">
+              <p>Mapa real indisponível no momento. Conecte à internet para carregar os tiles reais.</p>
+            </div>
+            <div class="map-legend">
+              <span><i class="dot own"></i> Sua capital</span>
+              <span><i class="dot base"></i> Bases</span>
+              <span><i class="dot threat"></i> Crises</span>
+              <span>Fonte do mapa: OpenStreetMap via Leaflet</span>
+            </div>
           </section>
 
-          <aside class="side-column">
-            <section class="advisor-card glass-panel">
-              <p class="eyebrow">Conselheiro</p>
-              <h2 id="advisorTitle">Aguardando ordem</h2>
-              <p id="advisorText">Escolha uma ação ou clique em uma região do mapa para receber leitura estratégica.</p>
-              <button class="primary-btn full" id="ackBtn">Confirmar leitura</button>
-            </section>
+          <aside class="command-panel glass-panel">
+            <div class="country-summary" id="countrySummary"></div>
+            <div class="tabline" role="tablist">
+              <button class="side-tab is-active" data-panel="panelBuild">Construir</button>
+              <button class="side-tab" data-panel="panelForces">Forças</button>
+              <button class="side-tab" data-panel="panelOps">Atacar</button>
+              <button class="side-tab" data-panel="panelIntel">Alerta</button>
+            </div>
 
-            <section class="region-panel glass-panel" id="regionPanel">
-              <p class="eyebrow">Região selecionada</p>
-              <h2>Mapa global</h2>
-              <p class="muted">Clique em uma região no mapa ou nos cards abaixo para ver tensão, comércio e influência.</p>
-            </section>
+            <div class="side-panel is-active" id="panelBuild">
+              <h2>Infraestrutura militar</h2>
+              <p class="muted">Construa a espinha dorsal do poder militar. Portos liberam navios; bases aéreas liberam caças; bases terrestres liberam tropas.</p>
+              <div id="buildList" class="build-list"></div>
+            </div>
 
-            <section class="actions-card glass-panel">
-              <p class="eyebrow">Ações do mês</p>
-              <div class="action-stack" id="actionStack"></div>
-              <button class="next-btn" id="nextTurnBtn">Avançar mês →</button>
-            </section>
+            <div class="side-panel" id="panelForces">
+              <h2>Compra de unidades</h2>
+              <p class="muted">Nesta fase o catálogo já existe como base. Nas próximas fases ele será expandido navio por navio, avião por avião e embarcação por embarcação.</p>
+              <div id="unitList" class="unit-list"></div>
+            </div>
 
-            <section class="log-card glass-panel">
-              <p class="eyebrow">Registro estratégico</p>
-              <div class="event-log" id="eventLog"></div>
-            </section>
+            <div class="side-panel" id="panelOps">
+              <h2>Operações militares</h2>
+              <p class="muted">Faça reconhecimento, ataque limitado ou operação combinada. Quanto maior o ataque, maior a escalada mundial.</p>
+              <label class="field-label">Alvo operacional</label>
+              <select id="targetSelect"></select>
+              <div class="ops-grid">
+                <button class="op-btn" data-op="recon">Reconhecimento</button>
+                <button class="op-btn" data-op="airstrike">Ataque aéreo</button>
+                <button class="op-btn" data-op="naval">Bloqueio naval</button>
+                <button class="op-btn danger" data-op="combined">Operação combinada</button>
+              </div>
+            </div>
+
+            <div class="side-panel" id="panelIntel">
+              <h2>Ameaça global</h2>
+              <div class="threat-meter"><span id="threatFill"></span></div>
+              <div class="intel-grid" id="intelGrid"></div>
+              <div class="event-feed" id="eventFeed"></div>
+            </div>
+
+            <button class="primary-btn next-month" id="nextMonthBtn">Avançar mês</button>
           </aside>
+        </div>
+      </section>
+
+      <section class="screen" id="screenRoadmap">
+        <div class="roadmap glass-panel">
+          <p class="eyebrow">Plano de crescimento correto</p>
+          <h1>Da Fase 4 em diante: jogo militar mobile, não painel genérico.</h1>
+          <div class="roadmap-grid">
+            <article><strong>Fase 5</strong><span>Construção por região: bases com slots reais no mapa, manutenção, tempo de obra e defesa local.</span></article>
+            <article><strong>Fase 6</strong><span>Catálogo terrestre: soldados, batalhões, blindados, artilharia, drones táticos e custo de treinamento.</span></article>
+            <article><strong>Fase 7</strong><span>Catálogo aéreo: caças, bombardeiros, AWACS, drones, helicópteros e hangares por aeroporto militar.</span></article>
+            <article><strong>Fase 8</strong><span>Catálogo naval: patrulhas, fragatas, destróieres, submarinos, porta-aviões e marinha por porto.</span></article>
+            <article><strong>Fase 9</strong><span>Sistema de ataque/defesa: incursões inimigas, interceptação, dano em bases e resposta rápida.</span></article>
+            <article><strong>Fase 10</strong><span>Terceira Guerra Mundial: blocos, ultimatos, crise nuclear, sanções, alianças e escalada mundial.</span></article>
+          </div>
         </div>
       </section>
     </main>
   </div>
 
-  <noscript>Este jogo precisa de JavaScript ativado para funcionar.</noscript>
-  <script src="js/app.js" defer></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="js/app.js" type="module"></script>
 </body>
 </html>

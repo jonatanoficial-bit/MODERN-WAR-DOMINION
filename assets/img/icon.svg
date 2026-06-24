@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Modern War Dominion icon">
+  <defs>
+    <linearGradient id="g" x1="0" x2="1" y1="0" y2="1"><stop stop-color="#5ff3ff"/><stop offset="1" stop-color="#6affad"/></linearGradient>
+    <filter id="s"><feDropShadow dx="0" dy="16" stdDeviation="22" flood-color="#000" flood-opacity=".45"/></filter>
+  </defs>
+  <rect width="512" height="512" rx="108" fill="#07111f"/>
+  <circle cx="256" cy="256" r="190" fill="none" stroke="#1f4166" stroke-width="18"/>
+  <path d="M107 265c31-65 88-102 159-102 62 0 110 30 139 83-50-22-89-24-117-8-26 15-43 45-84 49-29 3-58-7-97-22z" fill="#163656" stroke="#5ff3ff" stroke-width="8"/>
+  <path d="M254 94l41 119 126 2-101 72 36 121-102-73-103 73 37-121-102-72 126-2z" fill="url(#g)" filter="url(#s)"/>
+  <text x="256" y="472" text-anchor="middle" font-family="Arial, sans-serif" font-weight="900" font-size="54" fill="#dffbff">MWD</text>
+</svg>

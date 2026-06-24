@@ -1,212 +1,47 @@
 [
   {
-    "id": "usa",
-    "name": "Estados Unidos",
-    "flag": "🇺🇸",
-    "capital": "Washington, D.C.",
-    "bloc": "Aliança Atlântica",
-    "region": "América do Norte",
-    "doctrine": "Projeção global, aviação naval, tecnologia e logística expedicionária",
-    "description": "Campanha de superpotência: grande economia, alcance global, custo alto de manutenção e pressão diplomática constante.",
-    "stats": { "economy": 95, "military": 94, "diplomacy": 86, "intel": 90, "logistics": 95, "stability": 72, "tech": 96 },
-    "profile": { "populationM": 335, "gdpT": 27.0, "defenseB": 886, "activeMilitaryK": 1328, "reservesK": 799, "nuclear": "Sim", "navalPower": 96, "airPower": 97, "cyber": 95, "energy": 82, "food": 88, "industry": 92 },
-    "map": { "lat": 38.9, "lng": -77.0, "x": 25, "y": 39 },
-    "traits": ["Superpotência", "Marinha global", "Rede de alianças", "Alta tecnologia"]
+    "id":"br","iso":"BR","flag":"🇧🇷","name":"Brasil","capital":"Brasília","region":"América do Sul","coords":[-14.2350,-51.9253],"doctrine":"Defesa continental e Atlântico Sul","bloc":"Não alinhado estratégico","populationGame":214,"gdpGame":2050,"defenseBudget":24,"activeForces":360,"reserveForces":1340,"airframes":182,"warships":32,"armor":450,"missiles":42,"nuclear":false,"oil":77,"industry":68,"food":92,"cyber":54,"stability":73,"publicSupport":72,"manpower":84,"ports":3,"airports":5,"economy":71,"tech":57,"diplomacy":69,"intel":51,"military":56
   },
   {
-    "id": "brazil",
-    "name": "Brasil",
-    "flag": "🇧🇷",
-    "capital": "Brasília",
-    "bloc": "América do Sul",
-    "region": "América do Sul",
-    "doctrine": "Recursos naturais, diplomacia, indústria nacional e defesa territorial",
-    "description": "Campanha de ascensão: território vasto, população alta e recursos fortes, exigindo modernização militar e logística continental.",
-    "stats": { "economy": 66, "military": 53, "diplomacy": 77, "intel": 50, "logistics": 57, "stability": 61, "tech": 58 },
-    "profile": { "populationM": 216, "gdpT": 2.2, "defenseB": 23, "activeMilitaryK": 360, "reservesK": 1340, "nuclear": "Não", "navalPower": 54, "airPower": 55, "cyber": 52, "energy": 86, "food": 94, "industry": 63 },
-    "map": { "lat": -15.8, "lng": -47.9, "x": 34, "y": 70 },
-    "traits": ["Recursos", "Agronegócio", "Diplomacia", "Potencial industrial"]
+    "id":"us","iso":"US","flag":"🇺🇸","name":"Estados Unidos","capital":"Washington, D.C.","region":"América do Norte","coords":[39.8283,-98.5795],"doctrine":"Projeção global e superioridade conjunta","bloc":"OTAN / coalizão ocidental","populationGame":334,"gdpGame":26900,"defenseBudget":886,"activeForces":1328,"reserveForces":799,"airframes":2500,"warships":292,"armor":5500,"missiles":890,"nuclear":true,"oil":94,"industry":95,"food":88,"cyber":96,"stability":69,"publicSupport":67,"manpower":78,"ports":7,"airports":9,"economy":95,"tech":96,"diplomacy":82,"intel":94,"military":98
   },
   {
-    "id": "china",
-    "name": "China",
-    "flag": "🇨🇳",
-    "capital": "Pequim",
-    "bloc": "Ásia-Pacífico",
-    "region": "Ásia",
-    "doctrine": "Indústria, massa terrestre, tecnologia, influência comercial e defesa regional",
-    "description": "Campanha industrial: enorme economia produtiva, alta tecnologia e competição naval/regional crescente.",
-    "stats": { "economy": 92, "military": 89, "diplomacy": 70, "intel": 84, "logistics": 86, "stability": 78, "tech": 90 },
-    "profile": { "populationM": 1410, "gdpT": 17.8, "defenseB": 296, "activeMilitaryK": 2035, "reservesK": 510, "nuclear": "Sim", "navalPower": 88, "airPower": 86, "cyber": 91, "energy": 78, "food": 74, "industry": 96 },
-    "map": { "lat": 39.9, "lng": 116.4, "x": 78, "y": 43 },
-    "traits": ["Indústria", "População", "Tecnologia", "Influência comercial"]
+    "id":"ru","iso":"RU","flag":"🇷🇺","name":"Rússia","capital":"Moscou","region":"Eurásia","coords":[61.5240,105.3188],"doctrine":"Profundidade estratégica e dissuasão pesada","bloc":"Eixo eurasiático","populationGame":144,"gdpGame":2240,"defenseBudget":109,"activeForces":1150,"reserveForces":2000,"airframes":1150,"warships":240,"armor":10400,"missiles":960,"nuclear":true,"oil":97,"industry":78,"food":71,"cyber":82,"stability":64,"publicSupport":66,"manpower":82,"ports":6,"airports":7,"economy":68,"tech":78,"diplomacy":58,"intel":83,"military":90
   },
   {
-    "id": "russia",
-    "name": "Rússia",
-    "flag": "🇷🇺",
-    "capital": "Moscou",
-    "bloc": "Eurásia",
-    "region": "Eurásia",
-    "doctrine": "Profundidade estratégica, energia, mísseis, guerra eletrônica e pressão regional",
-    "description": "Campanha de profundidade: grande território, arsenal pesado e energia, com economia/diplomacia sob pressão.",
-    "stats": { "economy": 64, "military": 88, "diplomacy": 48, "intel": 82, "logistics": 69, "stability": 60, "tech": 76 },
-    "profile": { "populationM": 144, "gdpT": 2.0, "defenseB": 109, "activeMilitaryK": 1320, "reservesK": 2000, "nuclear": "Sim", "navalPower": 72, "airPower": 83, "cyber": 84, "energy": 96, "food": 79, "industry": 73 },
-    "map": { "lat": 55.7, "lng": 37.6, "x": 63, "y": 34 },
-    "traits": ["Energia", "Mísseis", "Território", "Dissuasão"]
+    "id":"cn","iso":"CN","flag":"🇨🇳","name":"China","capital":"Pequim","region":"Ásia-Pacífico","coords":[35.8617,104.1954],"doctrine":"Massa industrial e negação de área","bloc":"Potência asiática","populationGame":1410,"gdpGame":17700,"defenseBudget":296,"activeForces":2035,"reserveForces":510,"airframes":1700,"warships":350,"armor":6200,"missiles":780,"nuclear":true,"oil":63,"industry":98,"food":76,"cyber":92,"stability":76,"publicSupport":74,"manpower":98,"ports":8,"airports":8,"economy":92,"tech":91,"diplomacy":71,"intel":88,"military":95
   },
   {
-    "id": "uk",
-    "name": "Reino Unido",
-    "flag": "🇬🇧",
-    "capital": "Londres",
-    "bloc": "Aliança Atlântica",
-    "region": "Europa",
-    "doctrine": "Marinha expedicionária, inteligência, diplomacia e defesa tecnológica",
-    "description": "Campanha de influência: território menor, mas inteligência, marinha e diplomacia muito fortes.",
-    "stats": { "economy": 78, "military": 76, "diplomacy": 84, "intel": 91, "logistics": 76, "stability": 73, "tech": 86 },
-    "profile": { "populationM": 68, "gdpT": 3.3, "defenseB": 75, "activeMilitaryK": 148, "reservesK": 33, "nuclear": "Sim", "navalPower": 82, "airPower": 78, "cyber": 88, "energy": 62, "food": 58, "industry": 77 },
-    "map": { "lat": 51.5, "lng": -0.1, "x": 49, "y": 35 },
-    "traits": ["Inteligência", "Marinha", "Diplomacia", "Tecnologia"]
+    "id":"uk","iso":"GB","flag":"🇬🇧","name":"Reino Unido","capital":"Londres","region":"Europa","coords":[55.3781,-3.4360],"doctrine":"Força expedicionária e inteligência naval","bloc":"OTAN","populationGame":67,"gdpGame":3340,"defenseBudget":75,"activeForces":148,"reserveForces":38,"airframes":260,"warships":72,"armor":220,"missiles":180,"nuclear":true,"oil":58,"industry":78,"food":55,"cyber":89,"stability":70,"publicSupport":68,"manpower":56,"ports":5,"airports":6,"economy":86,"tech":88,"diplomacy":84,"intel":92,"military":82
   },
   {
-    "id": "france",
-    "name": "França",
-    "flag": "🇫🇷",
-    "capital": "Paris",
-    "bloc": "Europa",
-    "region": "Europa",
-    "doctrine": "Autonomia estratégica, forças expedicionárias e indústria militar avançada",
-    "description": "Campanha equilibrada: boa diplomacia, tecnologia e forças modernas para agir em várias regiões.",
-    "stats": { "economy": 76, "military": 77, "diplomacy": 82, "intel": 76, "logistics": 74, "stability": 70, "tech": 84 },
-    "profile": { "populationM": 68, "gdpT": 3.0, "defenseB": 61, "activeMilitaryK": 205, "reservesK": 36, "nuclear": "Sim", "navalPower": 78, "airPower": 79, "cyber": 79, "energy": 76, "food": 81, "industry": 78 },
-    "map": { "lat": 48.9, "lng": 2.3, "x": 51, "y": 38 },
-    "traits": ["Autonomia", "Diplomacia", "Indústria bélica", "Energia"]
+    "id":"fr","iso":"FR","flag":"🇫🇷","name":"França","capital":"Paris","region":"Europa","coords":[46.2276,2.2137],"doctrine":"Autonomia estratégica europeia","bloc":"OTAN / União Europeia","populationGame":68,"gdpGame":3030,"defenseBudget":61,"activeForces":205,"reserveForces":35,"airframes":420,"warships":95,"armor":400,"missiles":210,"nuclear":true,"oil":34,"industry":82,"food":82,"cyber":84,"stability":68,"publicSupport":64,"manpower":58,"ports":5,"airports":6,"economy":84,"tech":87,"diplomacy":86,"intel":83,"military":83
   },
   {
-    "id": "germany",
-    "name": "Alemanha",
-    "flag": "🇩🇪",
-    "capital": "Berlim",
-    "bloc": "Europa",
-    "region": "Europa",
-    "doctrine": "Economia avançada, logística continental, indústria e rearmamento gradual",
-    "description": "Campanha econômica: potência industrial que precisa converter riqueza e tecnologia em poder estratégico.",
-    "stats": { "economy": 86, "military": 62, "diplomacy": 83, "intel": 68, "logistics": 82, "stability": 78, "tech": 88 },
-    "profile": { "populationM": 84, "gdpT": 4.5, "defenseB": 67, "activeMilitaryK": 181, "reservesK": 34, "nuclear": "Não", "navalPower": 61, "airPower": 69, "cyber": 82, "energy": 59, "food": 67, "industry": 92 },
-    "map": { "lat": 52.5, "lng": 13.4, "x": 53, "y": 36 },
-    "traits": ["Indústria", "Economia", "Logística", "Tecnologia"]
+    "id":"de","iso":"DE","flag":"🇩🇪","name":"Alemanha","capital":"Berlim","region":"Europa","coords":[51.1657,10.4515],"doctrine":"Indústria, logística e defesa europeia","bloc":"OTAN / União Europeia","populationGame":84,"gdpGame":4460,"defenseBudget":66,"activeForces":181,"reserveForces":34,"airframes":280,"warships":64,"armor":300,"missiles":160,"nuclear":false,"oil":31,"industry":96,"food":73,"cyber":86,"stability":74,"publicSupport":70,"manpower":62,"ports":4,"airports":6,"economy":89,"tech":91,"diplomacy":88,"intel":78,"military":76
   },
   {
-    "id": "india",
-    "name": "Índia",
-    "flag": "🇮🇳",
-    "capital": "Nova Délhi",
-    "bloc": "Sul da Ásia",
-    "region": "Ásia",
-    "doctrine": "Autonomia estratégica, massa terrestre, tecnologia emergente e defesa regional",
-    "description": "Campanha de gigante emergente: população imensa, economia em expansão e desafios de fronteira/logística.",
-    "stats": { "economy": 77, "military": 79, "diplomacy": 73, "intel": 66, "logistics": 67, "stability": 66, "tech": 74 },
-    "profile": { "populationM": 1428, "gdpT": 3.7, "defenseB": 83, "activeMilitaryK": 1455, "reservesK": 1155, "nuclear": "Sim", "navalPower": 70, "airPower": 78, "cyber": 73, "energy": 64, "food": 82, "industry": 76 },
-    "map": { "lat": 28.6, "lng": 77.2, "x": 71, "y": 51 },
-    "traits": ["População", "Autonomia", "Exército", "Crescimento"]
+    "id":"it","iso":"IT","flag":"🇮🇹","name":"Itália","capital":"Roma","region":"Europa","coords":[41.8719,12.5674],"doctrine":"Mediterrâneo, portos e resposta rápida","bloc":"OTAN / União Europeia","populationGame":59,"gdpGame":2180,"defenseBudget":33,"activeForces":165,"reserveForces":18,"airframes":360,"warships":63,"armor":200,"missiles":90,"nuclear":false,"oil":42,"industry":80,"food":78,"cyber":70,"stability":66,"publicSupport":63,"manpower":56,"ports":6,"airports":5,"economy":78,"tech":75,"diplomacy":76,"intel":68,"military":72
   },
   {
-    "id": "japan",
-    "name": "Japão",
-    "flag": "🇯🇵",
-    "capital": "Tóquio",
-    "bloc": "Ásia-Pacífico",
-    "region": "Ásia-Pacífico",
-    "doctrine": "Defesa marítima, tecnologia, sensores e proteção de rotas comerciais",
-    "description": "Campanha tecnológica: economia forte, defesa marítima moderna e vulnerabilidade a recursos externos.",
-    "stats": { "economy": 82, "military": 67, "diplomacy": 78, "intel": 70, "logistics": 80, "stability": 82, "tech": 92 },
-    "profile": { "populationM": 124, "gdpT": 4.2, "defenseB": 50, "activeMilitaryK": 247, "reservesK": 56, "nuclear": "Não", "navalPower": 84, "airPower": 79, "cyber": 86, "energy": 45, "food": 42, "industry": 90 },
-    "map": { "lat": 35.7, "lng": 139.7, "x": 86, "y": 44 },
-    "traits": ["Tecnologia", "Marinha", "Estabilidade", "Sensores"]
+    "id":"in","iso":"IN","flag":"🇮🇳","name":"Índia","capital":"Nova Délhi","region":"Ásia-Pacífico","coords":[20.5937,78.9629],"doctrine":"Massa terrestre e autonomia tecnológica","bloc":"Potência não alinhada","populationGame":1420,"gdpGame":3730,"defenseBudget":84,"activeForces":1450,"reserveForces":1155,"airframes":850,"warships":150,"armor":4600,"missiles":420,"nuclear":true,"oil":54,"industry":86,"food":82,"cyber":82,"stability":71,"publicSupport":76,"manpower":97,"ports":6,"airports":7,"economy":82,"tech":82,"diplomacy":76,"intel":72,"military":87
   },
   {
-    "id": "south-korea",
-    "name": "Coreia do Sul",
-    "flag": "🇰🇷",
-    "capital": "Seul",
-    "bloc": "Ásia-Pacífico",
-    "region": "Ásia-Pacífico",
-    "doctrine": "Alta prontidão, defesa concentrada, indústria tecnológica e artilharia moderna",
-    "description": "Campanha de tensão regional: tecnologia muito alta e prontidão elevada em território pequeno.",
-    "stats": { "economy": 78, "military": 74, "diplomacy": 72, "intel": 73, "logistics": 75, "stability": 74, "tech": 89 },
-    "profile": { "populationM": 52, "gdpT": 1.7, "defenseB": 48, "activeMilitaryK": 500, "reservesK": 3100, "nuclear": "Não", "navalPower": 73, "airPower": 77, "cyber": 87, "energy": 49, "food": 46, "industry": 88 },
-    "map": { "lat": 37.6, "lng": 127.0, "x": 84, "y": 44 },
-    "traits": ["Prontidão", "Tecnologia", "Indústria", "Defesa"]
+    "id":"jp","iso":"JP","flag":"🇯🇵","name":"Japão","capital":"Tóquio","region":"Ásia-Pacífico","coords":[36.2048,138.2529],"doctrine":"Defesa marítima e tecnologia avançada","bloc":"Aliado pacífico ocidental","populationGame":124,"gdpGame":4210,"defenseBudget":50,"activeForces":247,"reserveForces":56,"airframes":520,"warships":154,"armor":1000,"missiles":220,"nuclear":false,"oil":22,"industry":92,"food":44,"cyber":87,"stability":82,"publicSupport":69,"manpower":61,"ports":7,"airports":6,"economy":88,"tech":94,"diplomacy":80,"intel":79,"military":81
   },
   {
-    "id": "turkey",
-    "name": "Turquia",
-    "flag": "🇹🇷",
-    "capital": "Ancara",
-    "bloc": "Eurásia/OTAN",
-    "region": "Oriente Médio / Europa",
-    "doctrine": "Controle de estreitos, drones, equilíbrio regional e indústria de defesa crescente",
-    "description": "Campanha de ponte geopolítica: posição crítica entre continentes, diplomacia flexível e tensão regional.",
-    "stats": { "economy": 62, "military": 72, "diplomacy": 68, "intel": 68, "logistics": 70, "stability": 58, "tech": 70 },
-    "profile": { "populationM": 85, "gdpT": 1.1, "defenseB": 16, "activeMilitaryK": 355, "reservesK": 379, "nuclear": "Não", "navalPower": 67, "airPower": 71, "cyber": 66, "energy": 55, "food": 76, "industry": 70 },
-    "map": { "lat": 39.9, "lng": 32.9, "x": 59, "y": 44 },
-    "traits": ["Drones", "Estreitos", "Equilíbrio", "Indústria"]
+    "id":"kp","iso":"KP","flag":"🇰🇵","name":"Coreia do Norte","capital":"Pyongyang","region":"Ásia-Pacífico","coords":[40.3399,127.5101],"doctrine":"Dissuasão assimétrica e fechamento interno","bloc":"Estado isolado","populationGame":26,"gdpGame":33,"defenseBudget":4,"activeForces":1280,"reserveForces":600,"airframes":260,"warships":80,"armor":4100,"missiles":360,"nuclear":true,"oil":18,"industry":39,"food":28,"cyber":66,"stability":58,"publicSupport":60,"manpower":78,"ports":2,"airports":3,"economy":21,"tech":41,"diplomacy":17,"intel":65,"military":69
   },
   {
-    "id": "iran",
-    "name": "Irã",
-    "flag": "🇮🇷",
-    "capital": "Teerã",
-    "bloc": "Oriente Médio",
-    "region": "Oriente Médio",
-    "doctrine": "Dissuasão assimétrica, mísseis, influência regional e defesa em profundidade",
-    "description": "Campanha de pressão: influência regional e dissuasão, com economia e diplomacia sob alto custo.",
-    "stats": { "economy": 52, "military": 66, "diplomacy": 45, "intel": 74, "logistics": 58, "stability": 59, "tech": 61 },
-    "profile": { "populationM": 89, "gdpT": 0.4, "defenseB": 10, "activeMilitaryK": 610, "reservesK": 350, "nuclear": "Não", "navalPower": 55, "airPower": 48, "cyber": 71, "energy": 92, "food": 59, "industry": 55 },
-    "map": { "lat": 35.7, "lng": 51.4, "x": 64, "y": 47 },
-    "traits": ["Energia", "Mísseis", "Influência", "Assimétrico"]
+    "id":"ir","iso":"IR","flag":"🇮🇷","name":"Irã","capital":"Teerã","region":"Oriente Médio","coords":[32.4279,53.6880],"doctrine":"Mísseis, drones e profundidade regional","bloc":"Eixo regional autônomo","populationGame":89,"gdpGame":402,"defenseBudget":10,"activeForces":575,"reserveForces":350,"airframes":180,"warships":65,"armor":2000,"missiles":420,"nuclear":false,"oil":91,"industry":65,"food":58,"cyber":72,"stability":61,"publicSupport":60,"manpower":76,"ports":3,"airports":5,"economy":54,"tech":60,"diplomacy":39,"intel":72,"military":75
   },
   {
-    "id": "israel",
-    "name": "Israel",
-    "flag": "🇮🇱",
-    "capital": "Jerusalém",
-    "bloc": "Oriente Médio",
-    "region": "Oriente Médio",
-    "doctrine": "Inteligência, defesa aérea, tecnologia e resposta rápida",
-    "description": "Campanha de alta tecnologia: território pequeno, prontidão alta, defesa aérea e inteligência muito fortes.",
-    "stats": { "economy": 69, "military": 74, "diplomacy": 64, "intel": 89, "logistics": 66, "stability": 63, "tech": 90 },
-    "profile": { "populationM": 10, "gdpT": 0.5, "defenseB": 24, "activeMilitaryK": 170, "reservesK": 465, "nuclear": "Ambíguo", "navalPower": 52, "airPower": 82, "cyber": 92, "energy": 56, "food": 54, "industry": 82 },
-    "map": { "lat": 31.8, "lng": 35.2, "x": 58, "y": 49 },
-    "traits": ["Inteligência", "Defesa aérea", "Tecnologia", "Prontidão"]
+    "id":"il","iso":"IL","flag":"🇮🇱","name":"Israel","capital":"Jerusalém","region":"Oriente Médio","coords":[31.0461,34.8516],"doctrine":"Superioridade aérea, defesa antimíssil e inteligência","bloc":"Aliado ocidental regional","populationGame":9,"gdpGame":520,"defenseBudget":24,"activeForces":170,"reserveForces":465,"airframes":320,"warships":45,"armor":2200,"missiles":310,"nuclear":true,"oil":24,"industry":82,"food":49,"cyber":94,"stability":60,"publicSupport":68,"manpower":59,"ports":2,"airports":4,"economy":78,"tech":95,"diplomacy":61,"intel":96,"military":82
   },
   {
-    "id": "ukraine",
-    "name": "Ucrânia",
-    "flag": "🇺🇦",
-    "capital": "Kyiv",
-    "bloc": "Europa Oriental",
-    "region": "Europa",
-    "doctrine": "Resiliência nacional, mobilização, drones, apoio externo e logística defensiva",
-    "description": "Campanha de resistência: economia pressionada, moral elevada e dependência de logística/diplomacia externa.",
-    "stats": { "economy": 48, "military": 70, "diplomacy": 79, "intel": 71, "logistics": 63, "stability": 68, "tech": 65 },
-    "profile": { "populationM": 37, "gdpT": 0.18, "defenseB": 65, "activeMilitaryK": 900, "reservesK": 1200, "nuclear": "Não", "navalPower": 32, "airPower": 54, "cyber": 70, "energy": 62, "food": 84, "industry": 58 },
-    "map": { "lat": 50.4, "lng": 30.5, "x": 57, "y": 37 },
-    "traits": ["Resiliência", "Drones", "Diplomacia", "Moral"]
+    "id":"tr","iso":"TR","flag":"🇹🇷","name":"Turquia","capital":"Ancara","region":"Eurásia","coords":[38.9637,35.2433],"doctrine":"Ponte estratégica, drones e projeção regional","bloc":"OTAN / autonomia regional","populationGame":85,"gdpGame":1100,"defenseBudget":16,"activeForces":425,"reserveForces":380,"airframes":420,"warships":90,"armor":3000,"missiles":210,"nuclear":false,"oil":35,"industry":76,"food":79,"cyber":70,"stability":62,"publicSupport":65,"manpower":74,"ports":4,"airports":6,"economy":68,"tech":72,"diplomacy":63,"intel":70,"military":80
   },
   {
-    "id": "north-korea",
-    "name": "Coreia do Norte",
-    "flag": "🇰🇵",
-    "capital": "Pyongyang",
-    "bloc": "Ásia Oriental",
-    "region": "Ásia Oriental",
-    "doctrine": "Militarização intensa, dissuasão, isolamento e controle interno",
-    "description": "Campanha extrema: alta militarização e tensão, mas economia frágil e diplomacia limitada.",
-    "stats": { "economy": 31, "military": 63, "diplomacy": 24, "intel": 62, "logistics": 42, "stability": 56, "tech": 48 },
-    "profile": { "populationM": 26, "gdpT": 0.03, "defenseB": 4, "activeMilitaryK": 1280, "reservesK": 600, "nuclear": "Sim", "navalPower": 40, "airPower": 38, "cyber": 66, "energy": 28, "food": 31, "industry": 37 },
-    "map": { "lat": 39.0, "lng": 125.8, "x": 83, "y": 43 },
-    "traits": ["Dissuasão", "Isolamento", "Militarização", "Risco"]
+    "id":"ua","iso":"UA","flag":"🇺🇦","name":"Ucrânia","capital":"Kyiv","region":"Europa","coords":[48.3794,31.1656],"doctrine":"Defesa territorial, drones e apoio externo","bloc":"Parceiro ocidental","populationGame":37,"gdpGame":178,"defenseBudget":50,"activeForces":800,"reserveForces":900,"airframes":120,"warships":12,"armor":2500,"missiles":180,"nuclear":false,"oil":32,"industry":61,"food":87,"cyber":75,"stability":52,"publicSupport":81,"manpower":77,"ports":2,"airports":4,"economy":48,"tech":64,"diplomacy":75,"intel":76,"military":78
   }
 ]

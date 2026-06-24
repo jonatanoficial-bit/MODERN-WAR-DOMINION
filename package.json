@@ -1,13 +1,11 @@
 {
   "name": "modern-war-dominion",
-  "version": "0.2.0",
+  "version": "0.4.0",
   "private": true,
   "type": "module",
-  "description": "Modern War Dominion — Fase 2 mapa mundial e países imersivos",
   "scripts": {
     "test": "node tests/smoke-test.mjs",
     "audit": "node tools/audit.mjs",
-    "smoke": "node tests/smoke-test.mjs",
     "integrity": "node tools/integrity.mjs"
   }
 }

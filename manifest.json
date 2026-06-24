@@ -1,13 +1,13 @@
 {
   "name": "Modern War Dominion",
   "short_name": "MWD",
-  "description": "Dominação Global: Guerra Moderna — Fase 2",
+  "description": "Dominação Global: Guerra Moderna — mapa real, bases militares e simulação mobile em tela deitada.",
   "start_url": "./index.html",
-  "display": "standalone",
-  "background_color": "#050b14",
-  "theme_color": "#07111f",
-  "orientation": "any",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "background_color": "#050914",
+  "theme_color": "#050914",
   "icons": [
-    { "src": "assets/img/world-map-free.svg", "sizes": "512x512", "type": "image/svg+xml", "purpose": "any maskable" }
+    {"src":"assets/img/icon.svg","sizes":"512x512","type":"image/svg+xml","purpose":"any maskable"}
   ]
 }

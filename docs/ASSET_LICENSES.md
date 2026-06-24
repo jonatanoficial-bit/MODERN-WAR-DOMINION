@@ -1,9 +1,20 @@
-# Asset Licenses
+# Licenças e atribuições
 
-## `assets/img/world-map-free.svg`
+## Mapa real
 
-Mapa mundial vetorial autoral criado para Modern War Dominion. Uso liberado dentro deste projeto.
+O jogo carrega mapa mundial real usando Leaflet e tiles públicos OpenStreetMap.
 
-## Leaflet/OpenStreetMap
+- Leaflet: biblioteca JavaScript open-source para mapas interativos.
+- OpenStreetMap: dados/cartografia livre com atribuição visível obrigatória.
+- O rodapé de atribuição aparece no mapa através do controle padrão do Leaflet.
 
-A Fase 2 usa visual e linguagem de interface inspirados em mapa estilo Leaflet/OpenStreetMap, mas mantém fallback offline próprio. Caso a fase futura use tiles reais do OpenStreetMap, a atribuição deverá ficar visível junto ao mapa.
+## Assets próprios
+
+Os arquivos abaixo são vetores autorais gerados para este protótipo e podem ser usados dentro do projeto:
+
+- `assets/img/icon.svg`
+- `assets/img/fallback-world.svg`
+
+## Observação
+
+O fallback SVG não deve ser tratado como mapa real. Ele só aparece se o navegador estiver offline ou se o tile provider estiver indisponível.

@@ -1,415 +1,627 @@
-(() => {
-  'use strict';
+const VERSION = "0.4.0";
+const PHASE = "Fase 4 — mapa real e poder militar";
+const SAVE_KEY = "MWD_SAVE_V4";
 
-  const BUILD = {
-    name: 'Modern War Dominion',
-    phase: 'Fase 2 — Mapa Mundial Leaflet Style e Países Imersivos',
-    version: 'v0.2.0-F2-MAPA-MUNDIAL-PAISES',
-    date: '2026-06-24',
-    saveKey: 'modern-war-dominion-save-v2-world-map',
-    legacySaveKeys: ['modern-war-dominion-save-v2', 'modern-war-dominion-save-v1']
+const $ = (sel, root = document) => root.querySelector(sel);
+const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
+
+const state = {
+  countries: [],
+  buildings: [],
+  units: [],
+  selectedCountry: null,
+  game: null,
+  map: null,
+  layers: {
+    countries: null,
+    bases: null,
+    threats: null
+  }
+};
+
+const monthNames = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
+
+async function boot(){
+  await loadData();
+  bindUi();
+  renderNationGrid();
+  checkSave();
+  registerServiceWorker();
+}
+
+async function loadData(){
+  const [countries, buildings, units] = await Promise.all([
+    fetch("data/countries.json").then(r => r.json()),
+    fetch("data/buildings.json").then(r => r.json()),
+    fetch("data/units_catalog.json").then(r => r.json())
+  ]);
+  state.countries = countries;
+  state.buildings = buildings;
+  state.units = units;
+  state.selectedCountry = countries.find(c => c.id === "br") || countries[0];
+}
+
+function bindUi(){
+  $("#newGameBtn").addEventListener("click", () => showScreen("screenNation"));
+  $("#continueBtn").addEventListener("click", continueGame);
+  $("#homeLogoBtn").addEventListener("click", () => showScreen("screenHome"));
+  $("#fullscreenBtn").addEventListener("click", enterImmersiveMode);
+  $("#forceLandscapeBtn").addEventListener("click", enterImmersiveMode);
+  $("#nationSearch").addEventListener("input", renderNationGrid);
+  $("#nextMonthBtn").addEventListener("click", advanceMonth);
+
+  $$(".tab-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      if(!btn.disabled) showScreen(btn.dataset.screen);
+    });
+  });
+
+  $$(".side-tab").forEach(btn => {
+    btn.addEventListener("click", () => {
+      $$(".side-tab").forEach(b => b.classList.remove("is-active"));
+      $$(".side-panel").forEach(p => p.classList.remove("is-active"));
+      btn.classList.add("is-active");
+      $("#" + btn.dataset.panel).classList.add("is-active");
+    });
+  });
+
+  $$(".op-btn").forEach(btn => btn.addEventListener("click", () => launchOperation(btn.dataset.op)));
+}
+
+function showScreen(id){
+  $$(".screen").forEach(s => s.classList.remove("screen-active"));
+  $("#" + id).classList.add("screen-active");
+  $$(".tab-btn").forEach(t => t.classList.toggle("is-active", t.dataset.screen === id));
+  if(id === "screenWar") setTimeout(() => state.map?.invalidateSize(), 160);
+}
+
+async function enterImmersiveMode(){
+  try{
+    if(document.documentElement.requestFullscreen && !document.fullscreenElement){
+      await document.documentElement.requestFullscreen();
+    }
+  }catch(err){ console.info("Fullscreen indisponível", err); }
+
+  try{
+    if(screen.orientation?.lock){
+      await screen.orientation.lock("landscape");
+    }
+  }catch(err){ console.info("Bloqueio de orientação indisponível", err); }
+}
+
+function checkSave(){
+  const hasSave = Boolean(localStorage.getItem(SAVE_KEY));
+  $("#continueBtn").disabled = !hasSave;
+}
+
+function renderNationGrid(){
+  const term = ($("#nationSearch")?.value || "").toLowerCase().trim();
+  const grid = $("#nationGrid");
+  grid.innerHTML = "";
+  const list = state.countries.filter(c => [c.name,c.capital,c.region,c.doctrine,c.bloc,c.iso].join(" ").toLowerCase().includes(term));
+  list.forEach(country => {
+    const card = document.createElement("article");
+    card.className = "nation-card";
+    card.innerHTML = `
+      <div class="nation-top">
+        <span class="flag">${country.flag}</span>
+        <div><h3>${country.name}</h3><small>${country.capital} · ${country.region}</small></div>
+      </div>
+      <small>${country.doctrine}</small>
+      <div class="stat-pills">
+        <span>Militar ${country.military}</span>
+        <span>PIB Jogo ${country.gdpGame}</span>
+        <span>Defesa ${country.defenseBudget}</span>
+        <span>Navios ${country.warships}</span>
+        <span>Aeronaves ${country.airframes}</span>
+        <span>${country.nuclear ? "Nuclear" : "Convencional"}</span>
+      </div>
+      <button class="select-country">Comandar ${country.flag}</button>
+    `;
+    card.querySelector("button").addEventListener("click", () => startGame(country.id));
+    grid.appendChild(card);
+  });
+}
+
+function makeInitialGame(countryId){
+  const country = state.countries.find(c => c.id === countryId) || state.countries[0];
+  return {
+    version: VERSION,
+    phase: PHASE,
+    countryId: country.id,
+    month: 0,
+    year: 2027,
+    finance: Math.round(280 + country.economy * 3 + country.defenseBudget * 1.8),
+    industry: Math.round(180 + country.industry * 3),
+    energy: Math.round(130 + country.oil * 2),
+    food: Math.round(120 + country.food * 2),
+    soldiers: country.activeForces * 1000,
+    readiness: 48 + Math.round(country.military / 3),
+    landPower: Math.round(country.armor / 100 + country.military / 2),
+    airPower: Math.round(country.airframes / 35 + country.military / 2),
+    navalPower: Math.round(country.warships / 5 + country.military / 2),
+    missilePower: Math.round(country.missiles / 18),
+    defense: Math.round(40 + country.military / 2),
+    logistics: Math.round(35 + country.ports * 4 + country.airports * 3),
+    cyber: country.cyber,
+    intel: country.intel,
+    stability: country.stability,
+    worldTension: 37,
+    escalation: country.nuclear ? 8 : 0,
+    bases: [],
+    construction: [],
+    units: [],
+    relations: seedRelations(country),
+    events: [eventText("sistema", `Campanha iniciada com ${country.name}. Prioridade: construir infraestrutura militar e sobreviver à escalada global.`)],
+    threats: generateThreats(country)
   };
+}
 
-  const monthNames = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
-  const statLabels = {
-    economy: 'Economia', military: 'Militar', diplomacy: 'Diplomacia', intel: 'Intel', logistics: 'Logística', stability: 'Estabilidade', tech: 'Tecnologia'
+function seedRelations(playerCountry){
+  return state.countries.filter(c => c.id !== playerCountry.id).map(c => {
+    const distance = getDistance(playerCountry.coords, c.coords);
+    const blocBonus = c.bloc === playerCountry.bloc ? 18 : 0;
+    const regionBonus = c.region === playerCountry.region ? 8 : 0;
+    const nuclearTension = c.nuclear || playerCountry.nuclear ? 6 : 0;
+    return {
+      id: c.id,
+      relation: clamp(48 + blocBonus + regionBonus - nuclearTension - Math.round(distance / 2600), 8, 92),
+      tension: clamp(25 + nuclearTension + Math.round(distance / 3600), 10, 88),
+      trade: clamp(38 + regionBonus + Math.round(Math.random() * 28), 12, 88)
+    };
+  });
+}
+
+function generateThreats(playerCountry){
+  const rivals = state.countries
+    .filter(c => c.id !== playerCountry.id)
+    .sort((a,b) => (b.military + b.missiles + (b.nuclear ? 20 : 0)) - (a.military + a.missiles + (a.nuclear ? 20 : 0)))
+    .slice(0, 4);
+  return rivals.map((c, idx) => ({
+    id: c.id,
+    countryId: c.id,
+    level: clamp(42 + idx * 7 + Math.round(Math.random() * 14), 25, 91),
+    type: ["pressão naval", "alerta aéreo", "crise diplomática", "atividade cyber"][idx % 4],
+    coords: jitter(c.coords, 2 + idx)
+  }));
+}
+
+function startGame(countryId){
+  state.game = makeInitialGame(countryId);
+  saveGame();
+  $(".tab-btn[data-screen='screenWar']").disabled = false;
+  renderGame();
+  showScreen("screenWar");
+  enterImmersiveMode();
+}
+
+function continueGame(){
+  const raw = localStorage.getItem(SAVE_KEY);
+  if(!raw) return;
+  state.game = JSON.parse(raw);
+  $(".tab-btn[data-screen='screenWar']").disabled = false;
+  renderGame();
+  showScreen("screenWar");
+}
+
+function saveGame(){
+  localStorage.setItem(SAVE_KEY, JSON.stringify(state.game));
+  checkSave();
+}
+
+function renderGame(){
+  renderSummary();
+  renderBuildList();
+  renderUnitList();
+  renderTargetSelect();
+  renderIntel();
+  initMap();
+  updateMapLayers();
+}
+
+function renderSummary(){
+  const g = state.game;
+  const c = getPlayerCountry();
+  $("#monthLabel").textContent = `${monthNames[g.month % 12]}/${g.year}`;
+  $("#countrySummary").innerHTML = `
+    <h2><span class="big-flag">${c.flag}</span> ${c.name}</h2>
+    <small>${c.capital} · ${c.doctrine}</small>
+    <div class="metrics">
+      <div class="metric"><small>Finanças</small><strong>${g.finance}</strong></div>
+      <div class="metric"><small>Indústria</small><strong>${g.industry}</strong></div>
+      <div class="metric"><small>Energia</small><strong>${g.energy}</strong></div>
+      <div class="metric"><small>Soldados</small><strong>${formatSoldiers(g.soldiers)}</strong></div>
+      <div class="metric"><small>Poder</small><strong>${powerIndex()}</strong></div>
+      <div class="metric"><small>Bases</small><strong>${g.bases.length}</strong></div>
+    </div>
+  `;
+}
+
+function renderBuildList(){
+  const list = $("#buildList");
+  const g = state.game;
+  list.innerHTML = "";
+  state.buildings.forEach(b => {
+    const can = canAfford(b.cost);
+    const card = document.createElement("article");
+    card.className = "build-card";
+    card.innerHTML = `
+      <div>
+        <h3>${b.icon} ${b.name}</h3>
+        <p>${b.role}</p>
+        <div class="cost-line">Custo: $${b.cost.finance} · Ind. ${b.cost.industry} · Energia ${b.cost.energy} · ${b.buildMonths} mês(es)</div>
+      </div>
+      <button ${can ? "" : "disabled"}>Construir</button>
+    `;
+    card.querySelector("button").addEventListener("click", () => buildBase(b.id));
+    list.appendChild(card);
+  });
+  if(g.construction.length){
+    const pending = document.createElement("div");
+    pending.className = "event warn";
+    pending.textContent = `Em construção: ${g.construction.map(x => `${getBuilding(x.buildingId).name} (${x.remaining}m)`).join(", ")}`;
+    list.prepend(pending);
+  }
+}
+
+function renderUnitList(){
+  const list = $("#unitList");
+  const g = state.game;
+  list.innerHTML = "";
+  state.units.forEach(u => {
+    const hasBase = g.bases.some(b => b.type === u.requires);
+    const canBuy = hasBase && g.finance >= u.cost;
+    const card = document.createElement("article");
+    card.className = "unit-card";
+    card.innerHTML = `
+      <div>
+        <h3>${u.icon} ${u.name}</h3>
+        <p>${u.role}</p>
+        <div class="cost-line">Classe: ${u.class} · Custo $${u.cost} · Manutenção ${u.upkeep} · Requer ${getBuilding(u.requires)?.name || u.requires}</div>
+      </div>
+      <button ${canBuy ? "" : "disabled"}>Comprar</button>
+    `;
+    card.querySelector("button").addEventListener("click", () => buyUnit(u.id));
+    list.appendChild(card);
+  });
+}
+
+function renderTargetSelect(){
+  const select = $("#targetSelect");
+  select.innerHTML = "";
+  state.countries.filter(c => c.id !== state.game.countryId).forEach(c => {
+    const rel = state.game.relations.find(r => r.id === c.id);
+    const opt = document.createElement("option");
+    opt.value = c.id;
+    opt.textContent = `${c.flag} ${c.name} · tensão ${rel?.tension ?? 50}`;
+    select.appendChild(opt);
+  });
+}
+
+function renderIntel(){
+  const g = state.game;
+  $("#threatFill").style.width = `${clamp(g.worldTension + g.escalation, 0, 100)}%`;
+  $("#intelGrid").innerHTML = `
+    <div class="metric"><small>Tensão mundial</small><strong>${g.worldTension}</strong></div>
+    <div class="metric"><small>Escalada</small><strong>${g.escalation}</strong></div>
+    <div class="metric"><small>Defesa</small><strong>${g.defense}</strong></div>
+    <div class="metric"><small>Prontidão</small><strong>${g.readiness}</strong></div>
+    <div class="metric"><small>Cyber</small><strong>${g.cyber}</strong></div>
+    <div class="metric"><small>Logística</small><strong>${g.logistics}</strong></div>
+  `;
+  const feed = $("#eventFeed");
+  feed.innerHTML = "";
+  g.events.slice(-8).reverse().forEach(e => {
+    const div = document.createElement("div");
+    div.className = `event ${e.kind || ""}`;
+    div.textContent = e.text;
+    feed.appendChild(div);
+  });
+}
+
+function initMap(){
+  if(state.map) return;
+  if(!window.L){
+    $("#mapFallback").hidden = false;
+    return;
+  }
+  const c = getPlayerCountry();
+  state.map = L.map("realMap", {
+    zoomControl: true,
+    attributionControl: true,
+    worldCopyJump: true,
+    minZoom: 2,
+    maxZoom: 7
+  }).setView(c.coords, 3);
+
+  L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    maxZoom: 19,
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+    detectRetina: true
+  }).addTo(state.map);
+
+  state.layers.countries = L.layerGroup().addTo(state.map);
+  state.layers.bases = L.layerGroup().addTo(state.map);
+  state.layers.threats = L.layerGroup().addTo(state.map);
+
+  state.map.on("tileerror", () => {
+    // Mantém o jogo funcionando mesmo se o navegador bloquear tiles externos.
+    if(!document.querySelector(".leaflet-tile-loaded")) $("#mapFallback").hidden = false;
+  });
+}
+
+function updateMapLayers(){
+  if(!state.map || !window.L) return;
+  const g = state.game;
+  const player = getPlayerCountry();
+  state.layers.countries.clearLayers();
+  state.layers.bases.clearLayers();
+  state.layers.threats.clearLayers();
+
+  state.countries.forEach(c => {
+    const isPlayer = c.id === player.id;
+    const icon = L.divIcon({
+      className: "",
+      html: `<div class="${isPlayer ? "marker-own" : "marker-country"}">${isPlayer ? player.flag : c.flag}</div>`,
+      iconSize: isPlayer ? [38,38] : [32,32],
+      iconAnchor: [16,16]
+    });
+    L.marker(c.coords, {icon}).addTo(state.layers.countries).bindPopup(`<strong>${c.flag} ${c.name}</strong><br>${c.capital}<br>Militar: ${c.military} · PIB jogo: ${c.gdpGame}`);
+  });
+
+  g.bases.forEach((base, idx) => {
+    const b = getBuilding(base.type);
+    const icon = L.divIcon({className:"",html:`<div class="marker-base">${b.icon}</div>`,iconSize:[30,30],iconAnchor:[15,15]});
+    L.marker(base.coords, {icon}).addTo(state.layers.bases).bindPopup(`<strong>${b.name}</strong><br>${base.name}<br>Nível ${base.level}`);
+  });
+
+  g.threats.forEach(t => {
+    const c = state.countries.find(x => x.id === t.countryId);
+    const icon = L.divIcon({className:"",html:`<div class="marker-threat">!</div>`,iconSize:[28,28],iconAnchor:[14,14]});
+    L.marker(t.coords, {icon}).addTo(state.layers.threats).bindPopup(`<strong>${c?.flag || ""} ${c?.name || "Ameaça"}</strong><br>${t.type}<br>Nível ${t.level}`);
+  });
+
+  state.map.setView(player.coords, Math.max(state.map.getZoom(), 3));
+}
+
+function buildBase(buildingId){
+  const b = getBuilding(buildingId);
+  if(!b || !canAfford(b.cost)) return;
+  const g = state.game;
+  g.finance -= b.cost.finance;
+  g.industry -= b.cost.industry;
+  g.energy -= b.cost.energy;
+  g.construction.push({ buildingId, remaining: b.buildMonths, id: cryptoId() });
+  g.events.push(eventText("sistema", `${b.name} entrou em construção. Previsão: ${b.buildMonths} mês(es).`));
+  saveGame();
+  renderGame();
+}
+
+function buyUnit(unitId){
+  const u = state.units.find(x => x.id === unitId);
+  if(!u || state.game.finance < u.cost) return;
+  if(!state.game.bases.some(b => b.type === u.requires)) return;
+  const g = state.game;
+  g.finance -= u.cost;
+  g.units.push({ id: unitId, qty: 1, veteran: 0 });
+  if(u.class === "Terrestre") g.landPower += u.power;
+  if(u.class === "Aéreo") g.airPower += u.power;
+  if(u.class === "Naval") g.navalPower += u.power;
+  if(u.class === "Estratégico") g.missilePower += u.power;
+  g.readiness = clamp(g.readiness + 2, 0, 100);
+  g.events.push(eventText("sistema", `${u.name} incorporado às forças armadas.`));
+  saveGame();
+  renderGame();
+}
+
+function launchOperation(kind){
+  const targetId = $("#targetSelect").value;
+  const target = state.countries.find(c => c.id === targetId);
+  if(!target) return;
+  const g = state.game;
+  const costs = {
+    recon: {finance: 12, energy: 4, tension: 2, power: g.intel + g.cyber},
+    airstrike: {finance: 35, energy: 16, tension: 8, power: g.airPower + g.missilePower / 2},
+    naval: {finance: 42, energy: 18, tension: 9, power: g.navalPower + g.logistics / 2},
+    combined: {finance: 85, energy: 30, tension: 17, power: g.landPower + g.airPower + g.navalPower + g.missilePower}
   };
-
-  const fallbackCountries = [
-    { id: 'brazil', name: 'Brasil', flag: '🇧🇷', capital: 'Brasília', bloc: 'América do Sul', region: 'América do Sul', doctrine: 'Recursos naturais, diplomacia e modernização industrial', description: 'Campanha de ascensão global com recursos, população e diplomacia.', stats: { economy: 66, military: 53, diplomacy: 77, intel: 50, logistics: 57, stability: 61, tech: 58 }, profile: { populationM: 216, gdpT: 2.2, defenseB: 23, activeMilitaryK: 360, reservesK: 1340, nuclear: 'Não', navalPower: 54, airPower: 55, cyber: 52, energy: 86, food: 94, industry: 63 }, map: { x: 34, y: 70 }, traits: ['Recursos', 'Diplomacia', 'Alimentos', 'Potencial'] },
-    { id: 'usa', name: 'Estados Unidos', flag: '🇺🇸', capital: 'Washington, D.C.', bloc: 'Aliança Atlântica', region: 'América do Norte', doctrine: 'Projeção global e superioridade tecnológica', description: 'Superpotência de alcance mundial e alto custo de manutenção.', stats: { economy: 95, military: 94, diplomacy: 86, intel: 90, logistics: 95, stability: 72, tech: 96 }, profile: { populationM: 335, gdpT: 27, defenseB: 886, activeMilitaryK: 1328, reservesK: 799, nuclear: 'Sim', navalPower: 96, airPower: 97, cyber: 95, energy: 82, food: 88, industry: 92 }, map: { x: 25, y: 39 }, traits: ['Superpotência', 'Marinha', 'Tecnologia', 'Alianças'] }
-  ];
-
-  const fallbackRegions = [
-    { id: 'north-america', name: 'América do Norte', x: 24, y: 38, tension: 31, influence: 76, trade: 84, stability: 72, resources: 'Tecnologia, energia, indústria', focus: 'Projeção aérea/naval e defesa continental' },
-    { id: 'south-america', name: 'América do Sul', x: 34, y: 71, tension: 24, influence: 48, trade: 61, stability: 58, resources: 'Alimentos, água, energia, minerais', focus: 'Autonomia regional e proteção de recursos' },
-    { id: 'europe', name: 'Europa', x: 53, y: 38, tension: 57, influence: 72, trade: 76, stability: 63, resources: 'Indústria avançada, alianças, tecnologia', focus: 'Segurança continental e energia' },
-    { id: 'asia-pacific', name: 'Ásia-Pacífico', x: 80, y: 47, tension: 63, influence: 81, trade: 88, stability: 62, resources: 'Chips, manufatura, rotas marítimas', focus: 'Tecnologia, comércio e defesa marítima' }
-  ];
-
-  const actionConfig = {
-    economy: { label: 'Plano econômico nacional', advisor: 'Ministro da Economia', text: 'Investimento em indústria, energia e cadeias de suprimento. Crescimento melhora, mas consome orçamento.', effects: { economy: 4, logistics: 1, stability: 1 }, budget: -5, region: { trade: 1, influence: 1 } },
-    military: { label: 'Modernizar forças armadas', advisor: 'Estado-Maior Conjunto', text: 'Manutenção, prontidão e aquisição de tecnologia defensiva aumentam força militar sem entrar em detalhe operacional real.', effects: { military: 4, tech: 1, logistics: -1 }, budget: -6, region: { tension: 1, influence: 1 } },
-    diplomacy: { label: 'Cúpula diplomática', advisor: 'Chanceler', text: 'Missões diplomáticas reduzem tensão regional e ampliam reputação internacional.', effects: { diplomacy: 4, stability: 1 }, budget: -3, region: { tension: -2, influence: 2, trade: 1 } },
-    intel: { label: 'Centro de inteligência', advisor: 'Diretor de Inteligência', text: 'Análise estratégica, contra-informação e leitura de risco melhoram previsibilidade global.', effects: { intel: 4, tech: 1 }, budget: -4, region: { tension: -1, stability: 1 } },
-    logistics: { label: 'Rede logística global', advisor: 'Comando Logístico', text: 'Portos, ferrovias, centros de manutenção e estoques estratégicos fortalecem alcance operacional.', effects: { logistics: 5, economy: 1 }, budget: -5, region: { trade: 2, stability: 1 } }
-  };
-
-  const eventPool = [
-    { title: 'Choque de energia', text: 'Preços internacionais pressionam indústria e estabilidade. Países com energia alta sofrem menos.', effects: { economy: -2, stability: -1 }, region: { tension: 2, trade: -1 } },
-    { title: 'Crise em rota marítima', text: 'O comércio global fica mais caro e a logística vira prioridade estratégica.', effects: { logistics: -2, economy: -1 }, region: { tension: 3, trade: -2 } },
-    { title: 'Fórum multilateral', text: 'Uma rodada diplomática abre espaço para acordos e redução de tensão.', effects: { diplomacy: 3, stability: 1 }, region: { tension: -2, influence: 2 } },
-    { title: 'Avanço industrial', text: 'Novas cadeias de produção elevam tecnologia e economia.', effects: { tech: 2, economy: 2 }, region: { trade: 1, influence: 1 } },
-    { title: 'Campanha de desinformação', text: 'Narrativas externas testam inteligência, estabilidade e credibilidade pública.', effects: { intel: -1, stability: -2, diplomacy: -1 }, region: { tension: 2, stability: -1 } },
-    { title: 'Acordo de suprimentos', text: 'Contratos internacionais aliviam estoques e melhoram a logística.', effects: { logistics: 3, economy: 1 }, region: { trade: 2, tension: -1 } }
-  ];
-
-  const els = {};
-  const state = {
-    countries: [], regions: [], selected: null, stats: null, budget: 100,
-    turn: 1, month: 0, year: 2026, actionsThisTurn: 0,
-    selectedRegionId: 'europe', log: []
-  };
-
-  const q = (id) => document.getElementById(id);
-  const clamp = (value, min = 0, max = 100) => Math.max(min, Math.min(max, Math.round(value)));
-  const clone = (value) => JSON.parse(JSON.stringify(value));
-  const fmt = new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 1 });
-
-  function initEls() {
-    ['screenHome','screenNation','screenGame','newGameBtn','continueBtn','backHomeBtn','nationGrid','nationSearch','buildChip','countryProfile','resourceGrid','campaignMeta','advisorTitle','advisorText','ackBtn','nextTurnBtn','eventLog','resetBtn','countryMapLayer','regionMapLayer','globalGrid','regionPanel','actionStack','installBtn'].forEach((id) => { els[id] = q(id); });
+  const op = costs[kind];
+  if(g.finance < op.finance || g.energy < op.energy){
+    g.events.push(eventText("warn", "Recursos insuficientes para iniciar essa operação."));
+    renderIntel();
+    return;
   }
+  g.finance -= op.finance;
+  g.energy -= op.energy;
+  g.worldTension = clamp(g.worldTension + op.tension, 0, 100);
+  g.escalation = clamp(g.escalation + Math.round(op.tension / 2), 0, 100);
+  const defense = target.military + target.intel / 2 + (target.nuclear ? 14 : 0) + Math.random() * 30;
+  const attack = op.power + g.readiness / 2 + Math.random() * 35;
+  const success = attack >= defense;
+  const label = {
+    recon:"Reconhecimento estratégico",
+    airstrike:"Ataque aéreo limitado",
+    naval:"Bloqueio naval",
+    combined:"Operação combinada"
+  }[kind];
 
-  function showScreen(name) {
-    ['screenHome','screenNation','screenGame'].forEach((screen) => els[screen].classList.remove('screen-active'));
-    els[name].classList.add('screen-active');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+  if(success){
+    g.readiness = clamp(g.readiness - Math.round(op.tension / 3), 0, 100);
+    g.intel = clamp(g.intel + (kind === "recon" ? 3 : 1), 0, 120);
+    g.events.push(eventText(kind === "combined" ? "danger" : "sistema", `${label} contra ${target.name} teve sucesso tático. A tensão mundial subiu.`));
+  }else{
+    g.readiness = clamp(g.readiness - Math.round(op.tension / 2), 0, 100);
+    g.stability = clamp(g.stability - 2, 0, 100);
+    g.events.push(eventText("danger", `${label} contra ${target.name} falhou. Perdas políticas e alerta inimigo aumentaram.`));
   }
-
-  async function loadData() {
-    try {
-      const [countriesResponse, regionsResponse] = await Promise.all([fetch('data/countries.json'), fetch('data/world_regions.json')]);
-      state.countries = countriesResponse.ok ? await countriesResponse.json() : fallbackCountries;
-      state.regions = regionsResponse.ok ? await regionsResponse.json() : fallbackRegions;
-    } catch (error) {
-      state.countries = fallbackCountries;
-      state.regions = fallbackRegions;
-    }
+  const rel = g.relations.find(r => r.id === target.id);
+  if(rel){
+    rel.tension = clamp(rel.tension + op.tension * 2, 0, 100);
+    rel.relation = clamp(rel.relation - op.tension * 2, 0, 100);
   }
+  maybeCounterAttack(target, Math.round(op.tension * 1.5));
+  saveGame();
+  renderGame();
+}
 
-  function hasSave() {
-    try {
-      return Boolean(localStorage.getItem(BUILD.saveKey) || BUILD.legacySaveKeys.some((key) => localStorage.getItem(key)));
-    } catch (error) { return false; }
+function maybeCounterAttack(target, pressure){
+  const g = state.game;
+  const chance = clamp((target.military + pressure + g.worldTension - g.defense) / 150, 0.05, 0.68);
+  if(Math.random() > chance) return;
+  const enemyPower = target.military + target.airframes / 80 + target.missiles / 30 + Math.random() * 25;
+  const defensePower = g.defense + g.readiness / 2 + g.intel / 4 + Math.random() * 30;
+  if(enemyPower > defensePower){
+    const damage = Math.round(8 + Math.random() * 16);
+    g.finance = Math.max(0, g.finance - damage);
+    g.industry = Math.max(0, g.industry - Math.round(damage / 2));
+    g.readiness = clamp(g.readiness - 4, 0, 100);
+    g.events.push(eventText("danger", `${target.name} respondeu com ataque limitado. Perda de finanças e indústria.`));
+  }else{
+    g.readiness = clamp(g.readiness + 1, 0, 100);
+    g.events.push(eventText("warn", `${target.name} tentou uma resposta limitada, mas a defesa interceptou a maior parte da ameaça.`));
   }
+}
 
-  function saveGame() {
-    try {
-      localStorage.setItem(BUILD.saveKey, JSON.stringify({
-        selected: state.selected, stats: state.stats, budget: state.budget, turn: state.turn,
-        month: state.month, year: state.year, actionsThisTurn: state.actionsThisTurn,
-        selectedRegionId: state.selectedRegionId, regions: state.regions, log: state.log.slice(0, 50),
-        savedAt: new Date().toISOString(), build: BUILD.version
-      }));
-      els.continueBtn.disabled = false;
-    } catch (error) { addLog('Sistema', 'Não foi possível salvar localmente neste navegador.'); }
+function advanceMonth(){
+  const g = state.game;
+  g.month += 1;
+  if(g.month % 12 === 0) g.year += 1;
+
+  const c = getPlayerCountry();
+  g.finance += Math.round(45 + c.economy * 1.2 + g.stability / 3 - g.units.length * 5);
+  g.industry += Math.round(24 + c.industry * .65 - g.units.length * 2);
+  g.energy += Math.round(22 + c.oil * .55 - g.bases.length * 2);
+  g.food += Math.round(15 + c.food * .4);
+  g.readiness = clamp(g.readiness + Math.round(g.logistics / 22) - Math.round(g.worldTension / 35), 0, 100);
+  g.worldTension = clamp(g.worldTension + randomInt(-3, 5), 0, 100);
+
+  progressConstruction();
+  monthlyWorldEvent();
+  decayRelations();
+  if(g.worldTension > 58 || Math.random() < .22) aiRaid();
+  saveGame();
+  renderGame();
+}
+
+function progressConstruction(){
+  const g = state.game;
+  const finished = [];
+  g.construction.forEach(job => {
+    job.remaining -= 1;
+    if(job.remaining <= 0) finished.push(job);
+  });
+  g.construction = g.construction.filter(job => job.remaining > 0);
+  finished.forEach(job => {
+    const b = getBuilding(job.buildingId);
+    const idx = g.bases.length + 1;
+    const coords = jitter(getPlayerCountry().coords, 1.4 + idx * .24);
+    g.bases.push({ id: job.id, type: job.buildingId, name: `${b.name} ${idx}`, level: 1, coords });
+    applyEffects(b.effects);
+    g.events.push(eventText("sistema", `${b.name} concluída e operacional no mapa.`));
+  });
+}
+
+function applyEffects(effects){
+  const g = state.game;
+  Object.entries(effects).forEach(([key, value]) => {
+    if(key === "soldiers") g.soldiers += value;
+    else g[key] = clamp((g[key] || 0) + value, 0, key === "soldiers" ? 999999999 : 9999);
+  });
+}
+
+function monthlyWorldEvent(){
+  const g = state.game;
+  const roll = Math.random();
+  if(roll < .22){
+    g.finance += 35;
+    g.events.push(eventText("sistema", "Contrato de defesa nacional reforçou o orçamento militar."));
+  }else if(roll < .44){
+    g.worldTension = clamp(g.worldTension + 6, 0, 100);
+    g.events.push(eventText("warn", "Crise internacional elevou a tensão mundial. Países entraram em estado de alerta."));
+  }else if(roll < .63){
+    g.intel = clamp(g.intel + 2, 0, 120);
+    g.events.push(eventText("sistema", "Relatório de inteligência revelou movimentação militar estrangeira."));
+  }else if(roll < .78){
+    g.energy = Math.max(0, g.energy - 18);
+    g.events.push(eventText("warn", "Oscilação energética reduziu reservas operacionais."));
+  }else{
+    g.stability = clamp(g.stability + 2, 0, 100);
+    g.events.push(eventText("sistema", "Discurso nacional aumentou coesão interna e apoio ao governo."));
   }
+}
 
-  function loadGame() {
-    try {
-      const raw = localStorage.getItem(BUILD.saveKey) || BUILD.legacySaveKeys.map((key) => localStorage.getItem(key)).find(Boolean);
-      if (!raw) return false;
-      const payload = JSON.parse(raw);
-      const selectedId = payload.selected?.id || payload.selected;
-      state.selected = state.countries.find((country) => country.id === selectedId) || payload.selected || state.countries[0];
-      state.stats = payload.stats || clone(state.selected.stats);
-      state.budget = payload.budget ?? 100;
-      state.turn = payload.turn || 1;
-      state.month = payload.month || 0;
-      state.year = payload.year || 2026;
-      state.actionsThisTurn = payload.actionsThisTurn || 0;
-      state.selectedRegionId = payload.selectedRegionId || state.selected?.region || 'europe';
-      state.regions = Array.isArray(payload.regions) && payload.regions.length ? payload.regions : state.regions;
-      state.log = Array.isArray(payload.log) ? payload.log : [];
-      addLog('Migração F2', 'Campanha carregada no novo mapa mundial estilo Leaflet/OpenStreetMap com fallback offline.');
-      renderGame(); showScreen('screenGame'); saveGame();
-      return true;
-    } catch (error) { return false; }
+function decayRelations(){
+  const g = state.game;
+  g.relations.forEach(r => {
+    r.tension = clamp(r.tension + Math.round((g.worldTension - 50) / 22), 0, 100);
+    if(r.tension > 70) r.relation = clamp(r.relation - 1, 0, 100);
+  });
+}
+
+function aiRaid(){
+  const g = state.game;
+  const threat = g.threats.sort((a,b) => b.level - a.level)[0];
+  const enemy = state.countries.find(c => c.id === threat.countryId);
+  if(!enemy) return;
+  const attack = threat.level + enemy.military / 2 + Math.random() * 25;
+  const defense = g.defense + g.readiness / 2 + g.intel / 3 + Math.random() * 35;
+  if(attack > defense){
+    const loss = randomInt(12, 30);
+    g.finance = Math.max(0, g.finance - loss);
+    g.readiness = clamp(g.readiness - 5, 0, 100);
+    g.events.push(eventText("danger", `Alerta vermelho: ${enemy.name} realizou incursão militar. Houve perdas e queda de prontidão.`));
+  }else{
+    g.readiness = clamp(g.readiness + 2, 0, 100);
+    g.events.push(eventText("warn", `Tentativa de ataque de ${enemy.name} foi contida pela defesa e inteligência.`));
   }
+  threat.level = clamp(threat.level + randomInt(-10, 8), 20, 98);
+}
 
-  function startCampaign(country) {
-    state.selected = country;
-    state.stats = clone(country.stats);
-    state.budget = 100;
-    state.turn = 1;
-    state.month = 0;
-    state.year = 2026;
-    state.actionsThisTurn = 0;
-    state.selectedRegionId = regionIdFromCountry(country);
-    state.regions = clone(state.regions.length ? state.regions : fallbackRegions);
-    state.log = [];
-    addLog('Campanha iniciada', `${country.flag} ${country.name} assumiu o comando global. Objetivo: ampliar influência sem quebrar estabilidade nacional.`);
-    advisor('Chefe do Estado-Maior', `Bem-vindo ao comando de ${country.name}. Leia o mapa mundial, compare tensão por região e escolha ações de economia, diplomacia, inteligência, logística e defesa.`);
-    renderGame(); showScreen('screenGame'); saveGame();
+function canAfford(cost){
+  const g = state.game;
+  return g.finance >= cost.finance && g.industry >= cost.industry && g.energy >= cost.energy;
+}
+function getBuilding(id){ return state.buildings.find(b => b.id === id); }
+function getPlayerCountry(){ return state.countries.find(c => c.id === state.game?.countryId) || state.selectedCountry || state.countries[0]; }
+function powerIndex(){
+  const g = state.game;
+  return Math.round((g.landPower + g.airPower + g.navalPower + g.missilePower + g.defense + g.logistics + g.cyber / 2) / 5);
+}
+function eventText(kind, text){ return {kind, text, at: new Date().toISOString()}; }
+function clamp(v,min,max){ return Math.max(min, Math.min(max, Math.round(v))); }
+function randomInt(min,max){ return Math.floor(Math.random() * (max - min + 1)) + min; }
+function formatSoldiers(n){ return n >= 1000000 ? `${(n/1000000).toFixed(1)}M` : `${Math.round(n/1000)}k`; }
+function cryptoId(){ return Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4); }
+function jitter([lat,lng], spread){ return [lat + (Math.random() - .5) * spread, lng + (Math.random() - .5) * spread * 1.4]; }
+function getDistance(a,b){
+  const R = 6371;
+  const dLat = deg2rad(b[0]-a[0]);
+  const dLon = deg2rad(b[1]-a[1]);
+  const x = Math.sin(dLat/2)**2 + Math.cos(deg2rad(a[0])) * Math.cos(deg2rad(b[0])) * Math.sin(dLon/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(x), Math.sqrt(1-x));
+}
+function deg2rad(d){ return d * Math.PI / 180; }
+
+function registerServiceWorker(){
+  if("serviceWorker" in navigator){
+    navigator.serviceWorker.register("service-worker.js").catch(() => {});
   }
+  let deferredPrompt;
+  window.addEventListener("beforeinstallprompt", event => {
+    event.preventDefault();
+    deferredPrompt = event;
+    $("#installBtn").hidden = false;
+  });
+  $("#installBtn").addEventListener("click", async () => {
+    if(!deferredPrompt) return;
+    deferredPrompt.prompt();
+    await deferredPrompt.userChoice;
+    deferredPrompt = null;
+    $("#installBtn").hidden = true;
+  });
+}
 
-  function regionIdFromCountry(country) {
-    const text = `${country.region} ${country.bloc}`.toLowerCase();
-    if (text.includes('norte')) return 'north-america';
-    if (text.includes('sul')) return 'south-america';
-    if (text.includes('europa') && !text.includes('oriente')) return 'europe';
-    if (text.includes('oriente')) return 'middle-east';
-    if (text.includes('eurásia')) return 'eurasia';
-    if (text.includes('pacífico') || text.includes('ásia')) return 'asia-pacific';
-    return 'europe';
-  }
-
-  function addLog(title, text) {
-    state.log.unshift({ title, text, stamp: `${monthNames[state.month]} ${state.year}` });
-    state.log = state.log.slice(0, 50);
-    renderLog();
-  }
-
-  function advisor(title, text) {
-    if (!els.advisorTitle) return;
-    els.advisorTitle.textContent = title;
-    els.advisorText.textContent = text;
-  }
-
-  function applyEffects(effects = {}) {
-    Object.entries(effects).forEach(([key, value]) => {
-      state.stats[key] = clamp((state.stats[key] ?? 50) + value);
-    });
-  }
-
-  function applyRegionEffects(regionId, effects = {}) {
-    const region = state.regions.find((item) => item.id === regionId) || selectedRegion();
-    if (!region) return;
-    Object.entries(effects).forEach(([key, value]) => {
-      region[key] = clamp((region[key] ?? 50) + value);
-    });
-  }
-
-  function selectedRegion() {
-    return state.regions.find((region) => region.id === state.selectedRegionId) || state.regions[0];
-  }
-
-  function takeAction(key) {
-    const action = actionConfig[key];
-    if (!action || state.actionsThisTurn >= 2) {
-      advisor('Limite operacional', 'Você já executou as duas ações principais deste mês. Avance o mês para receber nova janela de decisão.');
-      return;
-    }
-    if (state.budget + action.budget < 0) {
-      advisor('Orçamento insuficiente', 'O tesouro nacional não comporta esta ação agora. Fortaleça economia ou avance o mês.');
-      return;
-    }
-    state.budget += action.budget;
-    state.actionsThisTurn += 1;
-    applyEffects(action.effects);
-    applyRegionEffects(state.selectedRegionId, action.region);
-    addLog(action.advisor, action.text);
-    advisor(action.advisor, action.text);
-    renderGame(); saveGame();
-  }
-
-  function nextTurn() {
-    const event = eventPool[(state.turn + Math.floor(Math.random() * eventPool.length)) % eventPool.length];
-    applyEffects(event.effects);
-    applyRegionEffects(state.selectedRegionId, event.region);
-    const economyBonus = Math.round((state.stats.economy + state.stats.logistics + state.stats.stability) / 38);
-    const upkeep = Math.round((state.stats.military + state.stats.tech) / 58);
-    state.budget = clamp(state.budget + 10 + economyBonus - upkeep, 0, 160);
-    state.turn += 1;
-    state.month += 1;
-    if (state.month > 11) { state.month = 0; state.year += 1; }
-    state.actionsThisTurn = 0;
-    addLog(event.title, event.text);
-    advisor('Relatório mensal', `${event.title}: ${event.text} Orçamento atualizado: ${state.budget}.`);
-    renderGame(); saveGame();
-  }
-
-  function renderNationCards(filter = '') {
-    const term = filter.trim().toLowerCase();
-    const visible = state.countries.filter((country) => {
-      const haystack = `${country.name} ${country.flag} ${country.bloc} ${country.region} ${country.doctrine} ${country.description} ${(country.traits || []).join(' ')}`.toLowerCase();
-      return !term || haystack.includes(term);
-    });
-    els.nationGrid.innerHTML = visible.map((country) => countryCard(country)).join('');
-    els.nationGrid.querySelectorAll('[data-country]').forEach((button) => {
-      button.addEventListener('click', () => {
-        const country = state.countries.find((item) => item.id === button.dataset.country);
-        if (country) startCampaign(country);
-      });
-    });
-  }
-
-  function countryCard(country) {
-    const p = country.profile || {};
-    const bars = ['economy','military','diplomacy','tech'].map((key) => statBar(key, country.stats[key])).join('');
-    return `
-      <button class="nation-card" data-country="${country.id}" data-region="${country.region}">
-        <div class="nation-top"><span class="flag-pill">${country.flag}</span></div>
-        <div><h2>${country.name}</h2><p>${country.doctrine}</p></div>
-        <div class="nation-meta">
-          <span>Capital<strong>${country.capital}</strong></span>
-          <span>Bloco<strong>${country.bloc}</strong></span>
-          <span>População jogo<strong>${fmt.format(p.populationM || 0)} mi</strong></span>
-          <span>Defesa jogo<strong>US$ ${fmt.format(p.defenseB || 0)} bi</strong></span>
-        </div>
-        <div class="trait-row">${(country.traits || []).slice(0, 4).map((trait) => `<span>${trait}</span>`).join('')}</div>
-        <div class="stat-bars">${bars}</div>
-      </button>`;
-  }
-
-  function statBar(key, value) {
-    return `<div class="stat-row"><span>${statLabels[key] || key}</span><div class="bar"><span style="--value:${clamp(value)}%"></span></div><b>${clamp(value)}</b></div>`;
-  }
-
-  function renderGame() {
-    if (!state.selected) return;
-    els.buildChip.textContent = 'Fase 2 · v0.2.0';
-    els.campaignMeta.textContent = `Turno ${state.turn} · ${monthNames[state.month]} de ${state.year} · Orçamento ${state.budget}`;
-    renderCountryProfile();
-    renderResources();
-    renderWorldMap();
-    renderRegions();
-    renderRegionPanel();
-    renderActions();
-    renderLog();
-  }
-
-  function renderCountryProfile() {
-    const c = state.selected;
-    const p = c.profile || {};
-    els.countryProfile.innerHTML = `
-      <div class="country-seal">${c.flag}</div>
-      <div class="profile-title">
-        <h2>${c.name}</h2>
-        <p>${c.capital} · ${c.bloc} · ${c.region}</p>
-        <p>${c.description}</p>
-        <div class="profile-tags">
-          <span>População: ${fmt.format(p.populationM || 0)} mi</span>
-          <span>PIB jogo: US$ ${fmt.format(p.gdpT || 0)} tri</span>
-          <span>Defesa jogo: US$ ${fmt.format(p.defenseB || 0)} bi</span>
-          <span>Ativos: ${fmt.format(p.activeMilitaryK || 0)} mil</span>
-          <span>Nuclear: ${p.nuclear || 'N/D'}</span>
-        </div>
-      </div>`;
-  }
-
-  function renderResources() {
-    const p = state.selected.profile || {};
-    const cards = [
-      ['Economia', state.stats.economy, `PIB jogo US$ ${fmt.format(p.gdpT || 0)} tri`],
-      ['Militar', state.stats.military, `${fmt.format(p.activeMilitaryK || 0)} mil ativos`],
-      ['Diplomacia', state.stats.diplomacy, state.selected.bloc],
-      ['Inteligência', state.stats.intel, `Cyber ${p.cyber || 0}/100`],
-      ['Logística', state.stats.logistics, `Mar ${p.navalPower || 0} · Ar ${p.airPower || 0}`],
-      ['Estabilidade', state.stats.stability, `Alimentos ${p.food || 0}/100`],
-      ['Tecnologia', state.stats.tech, `Indústria ${p.industry || 0}/100`],
-      ['Orçamento', state.budget, 'Tesouro estratégico']
-    ];
-    els.resourceGrid.innerHTML = cards.map(([label, value, hint]) => `<article class="resource-card"><span>${label}</span><strong>${value}</strong><small>${hint}</small></article>`).join('');
-  }
-
-  function renderWorldMap() {
-    els.countryMapLayer.innerHTML = state.countries.map((country) => {
-      const selected = state.selected?.id === country.id ? ' selected' : '';
-      const x = country.map?.x ?? 50;
-      const y = country.map?.y ?? 50;
-      return `<button class="map-marker${selected}" style="--x:${x}%;--y:${y}%" aria-label="${country.name}" data-map-country="${country.id}" title="${country.name}">${country.flag}</button>`;
-    }).join('');
-    els.regionMapLayer.innerHTML = state.regions.map((region) => {
-      const active = state.selectedRegionId === region.id ? ' active' : '';
-      return `<button class="region-marker${active}" style="--x:${region.x}%;--y:${region.y}%" aria-label="${region.name}" data-region="${region.id}" title="${region.name}"></button>`;
-    }).join('');
-    els.countryMapLayer.querySelectorAll('[data-map-country]').forEach((button) => {
-      button.addEventListener('click', () => {
-        const country = state.countries.find((item) => item.id === button.dataset.mapCountry);
-        if (!country) return;
-        const p = country.profile || {};
-        advisor(`${country.flag} ${country.name}`, `${country.capital} · ${country.bloc}. Economia ${country.stats.economy}, militar ${country.stats.military}, tecnologia ${country.stats.tech}. População de jogo ${fmt.format(p.populationM || 0)} mi.`);
-      });
-    });
-    els.regionMapLayer.querySelectorAll('[data-region]').forEach((button) => button.addEventListener('click', () => selectRegion(button.dataset.region)));
-  }
-
-  function renderRegions() {
-    els.globalGrid.innerHTML = state.regions.map((region) => `
-      <button class="region-card${state.selectedRegionId === region.id ? ' active' : ''}" data-region-card="${region.id}">
-        <h3>${region.name}</h3>
-        <div class="region-mini">
-          <span>Tensão<strong>${region.tension}</strong></span>
-          <span>Influência<strong>${region.influence}</strong></span>
-          <span>Comércio<strong>${region.trade}</strong></span>
-          <span>Estabilidade<strong>${region.stability}</strong></span>
-        </div>
-      </button>`).join('');
-    els.globalGrid.querySelectorAll('[data-region-card]').forEach((button) => button.addEventListener('click', () => selectRegion(button.dataset.regionCard)));
-  }
-
-  function selectRegion(id) {
-    state.selectedRegionId = id;
-    const region = selectedRegion();
-    advisor(`Análise: ${region.name}`, `${region.focus}. Recursos-chave: ${region.resources}. Tensão ${region.tension}, comércio ${region.trade}, influência ${region.influence}.`);
-    renderWorldMap(); renderRegions(); renderRegionPanel(); saveGame();
-  }
-
-  function renderRegionPanel() {
-    const region = selectedRegion();
-    if (!region) return;
-    els.regionPanel.innerHTML = `
-      <p class="eyebrow">Região selecionada</p>
-      <h2>${region.name}</h2>
-      <p>${region.focus}</p>
-      <p class="muted">Recursos: ${region.resources}</p>
-      ${statBar('Tensão', region.tension).replace('Tensão', 'Tensão')}
-      ${statBar('Influência', region.influence).replace('Influência', 'Influência')}
-      ${statBar('Comércio', region.trade).replace('Comércio', 'Comércio')}
-      ${statBar('Estabilidade', region.stability).replace('Estabilidade', 'Estab.')}`;
-  }
-
-  function renderActions() {
-    els.actionStack.innerHTML = Object.entries(actionConfig).map(([key, action]) => `
-      <button class="action-btn" data-action="${key}">${action.label}<small>${action.advisor} · custo ${Math.abs(action.budget)} · ações ${state.actionsThisTurn}/2</small></button>`).join('');
-    els.actionStack.querySelectorAll('[data-action]').forEach((button) => button.addEventListener('click', () => takeAction(button.dataset.action)));
-  }
-
-  function renderLog() {
-    if (!els.eventLog) return;
-    if (!state.log.length) {
-      els.eventLog.innerHTML = '<div class="log-entry"><strong>Sistema</strong><p>Nenhum evento registrado ainda.</p></div>';
-      return;
-    }
-    els.eventLog.innerHTML = state.log.map((entry) => `<div class="log-entry"><strong>${entry.title}</strong><p>${entry.stamp} · ${entry.text}</p></div>`).join('');
-  }
-
-  function resetCampaign() {
-    try { localStorage.removeItem(BUILD.saveKey); } catch (error) { /* noop */ }
-    state.selected = null;
-    renderNationCards(els.nationSearch.value || '');
-    showScreen('screenNation');
-  }
-
-  function wireEvents() {
-    els.newGameBtn.addEventListener('click', () => { renderNationCards(); showScreen('screenNation'); });
-    els.continueBtn.addEventListener('click', () => loadGame());
-    els.backHomeBtn.addEventListener('click', () => showScreen('screenHome'));
-    els.nationSearch.addEventListener('input', (event) => renderNationCards(event.target.value));
-    els.ackBtn.addEventListener('click', () => advisor('Leitura confirmada', 'A equipe registrou o briefing. Escolha uma ação ou avance o mês.'));
-    els.nextTurnBtn.addEventListener('click', nextTurn);
-    els.resetBtn.addEventListener('click', resetCampaign);
-
-    let deferredPrompt = null;
-    window.addEventListener('beforeinstallprompt', (event) => {
-      event.preventDefault();
-      deferredPrompt = event;
-      els.installBtn.hidden = false;
-    });
-    els.installBtn.addEventListener('click', async () => {
-      if (!deferredPrompt) return;
-      deferredPrompt.prompt();
-      deferredPrompt = null;
-      els.installBtn.hidden = true;
-    });
-  }
-
-  async function registerServiceWorker() {
-    if ('serviceWorker' in navigator) {
-      try { await navigator.serviceWorker.register('service-worker.js'); } catch (error) { /* PWA optional */ }
-    }
-  }
-
-  async function boot() {
-    initEls();
-    els.buildChip.textContent = 'Fase 2 · v0.2.0';
-    await loadData();
-    wireEvents();
-    els.continueBtn.disabled = !hasSave();
-    renderNationCards();
-    await registerServiceWorker();
-  }
-
-  document.addEventListener('DOMContentLoaded', boot);
-})();
+boot().catch(err => {
+  console.error(err);
+  document.body.innerHTML = `<main style="padding:24px;color:white;background:#050914;min-height:100vh"><h1>Falha ao iniciar Modern War Dominion</h1><pre>${err.message}</pre></main>`;
+});
