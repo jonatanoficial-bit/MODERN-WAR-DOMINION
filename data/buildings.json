@@ -1,9 +1,129 @@
 [
-  {"id":"army_base","name":"Base terrestre","icon":"🪖","role":"Recruta batalhões, aumenta defesa regional e capacidade de ataque terrestre.","cost":{"finance":65,"industry":45,"energy":10},"buildMonths":2,"effects":{"soldiers":12000,"readiness":4,"landPower":9,"defense":7}},
-  {"id":"naval_port","name":"Porto militar","icon":"⚓","role":"Libera compra de navios, escoltas, desembarque anfíbio e bloqueio naval.","cost":{"finance":80,"industry":70,"energy":18},"buildMonths":3,"effects":{"navalPower":12,"logistics":8,"defense":5}},
-  {"id":"air_base","name":"Base aérea","icon":"✈️","role":"Libera esquadrões aéreos, superioridade aérea, interceptação e ataque cirúrgico.","cost":{"finance":90,"industry":60,"energy":22},"buildMonths":3,"effects":{"airPower":13,"readiness":5,"defense":6}},
-  {"id":"radar_station","name":"Radar e alerta aéreo","icon":"📡","role":"Aumenta detecção de ataque, reduz dano inimigo e melhora inteligência operacional.","cost":{"finance":38,"industry":25,"energy":12},"buildMonths":1,"effects":{"intel":8,"defense":5,"readiness":2}},
-  {"id":"missile_site","name":"Bateria de mísseis","icon":"🚀","role":"Dissuasão, defesa antimíssil e capacidade de ataque de longo alcance.","cost":{"finance":110,"industry":80,"energy":26},"buildMonths":4,"effects":{"missilePower":15,"defense":8,"escalation":4}},
-  {"id":"logistics_hub","name":"Centro logístico","icon":"🚚","role":"Sustenta campanhas longas, reduz custo de manutenção e aumenta reposição.","cost":{"finance":45,"industry":38,"energy":8},"buildMonths":2,"effects":{"logistics":12,"readiness":3,"stability":2}},
-  {"id":"cyber_command","name":"Comando cyber","icon":"🧬","role":"Protege infraestrutura, aumenta espionagem e desbloqueia sabotagem digital futura.","cost":{"finance":70,"industry":30,"energy":20},"buildMonths":3,"effects":{"cyber":14,"intel":10,"defense":4}}
+  {
+    "id": "army_base",
+    "name": "Base terrestre",
+    "icon": "🪖",
+    "role": "Recruta batalhões, aumenta defesa regional e capacidade de ataque terrestre.",
+    "cost": {
+      "finance": 65,
+      "industry": 45,
+      "energy": 10
+    },
+    "buildMonths": 2,
+    "effects": {
+      "soldiers": 12000,
+      "readiness": 4,
+      "landPower": 9,
+      "defense": 7
+    },
+    "image": "assets/buildings/army_base.png"
+  },
+  {
+    "id": "naval_port",
+    "name": "Porto militar",
+    "icon": "⚓",
+    "role": "Libera compra de navios, escoltas, desembarque anfíbio e bloqueio naval.",
+    "cost": {
+      "finance": 80,
+      "industry": 70,
+      "energy": 18
+    },
+    "buildMonths": 3,
+    "effects": {
+      "navalPower": 12,
+      "logistics": 8,
+      "defense": 5
+    },
+    "image": "assets/buildings/naval_port.png"
+  },
+  {
+    "id": "air_base",
+    "name": "Base aérea",
+    "icon": "✈️",
+    "role": "Libera esquadrões aéreos, superioridade aérea, interceptação e ataque cirúrgico.",
+    "cost": {
+      "finance": 90,
+      "industry": 60,
+      "energy": 22
+    },
+    "buildMonths": 3,
+    "effects": {
+      "airPower": 13,
+      "readiness": 5,
+      "defense": 6
+    },
+    "image": "assets/buildings/air_base.png"
+  },
+  {
+    "id": "radar_station",
+    "name": "Radar e alerta aéreo",
+    "icon": "📡",
+    "role": "Aumenta detecção de ataque, reduz dano inimigo e melhora inteligência operacional.",
+    "cost": {
+      "finance": 38,
+      "industry": 25,
+      "energy": 12
+    },
+    "buildMonths": 1,
+    "effects": {
+      "intel": 8,
+      "defense": 5,
+      "readiness": 2
+    },
+    "image": "assets/buildings/radar_station.png"
+  },
+  {
+    "id": "missile_site",
+    "name": "Bateria de mísseis",
+    "icon": "🚀",
+    "role": "Dissuasão, defesa antimíssil e capacidade de ataque de longo alcance.",
+    "cost": {
+      "finance": 110,
+      "industry": 80,
+      "energy": 26
+    },
+    "buildMonths": 4,
+    "effects": {
+      "missilePower": 15,
+      "defense": 8,
+      "escalation": 4
+    },
+    "image": "assets/buildings/missile_site.png"
+  },
+  {
+    "id": "logistics_hub",
+    "name": "Centro logístico",
+    "icon": "🚚",
+    "role": "Sustenta campanhas longas, reduz custo de manutenção e aumenta reposição.",
+    "cost": {
+      "finance": 45,
+      "industry": 38,
+      "energy": 8
+    },
+    "buildMonths": 2,
+    "effects": {
+      "logistics": 12,
+      "readiness": 3,
+      "stability": 2
+    },
+    "image": "assets/buildings/logistics_hub.png"
+  },
+  {
+    "id": "cyber_command",
+    "name": "Comando cyber",
+    "icon": "🧬",
+    "role": "Protege infraestrutura, aumenta espionagem e desbloqueia sabotagem digital futura.",
+    "cost": {
+      "finance": 70,
+      "industry": 30,
+      "energy": 20
+    },
+    "buildMonths": 3,
+    "effects": {
+      "cyber": 14,
+      "intel": 10,
+      "defense": 4
+    },
+    "image": "assets/buildings/cyber_command.png"
+  }
 ]

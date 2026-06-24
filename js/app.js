@@ -1,6 +1,6 @@
-const VERSION = "0.4.0";
-const PHASE = "Fase 4 — mapa real e poder militar";
-const SAVE_KEY = "MWD_SAVE_V4";
+const VERSION = "0.5.0";
+const PHASE = "Fase 5 — pacote visual militar base";
+const SAVE_KEY = "MWD_SAVE_V5";
 
 const $ = (sel, root = document) => root.querySelector(sel);
 const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
@@ -246,7 +246,7 @@ function renderBuildList(){
     const card = document.createElement("article");
     card.className = "build-card";
     card.innerHTML = `
-      <div>
+      ${b.image ? `<img class="card-thumb" src="${b.image}" alt="${b.name}">` : ''}<div>
         <h3>${b.icon} ${b.name}</h3>
         <p>${b.role}</p>
         <div class="cost-line">Custo: $${b.cost.finance} · Ind. ${b.cost.industry} · Energia ${b.cost.energy} · ${b.buildMonths} mês(es)</div>
@@ -274,7 +274,7 @@ function renderUnitList(){
     const card = document.createElement("article");
     card.className = "unit-card";
     card.innerHTML = `
-      <div>
+      ${u.image ? `<img class="card-thumb" src="${u.image}" alt="${u.name}">` : ''}<div>
         <h3>${u.icon} ${u.name}</h3>
         <p>${u.role}</p>
         <div class="cost-line">Classe: ${u.class} · Custo $${u.cost} · Manutenção ${u.upkeep} · Requer ${getBuilding(u.requires)?.name || u.requires}</div>

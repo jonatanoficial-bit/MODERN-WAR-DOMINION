@@ -1,14 +1,11 @@
 {
   "project": "Modern War Dominion",
-  "phase": 4,
-  "version": "0.4.0",
-  "codename": "Real Map Military Foundation",
-  "date_utc": "2026-06-24",
-  "deliverable": "complete_zip",
+  "version": "0.5.0",
+  "phase": "Fase 5 — pacote visual militar base",
+  "generated_at": "2026-06-24",
   "notes": [
-    "Correção: mapa global real via Leaflet/OpenStreetMap, não SVG autoral como mapa principal.",
-    "Mobile landscape/fullscreen como direção oficial.",
-    "Foco militar: construção de bases terrestres, portos, bases aéreas, radar, mísseis, logística e cyber.",
-    "Fundação para catálogo futuro navio por navio, avião por avião e embarcação por embarcação."
+    "Assets cortados e organizados em pastas",
+    "Fundos integrados ao jogo",
+    "Cards de construções e unidades com miniaturas"
   ]
 }

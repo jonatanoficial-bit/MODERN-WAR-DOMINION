@@ -1,0 +1,53 @@
+{
+  "backgrounds": {
+    "command_center_blue": "assets/backgrounds/command_center_blue.png",
+    "command_center_red_alert": "assets/backgrounds/command_center_red_alert.png",
+    "land_base": "assets/backgrounds/land_base.png",
+    "naval_port": "assets/backgrounds/naval_port.png",
+    "air_base": "assets/backgrounds/air_base.png",
+    "global_ops_room": "assets/backgrounds/global_ops_room.png"
+  },
+  "buildings": {
+    "hq_command_center": "assets/buildings/hq_command_center.png",
+    "army_base": "assets/buildings/army_base.png",
+    "naval_port": "assets/buildings/naval_port.png",
+    "air_base": "assets/buildings/air_base.png",
+    "radar_station": "assets/buildings/radar_station.png",
+    "logistics_hub": "assets/buildings/logistics_hub.png",
+    "military_factory": "assets/buildings/military_factory.png",
+    "cyber_command": "assets/buildings/cyber_command.png",
+    "missile_site": "assets/buildings/missile_site.png",
+    "air_defense_turret": "assets/buildings/air_defense_turret.png"
+  },
+  "units": {
+    "ground": {
+      "soldier_squad_desert": "assets/units/ground/soldier_squad_desert.png",
+      "soldier_squad_special_ops": "assets/units/ground/soldier_squad_special_ops.png",
+      "main_battle_tank": "assets/units/ground/main_battle_tank.png",
+      "armored_ifv": "assets/units/ground/armored_ifv.png",
+      "self_propelled_artillery": "assets/units/ground/self_propelled_artillery.png",
+      "sam_launcher": "assets/units/ground/sam_launcher.png",
+      "strategic_missile_launcher": "assets/units/ground/strategic_missile_launcher.png"
+    },
+    "air": {
+      "fighter_stealth": "assets/units/air/fighter_stealth.png",
+      "stealth_bomber": "assets/units/air/stealth_bomber.png",
+      "attack_helicopter": "assets/units/air/attack_helicopter.png",
+      "drone_uav": "assets/units/air/drone_uav.png",
+      "transport_aircraft": "assets/units/air/transport_aircraft.png"
+    },
+    "naval": {
+      "patrol_boat": "assets/units/naval/patrol_boat.png",
+      "frigate": "assets/units/naval/frigate.png",
+      "destroyer": "assets/units/naval/destroyer.png",
+      "attack_submarine": "assets/units/naval/attack_submarine.png",
+      "aircraft_carrier": "assets/units/naval/aircraft_carrier.png"
+    }
+  },
+  "source_sheets": {
+    "buildings_sheet": "assets/source_sheets/buildings_sheet.png",
+    "ground_units_sheet": "assets/source_sheets/ground_units_sheet.png",
+    "air_units_sheet": "assets/source_sheets/air_units_sheet.png",
+    "naval_units_sheet": "assets/source_sheets/naval_units_sheet.png"
+  }
+}

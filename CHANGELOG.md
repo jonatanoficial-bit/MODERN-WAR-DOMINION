@@ -23,3 +23,9 @@
 - PWA.
 - Seleção de nação.
 - Diplomacia de base para evolução posterior.
+
+
+## Fase 5 — Pacote Visual Militar Base
+- Assets militares recortados e nomeados em `assets/`
+- Fundos integrados ao jogo
+- Miniaturas visuais em construções e unidades

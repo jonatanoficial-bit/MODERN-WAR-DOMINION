@@ -36,3 +36,9 @@ Esta fase corrige o rumo visual e de gameplay:
 ## Observação sobre dados
 
 Os números de forças, PIB, defesa, tropas e unidades são dados de jogo para balanceamento, não base oficial para simulação geopolítica real.
+
+
+## Fase 5 — Pacote Visual Militar Base
+- Assets militares recortados e nomeados em `assets/`
+- Fundos integrados ao jogo
+- Miniaturas visuais em construções e unidades
