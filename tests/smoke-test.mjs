@@ -11,7 +11,11 @@ const required = [
   "manifest.json",
   "service-worker.js",
   "assets/img/icon.svg",
-  "assets/img/fallback-world.svg"
+  "assets/img/fallback-world.svg",
+  "assets/asset_manifest.json",
+  "assets/backgrounds/command_center_blue.png",
+  "assets/buildings/army_base.png",
+  "assets/units/naval/frigate.png"
 ];
 
 for (const file of required) {
@@ -34,8 +38,9 @@ if (buildings.length < 6) throw new Error("Poucas construções militares.");
 if (units.length < 6) throw new Error("Poucas unidades iniciais.");
 if (!buildings.some(b => b.id === "naval_port")) throw new Error("Porto militar ausente.");
 if (!buildings.some(b => b.id === "air_base")) throw new Error("Base aérea ausente.");
+if (!js.includes("makeRegions") || !js.includes("progressProduction")) throw new Error("Sistema regional/produção F6 ausente.");
 
 const check = spawnSync("node", ["--check", "js/app.js"], { encoding: "utf8" });
 if (check.status !== 0) throw new Error(check.stderr || check.stdout);
 
-console.log("Smoke test OK — Fase 4 mapa real e núcleo militar funcionando estaticamente.");
+console.log("Smoke test OK — Fase 6 regiões, slots e produção funcionando estaticamente.");

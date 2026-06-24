@@ -1,15 +1,36 @@
 [
   {
+    "id": "hq_command",
+    "name": "Quartel General",
+    "icon": "🏛️",
+    "role": "Centro de comando nacional; amplia slots, coordenação e capacidade de upgrade regional.",
+    "cost": {
+      "finance": 120,
+      "industry": 75,
+      "energy": 18
+    },
+    "buildMonths": 4,
+    "maxLevel": 5,
+    "effects": {
+      "defense": 8,
+      "logistics": 10,
+      "intel": 5,
+      "readiness": 5
+    },
+    "image": "assets/buildings/hq_command_center.png"
+  },
+  {
     "id": "army_base",
     "name": "Base terrestre",
     "icon": "🪖",
-    "role": "Recruta batalhões, aumenta defesa regional e capacidade de ataque terrestre.",
+    "role": "Recruta tropas, blindados e artilharia; aumenta defesa regional e poder terrestre.",
     "cost": {
       "finance": 65,
       "industry": 45,
       "energy": 10
     },
     "buildMonths": 2,
+    "maxLevel": 5,
     "effects": {
       "soldiers": 12000,
       "readiness": 4,
@@ -22,13 +43,14 @@
     "id": "naval_port",
     "name": "Porto militar",
     "icon": "⚓",
-    "role": "Libera compra de navios, escoltas, desembarque anfíbio e bloqueio naval.",
+    "role": "Libera frotas navais, escoltas, submarinos, bloqueio naval e projeção oceânica.",
     "cost": {
       "finance": 80,
       "industry": 70,
       "energy": 18
     },
     "buildMonths": 3,
+    "maxLevel": 5,
     "effects": {
       "navalPower": 12,
       "logistics": 8,
@@ -40,13 +62,14 @@
     "id": "air_base",
     "name": "Base aérea",
     "icon": "✈️",
-    "role": "Libera esquadrões aéreos, superioridade aérea, interceptação e ataque cirúrgico.",
+    "role": "Libera caças, drones, helicópteros e bombardeiros; melhora interceptação aérea.",
     "cost": {
       "finance": 90,
       "industry": 60,
       "energy": 22
     },
     "buildMonths": 3,
+    "maxLevel": 5,
     "effects": {
       "airPower": 13,
       "readiness": 5,
@@ -58,13 +81,14 @@
     "id": "radar_station",
     "name": "Radar e alerta aéreo",
     "icon": "📡",
-    "role": "Aumenta detecção de ataque, reduz dano inimigo e melhora inteligência operacional.",
+    "role": "Aumenta detecção de ataque, reduz surpresa e melhora inteligência operacional.",
     "cost": {
       "finance": 38,
       "industry": 25,
       "energy": 12
     },
     "buildMonths": 1,
+    "maxLevel": 5,
     "effects": {
       "intel": 8,
       "defense": 5,
@@ -73,34 +97,17 @@
     "image": "assets/buildings/radar_station.png"
   },
   {
-    "id": "missile_site",
-    "name": "Bateria de mísseis",
-    "icon": "🚀",
-    "role": "Dissuasão, defesa antimíssil e capacidade de ataque de longo alcance.",
-    "cost": {
-      "finance": 110,
-      "industry": 80,
-      "energy": 26
-    },
-    "buildMonths": 4,
-    "effects": {
-      "missilePower": 15,
-      "defense": 8,
-      "escalation": 4
-    },
-    "image": "assets/buildings/missile_site.png"
-  },
-  {
     "id": "logistics_hub",
     "name": "Centro logístico",
     "icon": "🚚",
-    "role": "Sustenta campanhas longas, reduz custo de manutenção e aumenta reposição.",
+    "role": "Sustenta campanhas longas, acelera filas de produção e reduz desgaste mensal.",
     "cost": {
       "finance": 45,
       "industry": 38,
       "energy": 8
     },
     "buildMonths": 2,
+    "maxLevel": 5,
     "effects": {
       "logistics": 12,
       "readiness": 3,
@@ -109,21 +116,79 @@
     "image": "assets/buildings/logistics_hub.png"
   },
   {
+    "id": "military_factory",
+    "name": "Fábrica militar",
+    "icon": "🏭",
+    "role": "Aumenta produção, reduz gargalos industriais e acelera unidades terrestres pesadas.",
+    "cost": {
+      "finance": 95,
+      "industry": 90,
+      "energy": 24
+    },
+    "buildMonths": 4,
+    "maxLevel": 5,
+    "effects": {
+      "industry": 28,
+      "landPower": 6,
+      "logistics": 5
+    },
+    "image": "assets/buildings/military_factory.png"
+  },
+  {
     "id": "cyber_command",
-    "name": "Comando cyber",
+    "name": "Centro de inteligência",
     "icon": "🧬",
-    "role": "Protege infraestrutura, aumenta espionagem e desbloqueia sabotagem digital futura.",
+    "role": "Protege infraestrutura, amplia espionagem, sabotagem futura e alerta preventivo.",
     "cost": {
       "finance": 70,
       "industry": 30,
       "energy": 20
     },
     "buildMonths": 3,
+    "maxLevel": 5,
     "effects": {
       "cyber": 14,
       "intel": 10,
       "defense": 4
     },
     "image": "assets/buildings/cyber_command.png"
+  },
+  {
+    "id": "missile_site",
+    "name": "Bateria de mísseis",
+    "icon": "🚀",
+    "role": "Dissuasão estratégica, ataque de longo alcance e defesa contra ameaças pesadas.",
+    "cost": {
+      "finance": 110,
+      "industry": 80,
+      "energy": 26
+    },
+    "buildMonths": 4,
+    "maxLevel": 5,
+    "effects": {
+      "missilePower": 15,
+      "defense": 8,
+      "escalation": 4
+    },
+    "image": "assets/buildings/missile_site.png"
+  },
+  {
+    "id": "air_defense",
+    "name": "Defesa antiaérea",
+    "icon": "🛡️",
+    "role": "Protege bases contra ataques aéreos, drones e mísseis de cruzeiro.",
+    "cost": {
+      "finance": 75,
+      "industry": 55,
+      "energy": 18
+    },
+    "buildMonths": 3,
+    "maxLevel": 5,
+    "effects": {
+      "defense": 12,
+      "readiness": 3,
+      "airPower": 3
+    },
+    "image": "assets/buildings/air_defense_turret.png"
   }
 ]

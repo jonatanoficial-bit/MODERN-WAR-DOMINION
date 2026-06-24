@@ -19,7 +19,7 @@ function walk(dir, prefix = "") {
 const files = walk(".");
 const manifest = {
   project: "Modern War Dominion",
-  version: "0.4.0",
+  version: "0.6.0",
   generated_utc: new Date().toISOString(),
   files: files.map(file => ({
     file,

@@ -1,13 +1,18 @@
 {
-  "name": "Modern War Dominion",
-  "short_name": "MWD",
-  "description": "Dominação Global: Guerra Moderna — mapa real, bases militares e simulação mobile em tela deitada.",
+  "name": "Modern War Dominion Fase 6",
+  "short_name": "MWD F6",
+  "description": "Modern War Dominion — Fase 6 com regiões, slots e produção militar.",
   "start_url": "./index.html",
   "display": "fullscreen",
   "orientation": "landscape",
   "background_color": "#050914",
   "theme_color": "#050914",
   "icons": [
-    {"src":"assets/img/icon.svg","sizes":"512x512","type":"image/svg+xml","purpose":"any maskable"}
+    {
+      "src": "assets/img/icon.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
   ]
 }

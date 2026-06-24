@@ -1,19 +1,87 @@
 {
   "project": "Modern War Dominion",
-  "version": "0.4.0",
-  "generated_utc": "2026-06-24T15:47:16.461Z",
+  "version": "0.6.0",
+  "generated_utc": "2026-06-24T18:24:44.101Z",
   "files": [
     {
       "file": "BUILD_INFO.json",
-      "sha256": "146effa583a22c2376341aa5c12f3dac886611ac8e6a00f48abb39e48f7ac3a2"
+      "sha256": "82a53bcb83f6061e65195913a083e349a0601c70496bbee16dc2d02efaf10b4e"
     },
     {
       "file": "CHANGELOG.md",
-      "sha256": "17056a07e726478e13f98a48d44eff929c60f1991637d6e88103ce8ef49d16f4"
+      "sha256": "4a985e82b3b6a8f2c332b93b0b75198066da952ec44ec10cd88f0e8eb8100652"
     },
     {
       "file": "README.md",
-      "sha256": "a4248911225db9476a98d407e4845c268834fa622eda2db4045f6e2fb57fd007"
+      "sha256": "f7036e7ab407b5f9d299ae9df035f855b766053ba25aa73668ce5b47253a2018"
+    },
+    {
+      "file": "assets/asset_manifest.json",
+      "sha256": "7df75efa82337d86cf6fd4dff53de020c0eae814d2973989c9060c38ade2c93f"
+    },
+    {
+      "file": "assets/backgrounds/air_base.png",
+      "sha256": "6d9937c90467bf3cb5bf849f9435c20422c2ffb63fcbcfad050087771c4bf74a"
+    },
+    {
+      "file": "assets/backgrounds/command_center_blue.png",
+      "sha256": "3796284e7c1857d2bac002012c4bf3cbf8331ed76e081563c1346ad6cf35be08"
+    },
+    {
+      "file": "assets/backgrounds/command_center_red_alert.png",
+      "sha256": "c63716c99ef0a5d2015f8d7a764a0b693d10343e5873082bb6b996fc4e32b371"
+    },
+    {
+      "file": "assets/backgrounds/global_ops_room.png",
+      "sha256": "3796284e7c1857d2bac002012c4bf3cbf8331ed76e081563c1346ad6cf35be08"
+    },
+    {
+      "file": "assets/backgrounds/land_base.png",
+      "sha256": "b47fcd43a85e166540e9730d87d3d922b440e42f7c7b97a602606e10b153aceb"
+    },
+    {
+      "file": "assets/backgrounds/naval_port.png",
+      "sha256": "17a9a9b4e28e9cf9b034c4e2bbbe4949fa9802f46bdc7b7e5ae4a9eab67e033c"
+    },
+    {
+      "file": "assets/buildings/air_base.png",
+      "sha256": "06475db4d82be8f2489f34e057057b168ea8d1b1eadc9cd1b119ab19a5faa78f"
+    },
+    {
+      "file": "assets/buildings/air_defense_turret.png",
+      "sha256": "293c9f5ffc8a032dc00917deb54cdc6a91bd3ed5e596d85ac4db3d6250756196"
+    },
+    {
+      "file": "assets/buildings/army_base.png",
+      "sha256": "c5ef2b3a747fbd1e2009fac277d591f49ce14f77fb747e3de20d0827c1572af6"
+    },
+    {
+      "file": "assets/buildings/cyber_command.png",
+      "sha256": "882c906f94d492a37f94acd84c62ec634bfa86c78a1b4097b318b4d36fedbfe0"
+    },
+    {
+      "file": "assets/buildings/hq_command_center.png",
+      "sha256": "71f82b79859300bd84b7991b2a7e01113616abd55fe8f08d60c120c501ba5980"
+    },
+    {
+      "file": "assets/buildings/logistics_hub.png",
+      "sha256": "3202db2f681a9f41f66e090118275db783b4074e72368c3c5d3c774bed37046b"
+    },
+    {
+      "file": "assets/buildings/military_factory.png",
+      "sha256": "5e9cf51b98989f95eb2c09b4ed80070b8b04a571ab52055830a2e8bad4bcd7bd"
+    },
+    {
+      "file": "assets/buildings/missile_site.png",
+      "sha256": "495e623c842db8a93cf46ed85dc963b30f8179799587adf65090f836f9022ade"
+    },
+    {
+      "file": "assets/buildings/naval_port.png",
+      "sha256": "5faf7ffd2b36e2b904ea05ee4d238d133b2011cb7fce773766299627e55ce3bf"
+    },
+    {
+      "file": "assets/buildings/radar_station.png",
+      "sha256": "924918136844f961f3ab15de579024b647d08ca02cc392c08f6d5042798e99b5"
     },
     {
       "file": "assets/img/fallback-world.svg",
@@ -24,12 +92,96 @@
       "sha256": "8639402ed092db19c3dfc79afe7193b699071cbc0aedb2f983c22cd724780896"
     },
     {
+      "file": "assets/source_sheets/air_units_sheet.png",
+      "sha256": "d0347fa1388b5f8dd9bbc67c011e88d16a59960bfa29b1c1ac7a3f4deaa65d24"
+    },
+    {
+      "file": "assets/source_sheets/buildings_sheet.png",
+      "sha256": "605b1383c532553d2871eed20706976613c25ebe484b5d7239d53a6f90b98a41"
+    },
+    {
+      "file": "assets/source_sheets/ground_units_sheet.png",
+      "sha256": "7932d5f93e173a003810a6c1566b540279f98d41f0dbe71e9426606ca7922eb3"
+    },
+    {
+      "file": "assets/source_sheets/naval_units_sheet.png",
+      "sha256": "884e77bcc9851c5685d850b1d5e6ec5a2a62ec0d9b04951f150c255695980b53"
+    },
+    {
+      "file": "assets/units/air/attack_helicopter.png",
+      "sha256": "edca2d6b50bc871ab0e0f285fb99d919491f59a482dd02122feb550578d43a20"
+    },
+    {
+      "file": "assets/units/air/drone_uav.png",
+      "sha256": "0aaa593c14fb2cef98c7e0c2cd8df2fc189f93ccac30ec6f4b0157a6b4992299"
+    },
+    {
+      "file": "assets/units/air/fighter_stealth.png",
+      "sha256": "c85064db3a03d343684ef02107f90fc8d08cb8d3e047e7e4dcb6178d870d673c"
+    },
+    {
+      "file": "assets/units/air/stealth_bomber.png",
+      "sha256": "e146b913f8a14db57254467b2c96ef625f77292b89a587c48b368480d046fd63"
+    },
+    {
+      "file": "assets/units/air/transport_aircraft.png",
+      "sha256": "2201f78f0c02abfb8a189ae57aa2b3a58e2c481e220d962c70a1d2c848aeaa94"
+    },
+    {
+      "file": "assets/units/ground/armored_ifv.png",
+      "sha256": "44a530ae57f4b96b3a65c3be2d87ee0f3bd34ab804d938a8cb8b27541ef4707b"
+    },
+    {
+      "file": "assets/units/ground/main_battle_tank.png",
+      "sha256": "75f1db9a9977b20cbd37d42c4c56389cacc4a95b89d350492a26fbabaa7dc8c1"
+    },
+    {
+      "file": "assets/units/ground/sam_launcher.png",
+      "sha256": "2b53aee2cc4c9cd8e4dd3877cf4179ebf4ab9d722b7ffe38ccc59af66e51b2a5"
+    },
+    {
+      "file": "assets/units/ground/self_propelled_artillery.png",
+      "sha256": "661421f822f0ba9264f4289646ccf269f3fc113d4b894a9ce50c896a17c7c2d9"
+    },
+    {
+      "file": "assets/units/ground/soldier_squad_desert.png",
+      "sha256": "e3057ce95393cb759f341c43cee1ce92dfd7243312ac0eee2c86e0b5ab028c11"
+    },
+    {
+      "file": "assets/units/ground/soldier_squad_special_ops.png",
+      "sha256": "b8a0b518fa5d02c29bb115ae424e74d4f7ad080fe7a57a14b554f4ebc71007dc"
+    },
+    {
+      "file": "assets/units/ground/strategic_missile_launcher.png",
+      "sha256": "a6bc1ebfe7e2d133ff45277dc77bb71851ddefdc9436ba4730baddd5b6628694"
+    },
+    {
+      "file": "assets/units/naval/aircraft_carrier.png",
+      "sha256": "dadec67d5a86403dd3e959fc93630baab9ea5170e97f44be2004465384130044"
+    },
+    {
+      "file": "assets/units/naval/attack_submarine.png",
+      "sha256": "21b7867b9b8d3a24c1581f9f34076c186ea6d62a73bd3db68e8f22f3cca8206a"
+    },
+    {
+      "file": "assets/units/naval/destroyer.png",
+      "sha256": "c0cba5a1b1d3a45a07f376815437bce189d0fd7a93f3819fea463956ee1ce18a"
+    },
+    {
+      "file": "assets/units/naval/frigate.png",
+      "sha256": "471f270217ce634a4529eaf7518e9426b530f2cfb87bc7ffd587e68dcf8c5d4d"
+    },
+    {
+      "file": "assets/units/naval/patrol_boat.png",
+      "sha256": "5941da45a151bb362f7b7d2cd30c573ce1ab1524376bbec83f9f4d3ef54e5d6e"
+    },
+    {
       "file": "css/styles.css",
-      "sha256": "9183fee30b098667a479748e95e49a849d9c16f574c7db5f7e9e54eb7327647d"
+      "sha256": "eb49deac5a7765e6901720c9c09c15aa37595ee400dbcd51e653c13a88650c12"
     },
     {
       "file": "data/buildings.json",
-      "sha256": "eac13f5ac17dc2b6b6f69af4e534b24083450200c2ecdeaa2daaf160333b9a96"
+      "sha256": "3fa20fe5b1afc5350371ebf1c29f6a280ab4d62cf4f4d32cda42bb41d3555205"
     },
     {
       "file": "data/countries.json",
@@ -37,59 +189,59 @@
     },
     {
       "file": "data/units_catalog.json",
-      "sha256": "ad8efc9f0c5722da3da830b783037cfb707a4211379421ae9f21c25132a64789"
+      "sha256": "c505e3ca5fe9318ac74b691df89a6b531f81b55aa8353b64f1aaac4b95e079a8"
     },
     {
       "file": "docs/ASSET_LICENSES.md",
       "sha256": "1b841019783d8ca11fcdbdd86eae9f2bc46ff6d5d7eed28a4fd28e1b4d0ed22a"
     },
     {
-      "file": "docs/KNOWN_ISSUES_F4.md",
-      "sha256": "873bef14230b19a0e708bbcd0c42acdf94ba14ccdfc65eb1c6ce7d4040c5d513"
+      "file": "docs/KNOWN_ISSUES_F6.md",
+      "sha256": "d3ba98ca924334c8b06e9eb9633b93a927296c51c3ab4edde8957b21c7396a7d"
     },
     {
-      "file": "docs/QA_CHECKLIST_F4.md",
-      "sha256": "38920da592c43977171d898e0dc71619b6da3f941d84f2474f8d28161248aa5e"
+      "file": "docs/QA_CHECKLIST_F6.md",
+      "sha256": "3c839119d0d745dfb577d7e7d10d08f169a9c4b4bf53b1bd6645eee0e2c0e6f2"
     },
     {
-      "file": "docs/RELEASE_NOTES_F4.md",
-      "sha256": "2cc8c70bc9055bb81f634901078b32119493f49f6ea330df26695f582adf2f6d"
+      "file": "docs/RELEASE_NOTES_F6.md",
+      "sha256": "b0d0c741f774062c31540a11952addcc3e0a3322ff0d0154b449052f1acc524e"
     },
     {
-      "file": "docs/ROLLBACK_F4.md",
-      "sha256": "613ac22bc364692c86d8a777f6b97c15d6519691d5587767741dd725a8235847"
+      "file": "docs/ROLLBACK_F6.md",
+      "sha256": "640525ee918a1530d8011b059329fd0462e1d1c5742086f77092e4d2c3d61115"
     },
     {
       "file": "index.html",
-      "sha256": "bfd5cdd27c800b0db5005dfe9606dfda59b06595ba38d4dd9c567e41a845eb21"
+      "sha256": "d774006518780ab7793949e074802079fd6ffa5313b7f152810ad908ba90282e"
     },
     {
       "file": "js/app.js",
-      "sha256": "788f13b36bcd408902c6c7a3184429d88bf1b4c25b6915cb7999d9590b5e46eb"
+      "sha256": "0a1328ff85e84c6e5489c148be4e5faa7a6869471b43be033bd5ba5c176858dc"
     },
     {
       "file": "manifest.json",
-      "sha256": "3d96800de649b0d8eb2657c2b5976b56e8ea4e3aa910e91b81492ab4f967b9a3"
+      "sha256": "1421dcac4ff33fb948193132e2c88843f02b8ca292043566a8df1bc4653553de"
     },
     {
       "file": "package.json",
-      "sha256": "0de268d2c2e78620de4eb760d958a78209cb66dffb54a4164cab3ddaca2389c8"
+      "sha256": "e09e385a69973735af2a8e91135639d10269a43b0430dd71d974e4d56bfb82dc"
     },
     {
       "file": "service-worker.js",
-      "sha256": "6fc574223529c81b78b32b11fb448b94249504e27bc70776d2572b56e4e38467"
+      "sha256": "01c3a7774655c7079108486729695f7457af85372c8ddb30d4d7bd99dd104199"
     },
     {
       "file": "tests/smoke-test.mjs",
-      "sha256": "b459bcbf8d0bedbcd16f137df32f6823314e3c85eba4bb3b18c0f2bd06d28f97"
+      "sha256": "232be6b6cca8e67e83401ccafa82d15716d5050840a46c8ac0cafc18136c47d7"
     },
     {
       "file": "tools/audit.mjs",
-      "sha256": "b74753e0bcde6975375324014b99d4742445cf8954918f278cc94016943dde36"
+      "sha256": "2e87adafe81583daf95fa7c715040d01e6c7d01765eac0a8e37063d6c80883ad"
     },
     {
       "file": "tools/integrity.mjs",
-      "sha256": "1bc010e79d9d29d1713db8ca985e8ec7b3b3ada479186121ff96bc689c9dde7f"
+      "sha256": "e06b02c95c5c1497580115655199d67e123744ae227af946216022415e7233d7"
     }
   ]
 }

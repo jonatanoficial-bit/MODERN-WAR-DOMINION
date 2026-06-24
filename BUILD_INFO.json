@@ -1,11 +1,20 @@
 {
   "project": "Modern War Dominion",
-  "version": "0.5.0",
-  "phase": "Fase 5 — pacote visual militar base",
+  "version": "0.7.0",
+  "phase": "Fase 7 — guerra, danos e reparo",
   "generated_at": "2026-06-24",
+  "base": "Fase 5 assets integrados",
+  "features": [
+    "regiões estratégicas",
+    "slots de construção",
+    "fila de produção",
+    "upgrades de base",
+    "mapa real preservado"
+  ],
   "notes": [
-    "Assets cortados e organizados em pastas",
-    "Fundos integrados ao jogo",
-    "Cards de construções e unidades com miniaturas"
+    "Fundos com camada azul reduzida para aparecer melhor no PC",
+    "Bases agora sofrem dano, podem ser reparadas e até destruídas",
+    "Interceptação regional por radar e base aérea",
+    "Contra-ataques danificam regiões ativas"
   ]
 }
