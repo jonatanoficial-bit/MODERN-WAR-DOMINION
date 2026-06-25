@@ -1,6 +1,6 @@
-const VERSION = "1.6.0";
-const PHASE = "Fase 16 — tutorial guiado e missões iniciais";
-const SAVE_KEY = "MWD_SAVE_F16";
+const VERSION = "1.7.0";
+const PHASE = "Fase 17 — tela de batalha e relatórios visuais";
+const SAVE_KEY = "MWD_SAVE_F17";
 
 const $ = (sel, root = document) => root.querySelector(sel);
 const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
@@ -217,6 +217,114 @@ function ensureTutorial() {
   return state.game.tutorial;
 }
 
+function ensureBattleReports() {
+  if (!state.game) return [];
+  if (!Array.isArray(state.game.battleReports)) state.game.battleReports = [];
+  return state.game.battleReports;
+}
+
+function battleOperationLabel(kind) {
+  const labels = {
+    recon: currentLang === "en-US" ? "Strategic reconnaissance" : currentLang === "es-ES" ? "Reconocimiento estratégico" : "Reconhecimento estratégico",
+    airstrike: currentLang === "en-US" ? "Limited airstrike" : currentLang === "es-ES" ? "Ataque aéreo limitado" : "Ataque aéreo limitado",
+    naval: currentLang === "en-US" ? "Naval blockade" : currentLang === "es-ES" ? "Bloqueo naval" : "Bloqueio naval",
+    combined: currentLang === "en-US" ? "Combined operation" : currentLang === "es-ES" ? "Operación combinada" : "Operação combinada"
+  };
+  return labels[kind] || kind;
+}
+
+function makeBattleReport(kind, target, attack, defense, success, op) {
+  const g = state.game;
+  const intensity = kind === "recon" ? 1 : kind === "airstrike" ? 2 : kind === "naval" ? 2 : 4;
+  const ratio = clamp((attack / Math.max(1, defense)) * 50, 0, 140);
+  const ownLosses = kind === "recon" ? randomInt(0, success ? 1 : 3) : Math.max(1, randomInt(intensity, intensity * 8) + (success ? 0 : intensity * 4));
+  const enemyDamage = success ? randomInt(8 * intensity, 18 * intensity) + Math.round(ratio / 10) : randomInt(1, 6 * intensity);
+  const readinessImpact = success ? Math.max(1, Math.round(op.tension / 3)) : Math.max(2, Math.round(op.tension / 2));
+  const report = {
+    id: cryptoId(),
+    kind,
+    operation: battleOperationLabel(kind),
+    targetId: target.id,
+    targetName: target.name,
+    targetFlag: target.flag,
+    success,
+    attack: Math.round(attack),
+    defense: Math.round(defense),
+    ownLosses,
+    enemyDamage,
+    tension: op.tension,
+    readinessImpact,
+    month: g.month,
+    year: g.year,
+    createdAt: new Date().toISOString()
+  };
+  ensureBattleReports().push(report);
+  g.battleReports = g.battleReports.slice(-10);
+  return report;
+}
+
+function latestBattleReport() {
+  const list = ensureBattleReports();
+  return list[list.length - 1] || null;
+}
+
+function renderBattleReportMini() {
+  const report = latestBattleReport();
+  if (!report) return "";
+  return `
+    <article class="latest-battle-mini ${report.success ? "success" : "failure"}">
+      <div>
+        <small>${t("battle.title", "Relatório de batalha")}</small>
+        <strong>${report.targetFlag || "🏳️"} ${report.operation}</strong>
+        <span>${report.targetName} · ${report.success ? t("battle.success", "Sucesso tático") : t("battle.failure", "Falha operacional")}</span>
+      </div>
+      <button id="openLatestBattleBtn">${t("battle.open", "Ver batalha")}</button>
+    </article>`;
+}
+
+function renderBattleReport() {
+  const box = $("#battleReportPanel");
+  if (!box || !state.game) return;
+  const report = latestBattleReport();
+  if (!report) {
+    box.innerHTML = `<div class="empty-battle">${t("battle.empty", "Nenhuma batalha registrada ainda. Faça reconhecimento ou ataque um alvo no painel Atacar.")}</div>`;
+    return;
+  }
+  const resultText = report.success ? t("battle.success", "Sucesso tático") : t("battle.failure", "Falha operacional");
+  const resultClass = report.success ? "success" : "failure";
+  const history = ensureBattleReports().slice(-5).reverse();
+  box.innerHTML = `
+    <article class="battle-hero ${resultClass}">
+      <div class="battle-radar">
+        <i></i><i></i><i></i><span>${report.success ? "✓" : "!"}</span>
+      </div>
+      <div>
+        <small>${t("battle.result", "Resultado")}</small>
+        <strong>${resultText}</strong>
+        <p>${report.operation} · ${report.targetFlag || "🏳️"} ${report.targetName}</p>
+      </div>
+    </article>
+
+    <div class="battle-bars">
+      <div><span>${t("battle.ourForce", "Nossa força")}</span><b>${report.attack}</b><i style="width:${clamp(report.attack, 0, 140)}%"></i></div>
+      <div><span>${t("battle.enemyDefense", "Defesa inimiga")}</span><b>${report.defense}</b><i style="width:${clamp(report.defense, 0, 140)}%"></i></div>
+    </div>
+
+    <div class="battle-kpis">
+      <div><small>${t("battle.target", "Alvo")}</small><strong>${report.targetFlag || "🏳️"} ${report.targetName}</strong></div>
+      <div><small>${t("battle.operation", "Operação")}</small><strong>${report.operation}</strong></div>
+      <div><small>${t("battle.losses", "Perdas próprias")}</small><strong>${report.ownLosses}</strong></div>
+      <div><small>${t("battle.enemyDamage", "Dano inimigo")}</small><strong>${report.enemyDamage}</strong></div>
+      <div><small>${t("battle.tension", "Tensão")}</small><strong>+${report.tension}</strong></div>
+      <div><small>${t("battle.readiness", "Prontidão")}</small><strong>-${report.readinessImpact}</strong></div>
+    </div>
+
+    <h3 class="battle-history-title">${t("battle.history", "Histórico recente")}</h3>
+    <div class="battle-history">
+      ${history.map(item => `<article class="${item.success ? "success" : "failure"}"><b>${item.targetFlag || "🏳️"}</b><div><strong>${item.operation}</strong><span>${item.targetName} · ${item.success ? t("battle.success", "Sucesso tático") : t("battle.failure", "Falha operacional")}</span></div><small>${monthNames[item.month % 12]}/${item.year}</small></article>`).join("")}
+    </div>`;
+}
+
 function tutorialMissions() {
   const g = state.game;
   const hasBaseQueued = g.bases.length + g.construction.length > 0;
@@ -336,6 +444,7 @@ function makeInitialGame(countryId) {
     construction: [],
     production: [],
     units: [],
+    battleReports: [],
     logisticsBudget: 100,
     monthlyLosses: 0,
     globalWar: makeGlobalWar(country),
@@ -495,6 +604,7 @@ function renderGame() {
   renderGlobalWar();
   renderAiWorld();
   renderTargetSelect();
+  renderBattleReport();
   renderIntel();
   initMap();
   updateMapLayers();
@@ -604,6 +714,8 @@ function renderCommanderGuide() {
 
     ${renderTutorialMissions()}
 
+    ${renderBattleReportMini()}
+
     <div class="mobile-command-grid">
       <button id="quickBuildBtn"><b>🏗️ ${t("guide.build", "Construir")}</b><span>${t("guide.buildSub", "base recomendada")}</span></button>
       <button id="quickProduceBtn"><b>🪖 ${t("guide.produce", "Produzir")}</b><span>${t("guide.produceSub", "melhor unidade")}</span></button>
@@ -620,6 +732,7 @@ function renderCommanderGuide() {
   $("#quickWorldBtn")?.addEventListener("click", () => activatePanel("panelGlobal"));
   $("#quickAiBtn")?.addEventListener("click", () => activatePanel("panelAiWorld"));
   bindTutorialMissionButtons();
+  $("#openLatestBattleBtn")?.addEventListener("click", () => activatePanel("panelBattle"));
 }
 
 function runRecommendedAction(rec) {
@@ -1143,7 +1256,7 @@ function launchOperation(kind) {
   const defense = target.military + target.intel / 2 + (target.nuclear ? 14 : 0) + Math.random() * 30;
   const attack = op.power + g.readiness / 2 + regionalForceBonus() + Math.random() * 35;
   const success = attack >= defense;
-  const label = { recon: "Reconhecimento estratégico", airstrike: "Ataque aéreo limitado", naval: "Bloqueio naval", combined: "Operação combinada" }[kind];
+  const label = battleOperationLabel(kind);
   if (success) {
     g.readiness = clamp(g.readiness - Math.round(op.tension / 3), 0, 100);
     g.intel = clamp(g.intel + (kind === "recon" ? 3 : 1), 0, 120);
@@ -1153,6 +1266,7 @@ function launchOperation(kind) {
     g.stability = clamp(g.stability - 2, 0, 100);
     g.events.push(eventText("danger", `${label} contra ${target.name} falhou. Perdas políticas e alerta inimigo aumentaram.`));
   }
+  const report = makeBattleReport(kind, target, attack, defense, success, op);
   const rel = g.relations.find(r => r.id === target.id);
   if (rel) {
     rel.tension = clamp(rel.tension + op.tension * 2, 0, 100);
@@ -1163,6 +1277,7 @@ function launchOperation(kind) {
   maybeCounterAttack(target, Math.round(op.tension * 1.5));
   saveGame();
   renderGame();
+  activatePanel("panelBattle");
 }
 
 function advanceMonth() {

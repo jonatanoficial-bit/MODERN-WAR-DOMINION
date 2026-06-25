@@ -1,7 +1,7 @@
 {
   "project": "Modern War Dominion",
-  "version": "1.6.0",
-  "phase": "Fase 16 — Tutorial guiado e missões iniciais",
+  "version": "1.7.0",
+  "phase": "Fase 17 — Tela de batalha e relatórios visuais",
   "generated_at": "2026-06-24",
   "base": "Fase 5 assets integrados",
   "features": [
@@ -12,11 +12,12 @@
     "mapa real preservado"
   ],
   "notes": [
-    "Tutorial de campanha com 6 missões iniciais",
-    "Recompensas automáticas por missão concluída",
-    "Botões de ação direta dentro das missões",
-    "Reconhecimento agora completa missão de tutorial",
-    "Tutorial funciona com PT-BR, EN-US e ES-ES"
+    "Adicionado painel Batalha",
+    "Operações agora geram relatório visual",
+    "Relatório mostra força, defesa, perdas, dano e impacto",
+    "Histórico recente de até 10 batalhas",
+    "Mini card da última batalha no Quartel-General Mobile",
+    "Tradução PT-BR, EN-US e ES-ES para a tela de batalha"
   ],
   "countries_count": 249,
   "countries_available": 249,
@@ -25,5 +26,6 @@
     "en-US",
     "es-ES"
   ],
-  "tutorial_missions": 6
+  "tutorial_missions": 6,
+  "battle_reports": true
 }

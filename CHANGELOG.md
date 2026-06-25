@@ -84,3 +84,13 @@
 - Missões ensinam: construir base, concluir base, produzir unidade, receber tropa, fazer reconhecimento e sobreviver 3 meses.
 - Botões diretos reduzem confusão no mobile.
 - Tutorial integrado aos três idiomas: PT-BR, EN-US e ES-ES.
+
+
+## Fase 17 — Tela de batalha e relatórios visuais
+
+- Adicionado painel Batalha.
+- Operações militares agora geram relatório visual.
+- O relatório mostra resultado, alvo, operação, força atacante, defesa inimiga, perdas, dano causado, tensão e impacto na prontidão.
+- O Quartel-General mostra mini card da última batalha.
+- Histórico recente de batalhas preservado no save.
+- Tela de batalha traduzida em PT-BR, EN-US e ES-ES.
