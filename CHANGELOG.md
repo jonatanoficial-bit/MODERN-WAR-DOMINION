@@ -36,3 +36,10 @@
 - Sistema DEFCON, risco nuclear e pontuação de guerra global.
 - Sanções afetam relações e economia; ultimatos podem virar frentes de invasão.
 - Invasões progridem mensalmente e podem causar ataques regionais.
+
+
+## Fase 11 — Bandeiras reais e objetivos de campanha
+- Jogo preparado para usar `assets/flags/{codigo}.png` ou webp/jpg/svg/gif.
+- Script `tools/import-flags-gitbash.sh` para copiar as bandeiras da pasta do Windows.
+- Cards de país, resumo e marcadores do mapa usam imagem real com fallback emoji.
+- Painel Mundo ganhou objetivos de campanha com progresso.

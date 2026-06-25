@@ -1,6 +1,6 @@
-const VERSION = "0.9.0";
-const PHASE = "Fase 9 — manutenção, desgaste e reposição";
-const SAVE_KEY = "MWD_SAVE_V9";
+const VERSION = "1.1.0";
+const PHASE = "Fase 11 — bandeiras reais e objetivos de campanha";
+const SAVE_KEY = "MWD_SAVE_V11";
 
 const $ = (sel, root = document) => root.querySelector(sel);
 const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
@@ -17,6 +17,46 @@ const state = {
 };
 
 const monthNames = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
+
+const FLAG_EXTENSIONS = ["png", "webp", "jpg", "jpeg", "svg", "gif"];
+
+function flagCandidates(country) {
+  const rawCodes = [country.flagCode, country.iso, country.id, ...(country.flagAliases || [])].filter(Boolean);
+  const codes = [];
+  rawCodes.forEach(code => {
+    const normalized = String(code).toLowerCase().trim();
+    if (normalized && !codes.includes(normalized)) codes.push(normalized);
+  });
+  return codes.flatMap(code => FLAG_EXTENSIONS.map(ext => `assets/flags/${code}.${ext}`));
+}
+
+function escapeAttr(value) {
+  return String(value ?? "").replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+function flagHtml(country, className = "flag-img") {
+  const candidates = flagCandidates(country);
+  const src = candidates[0] || "";
+  const list = escapeAttr(JSON.stringify(candidates));
+  const fallback = country.flag || "🏳️";
+  return `<span class="flag-wrap ${className}-wrap"><img class="${className}" src="${src}" alt="Bandeira de ${escapeAttr(country.name)}" data-flag-index="0" data-flag-list="${list}" onerror="window.MWD_NEXT_FLAG && window.MWD_NEXT_FLAG(this)"><span class="${className} emoji-fallback" hidden>${fallback}</span></span>`;
+}
+
+window.MWD_NEXT_FLAG = function(img) {
+  try {
+    const list = JSON.parse(img.dataset.flagList || "[]");
+    const next = Number(img.dataset.flagIndex || 0) + 1;
+    if (next < list.length) {
+      img.dataset.flagIndex = String(next);
+      img.src = list[next];
+      return;
+    }
+  } catch (err) {}
+  img.hidden = true;
+  const fallback = img.nextElementSibling;
+  if (fallback) fallback.hidden = false;
+};
+
 
 async function boot() {
   await loadData();
@@ -108,10 +148,10 @@ function renderNationGrid() {
     const card = document.createElement("article");
     card.className = "nation-card";
     card.innerHTML = `
-      <div class="nation-top"><span class="flag">${country.flag}</span><div><h3>${country.name}</h3><small>${country.capital} · ${country.region}</small></div></div>
+      <div class="nation-top">${flagHtml(country, "flag-img-lg")}<div><h3>${country.name}</h3><small>${country.capital} · ${country.region}</small></div></div>
       <small>${country.doctrine}</small>
       <div class="stat-pills"><span>Militar ${country.military}</span><span>PIB ${country.gdpGame}</span><span>Defesa ${country.defenseBudget}</span><span>Navios ${country.warships}</span><span>Aeronaves ${country.airframes}</span><span>${country.nuclear ? "Nuclear" : "Convencional"}</span></div>
-      <button class="select-country">Comandar ${country.flag}</button>`;
+      <button class="select-country">Comandar ${country.name}</button>`;
     card.querySelector("button").addEventListener("click", () => startGame(country.id));
     grid.appendChild(card);
   });
@@ -197,7 +237,7 @@ function summarizeBlocs(playerId = null) {
     b.military += c.military;
     b.economy += c.economy;
     b.nuclear += c.nuclear ? 1 : 0;
-    if (b.flags.length < 6) b.flags.push(c.flag);
+    if (b.flags.length < 6) b.flags.push(c.id);
   });
   return [...map.values()].sort((a,b) => b.military - a.military);
 }
@@ -283,7 +323,7 @@ function renderSummary() {
   const g = state.game;
   const c = getPlayerCountry();
   $("#monthLabel").textContent = `${monthNames[g.month % 12]}/${g.year}`;
-  $("#countrySummary").innerHTML = `<h2><span class="big-flag">${c.flag}</span> ${c.name}</h2><small>${c.capital} · ${c.doctrine}</small><div class="metrics"><div class="metric"><small>Finanças</small><strong>${g.finance}</strong></div><div class="metric"><small>Indústria</small><strong>${g.industry}</strong></div><div class="metric"><small>Energia</small><strong>${g.energy}</strong></div><div class="metric"><small>Soldados</small><strong>${formatSoldiers(g.soldiers)}</strong></div><div class="metric"><small>Poder</small><strong>${powerIndex()}</strong></div><div class="metric"><small>DEFCON</small><strong>${state.game.globalWar?.defcon ?? 5}</strong></div></div>`;
+  $("#countrySummary").innerHTML = `<h2>${flagHtml(c, "big-flag-img")} ${c.name}</h2><small>${c.capital} · ${c.doctrine}</small><div class="metrics"><div class="metric"><small>Finanças</small><strong>${g.finance}</strong></div><div class="metric"><small>Indústria</small><strong>${g.industry}</strong></div><div class="metric"><small>Energia</small><strong>${g.energy}</strong></div><div class="metric"><small>Soldados</small><strong>${formatSoldiers(g.soldiers)}</strong></div><div class="metric"><small>Poder</small><strong>${powerIndex()}</strong></div><div class="metric"><small>DEFCON</small><strong>${state.game.globalWar?.defcon ?? 5}</strong></div></div>`;
 }
 
 function getSelectedRegion() {
@@ -506,7 +546,7 @@ function renderGlobalWar() {
   const sanctions = gw.sanctions.slice(-4).map(s => `<div class="global-line"><strong>${s.sourceFlag || player.flag} Sanção</strong><span>${s.targetName} · ${s.remaining}m · pressão ${s.pressure}</span></div>`).join("") || '<div class="global-empty">Nenhuma sanção ativa.</div>';
   const ultimatums = gw.ultimatums.slice(-4).map(u => `<div class="global-line danger"><strong>Ultimato</strong><span>${u.targetName} · vence em ${u.remaining}m · risco ${u.risk}</span></div>`).join("") || '<div class="global-empty">Nenhum ultimato ativo.</div>';
   const invasions = gw.invasions.slice(-4).map(i => `<div class="global-line war"><strong>Frente aberta</strong><span>${i.attackerName} → ${i.targetName} · ${i.progress}% · ${i.remaining}m</span></div>`).join("") || '<div class="global-empty">Nenhuma invasão ativa.</div>';
-  const blocHtml = blocs.map(b => `<article class="bloc-card ${b.name === player.bloc ? 'is-player' : ''}"><strong>${b.flags.join(' ')} ${b.name}</strong><span>${b.members} países · poder ${Math.round(b.military)} · economia ${Math.round(b.economy)} · nuclear ${b.nuclear}</span></article>`).join("");
+  const blocHtml = blocs.map(b => `<article class="bloc-card ${b.name === player.bloc ? 'is-player' : ''}"><strong>${b.flags.map(id => flagHtml(state.countries.find(c => c.id === id) || player, 'bloc-flag-img')).join('')} ${b.name}</strong><span>${b.members} países · poder ${Math.round(b.military)} · economia ${Math.round(b.economy)} · nuclear ${b.nuclear}</span></article>`).join("");
   panel.innerHTML = `
     <div class="global-kpis">
       <div><small>Fase mundial</small><strong>${gw.phase}</strong></div>
@@ -515,6 +555,7 @@ function renderGlobalWar() {
       <div><small>Guerra global</small><strong>${gw.warScore}%</strong></div>
     </div>
     <div class="global-meter"><i style="width:${clamp(gw.nuclearRisk,0,100)}%"></i></div>
+    <h3>Objetivos de campanha</h3><div class="goal-grid">${renderCampaignGoals()}</div>
     <label class="field-label">Alvo diplomático/militar</label>
     <select id="globalTargetSelect">${state.countries.filter(c => c.id !== player.id).map(c => `<option value="${c.id}" ${target && c.id === target.id ? 'selected' : ''}>${c.flag} ${c.name} · ${c.bloc}</option>`).join("")}</select>
     <div class="global-actions">
@@ -529,6 +570,20 @@ function renderGlobalWar() {
     <h3>Frentes de invasão</h3>${invasions}
   `;
   panel.querySelectorAll("[data-global-action]").forEach(btn => btn.addEventListener("click", () => globalWarAction(btn.dataset.globalAction)));
+}
+
+
+function renderCampaignGoals() {
+  const g = state.game;
+  ensureGlobalWar();
+  const gw = g.globalWar;
+  const goals = [
+    { name: "Dominação militar", value: clamp(powerIndex() + g.bases.length * 4 + gw.warScore / 3, 0, 100), desc: "poder + bases + guerra global" },
+    { name: "Dissuasão estratégica", value: clamp(g.defense / 1.2 + g.missilePower / 1.8 + (getPlayerCountry().nuclear ? 18 : 0), 0, 100), desc: "defesa, mísseis e risco controlado" },
+    { name: "Supremacia industrial", value: clamp((g.industry + g.finance / 3 + g.logistics) / 7, 0, 100), desc: "indústria, orçamento e logística" },
+    { name: "Estabilidade nacional", value: clamp(g.stability + forceCondition() / 5 - gw.nuclearRisk / 5, 0, 100), desc: "apoio interno e forças íntegras" }
+  ];
+  return goals.map(goal => `<article class="goal-card"><strong>${goal.name}</strong><span>${goal.value}%</span><div class="goal-bar"><i style="width:${goal.value}%"></i></div><small>${goal.desc}</small></article>`).join("");
 }
 
 function renderTargetSelect() {
@@ -587,7 +642,7 @@ function updateMapLayers() {
 
   state.countries.forEach(c => {
     const isPlayer = c.id === player.id;
-    const icon = L.divIcon({ className: "", html: `<div class="${isPlayer ? "marker-own" : "marker-country"}">${isPlayer ? player.flag : c.flag}</div>`, iconSize: isPlayer ? [38, 38] : [32, 32], iconAnchor: [16, 16] });
+    const icon = L.divIcon({ className: "", html: `<div class="${isPlayer ? "marker-own" : "marker-country"}">${flagHtml(c, "marker-flag-img")}</div>`, iconSize: isPlayer ? [38, 38] : [32, 32], iconAnchor: [16, 16] });
     L.marker(c.coords, { icon }).addTo(state.layers.countries).bindPopup(`<strong>${c.flag} ${c.name}</strong><br>${c.capital}<br>Militar: ${c.military} · PIB jogo: ${c.gdpGame}`);
   });
 

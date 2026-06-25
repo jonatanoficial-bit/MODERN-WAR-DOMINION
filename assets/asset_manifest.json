@@ -49,5 +49,18 @@
     "ground_units_sheet": "assets/source_sheets/ground_units_sheet.png",
     "air_units_sheet": "assets/source_sheets/air_units_sheet.png",
     "naval_units_sheet": "assets/source_sheets/naval_units_sheet.png"
+  },
+  "flags": {
+    "folder": "assets/flags/",
+    "naming": "ISO alpha-2 lowercase, e.g. br.png, us.png, cn.png, gb.png",
+    "extensions": [
+      "png",
+      "webp",
+      "jpg",
+      "jpeg",
+      "svg",
+      "gif"
+    ],
+    "fallback": "emoji from data/countries.json when image is missing"
   }
 }

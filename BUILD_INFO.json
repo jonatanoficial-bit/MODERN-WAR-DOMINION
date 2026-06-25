@@ -1,7 +1,7 @@
 {
   "project": "Modern War Dominion",
-  "version": "1.0.0",
-  "phase": "Fase 10 — Terceira Guerra Mundial",
+  "version": "1.1.0",
+  "phase": "Fase 11 — bandeiras reais e objetivos de campanha",
   "generated_at": "2026-06-24",
   "base": "Fase 5 assets integrados",
   "features": [
@@ -12,11 +12,9 @@
     "mapa real preservado"
   ],
   "notes": [
-    "Painel Mundo",
-    "Blocos militares",
-    "Sanções",
-    "Ultimatos",
-    "Invasões",
-    "DEFCON e risco nuclear"
+    "Sistema de bandeiras reais via assets/flags",
+    "Script para importar bandeiras do Windows",
+    "Objetivos de campanha no painel Mundo",
+    "Fallback por emoji quando a imagem não existir"
   ]
 }
