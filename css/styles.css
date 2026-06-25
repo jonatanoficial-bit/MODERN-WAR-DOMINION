@@ -135,3 +135,31 @@ main{min-height:0}.screen{display:none;height:100%;min-height:0}.screen-active{d
   .mobile-command-grid span{font-size:.58rem}
   .command-panel{max-height:calc(100dvh - 120px)}
 }
+
+
+/* Fase 15 — Sistema trilíngue PT/EN/ES */
+.lang-select{
+  min-width:74px;
+  border:1px solid rgba(121,190,246,.26);
+  border-radius:16px;
+  padding:9px 10px;
+  background:rgba(255,255,255,.06);
+  color:var(--text);
+  font-weight:900;
+  outline:0;
+}
+.lang-select option{background:#07101d;color:#eef7ff}
+.i18n-note{
+  border:1px solid rgba(106,255,173,.20);
+  background:rgba(106,255,173,.06);
+  border-radius:16px;
+  padding:10px;
+  color:#dfffee;
+  font-size:.76rem;
+}
+@media (max-width:980px){
+  .lang-select{min-width:58px;padding:8px 7px;font-size:.72rem}
+}
+@media (max-height:560px){
+  .lang-select{min-width:50px;padding:7px 5px;font-size:.66rem}
+}

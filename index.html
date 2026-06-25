@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
   <meta name="theme-color" content="#050914">
   <meta name="description" content="Modern War Dominion — jogo mobile de dominação militar global com mapa real, bases regionais, produção de unidades e escalada de guerra mundial.">
-  <title>Modern War Dominion — Fase 14</title>
+  <title>Modern War Dominion — Fase 15</title>
   <link rel="manifest" href="manifest.json">
   <link rel="icon" href="assets/img/icon.svg" type="image/svg+xml">
   <link rel="preconnect" href="https://unpkg.com">
@@ -16,9 +16,9 @@
 <body>
   <div id="rotateGuard" class="rotate-guard" aria-live="polite">
     <div class="rotate-card">
-      <strong>Vire o celular deitado</strong>
-      <p>Modern War Dominion foi feito para jogar em tela deitada/fullscreen, com mapa real e painel militar.</p>
-      <button id="forceLandscapeBtn">Entrar em tela cheia</button>
+      <strong data-i18n="rotate.title">Vire o celular deitado</strong>
+      <p data-i18n="rotate.text">Modern War Dominion foi feito para jogar em tela deitada/fullscreen, com mapa real e painel militar.</p>
+      <button id="forceLandscapeBtn" data-i18n="rotate.button">Entrar em tela cheia</button>
     </div>
   </div>
 
@@ -26,18 +26,23 @@
     <header class="topbar">
       <button class="brand-block" id="homeLogoBtn" aria-label="Voltar ao comando inicial">
         <span class="brand-mark">MWD</span>
-        <span><strong>Modern War Dominion</strong><small>Dominação Global: Guerra Moderna</small></span>
+        <span><strong data-i18n="app.title">Modern War Dominion</strong><small data-i18n="app.subtitle">Dominação Global: Guerra Moderna</small></span>
       </button>
       <nav class="top-tabs" aria-label="Navegação principal">
-        <button class="tab-btn is-active" data-screen="screenHome">Início</button>
-        <button class="tab-btn" data-screen="screenNation">País</button>
-        <button class="tab-btn" data-screen="screenWar" disabled>Comando</button>
-        <button class="tab-btn" data-screen="screenRoadmap">Plano</button>
+        <button class="tab-btn is-active" data-screen="screenHome" data-i18n="top.home">Início</button>
+        <button class="tab-btn" data-screen="screenNation" data-i18n="top.country">País</button>
+        <button class="tab-btn" data-screen="screenWar" disabled data-i18n="top.command">Comando</button>
+        <button class="tab-btn" data-screen="screenRoadmap" data-i18n="top.plan">Plano</button>
       </nav>
       <div class="top-actions">
-        <button class="mini-btn" id="fullscreenBtn">Tela cheia</button>
-        <button class="mini-btn" id="installBtn" hidden>Instalar</button>
-        <div class="build-chip">Fase 14 · v1.4.0</div>
+        <select class="lang-select" id="languageSelect" aria-label="Idioma">
+          <option value="pt-BR">PT</option>
+          <option value="en-US">EN</option>
+          <option value="es-ES">ES</option>
+        </select>
+        <button class="mini-btn" id="fullscreenBtn" data-i18n="top.fullscreen">Tela cheia</button>
+        <button class="mini-btn" id="installBtn" hidden data-i18n="top.install">Instalar</button>
+        <div class="build-chip" data-i18n="phase.label">Fase 15 · v1.5.0</div>
       </div>
     </header>
 
@@ -45,22 +50,22 @@
       <section class="screen screen-active" id="screenHome">
         <div class="home-layout">
           <article class="hero-card glass-panel">
-            <p class="eyebrow">Fase 14 — Rework total da jogabilidade mobile</p>
-            <h1>Comando mobile claro, bandeira como logo e decisões em um toque.</h1>
-            <p>Esta fase reorganiza a jogabilidade para celular: menos confusão de abas, mais comando visual, bandeira real como identidade do país, ações principais em um toque e roteiro claro para construir, produzir, defender, atacar e avançar mês.</p>
+            <p class="eyebrow" data-i18n="home.eyebrow">Fase 15 — Sistema trilíngue</p>
+            <h1 data-i18n="home.title">Agora o jogo começa a virar produto internacional.</h1>
+            <p data-i18n="home.text">A base do jogo passa a funcionar em Português, Inglês e Espanhol, com seletor de idioma, textos principais traduzidos e estrutura pronta para remover textos fixos nas próximas fases.</p>
             <div class="hero-actions">
-              <button class="primary-btn" id="newGameBtn">Nova campanha militar</button>
-              <button class="ghost-btn" id="continueBtn" disabled>Continuar campanha</button>
+              <button class="primary-btn" id="newGameBtn" data-i18n="home.new">Nova campanha militar</button>
+              <button class="ghost-btn" id="continueBtn" disabled data-i18n="home.continue">Continuar campanha</button>
             </div>
             <div class="status-strip">
-              <span>Mobile primeiro</span><span>Bandeira como brasão</span><span>Ações em um toque</span><span>HQ do comandante</span><span>249 países</span><span>Fluxo claro</span>
+              <span data-i18n="home.tag1">Português</span><span data-i18n="home.tag2">English</span><span data-i18n="home.tag3">Español</span><span data-i18n="home.tag4">Bandeira como logo</span><span data-i18n="home.tag5">Mobile claro</span><span data-i18n="home.tag6">Interface internacional</span>
             </div>
           </article>
           <aside class="glass-panel doctrine-panel">
-            <h2>Jogabilidade mais clara</h2>
-            <p>Agora a tela principal do jogador funciona como um Quartel-General mobile. A bandeira do país aparece como logo, o próximo objetivo fica visível e os botões grandes guiam a campanha.</p>
+            <h2 data-i18n="home.sideTitle">Internacionalização</h2>
+            <p data-i18n="home.sideText">O jogo agora tem base real de idiomas. A próxima etapa será expandir a tradução para eventos, países, tutoriais, relatórios de combate e economia.</p>
             <div class="doctrine-grid">
-              <span>🏳️ País</span><span>🎯 Objetivo</span><span>🏗️ Construir</span><span>🪖 Produzir</span><span>⚔️ Atacar</span><span>📱 Mobile</span>
+              <span>🇧🇷 PT-BR</span><span>🇺🇸 EN-US</span><span>🇪🇸 ES-ES</span><span>🏳️ Flags</span><span>📱 Mobile</span><span>🌍 Global</span>
             </div>
           </aside>
         </div>
@@ -69,11 +74,11 @@
       <section class="screen" id="screenNation">
         <div class="section-head compact">
           <div>
-            <p class="eyebrow">Escolha da Nação</p>
-            <h1>Escolha o país inicial</h1>
-            <p class="muted">A lista mantém 249 países/territórios possíveis. As bandeiras reais são buscadas em assets/flags pelo código ISO em minúsculo, como br.png, us.png, fr.png.</p>
+            <p class="eyebrow" data-i18n="nation.eyebrow">Escolha da Nação</p>
+            <h1 data-i18n="nation.title">Escolha o país inicial</h1>
+            <p class="muted" data-i18n="nation.text">A lista mantém 249 países/territórios possíveis. As bandeiras reais são buscadas em assets/flags pelo código ISO em minúsculo, como br.png, us.png, fr.png.</p>
           </div>
-          <input id="nationSearch" class="search-box" type="search" placeholder="Buscar país, região, doutrina...">
+          <input id="nationSearch" class="search-box" type="search" placeholder="Buscar país, região, doutrina..." data-i18n-placeholder="nation.search">
         </div>
         <div class="nation-grid" id="nationGrid"></div>
       </section>
@@ -83,7 +88,7 @@
           <section class="map-stack glass-panel">
             <div class="map-head">
               <div>
-                <p class="eyebrow">Mapa Real de Operações Globais</p>
+                <p class="eyebrow" data-i18n="map.eyebrow">Mapa Real de Operações Globais</p>
                 <h1 id="commandTitle">Teatro de dominação mundial</h1>
               </div>
               <div class="war-clock"><small>Mês</small><strong id="monthLabel">Jan/2027</strong></div>
@@ -94,47 +99,47 @@
               <p>Mapa real indisponível no momento. Conecte à internet para carregar os tiles reais.</p>
             </div>
             <div class="map-legend">
-              <span><i class="dot own"></i> Capital</span>
-              <span><i class="dot region"></i> Região</span>
-              <span><i class="dot base"></i> Base</span>
-              <span><i class="dot threat"></i> Crise</span>
-              <span>Fonte do mapa: OpenStreetMap via Leaflet</span>
+              <span><i class="dot own"></i> <span data-i18n="legend.capital">Capital</span></span>
+              <span><i class="dot region"></i> <span data-i18n="legend.region">Região</span></span>
+              <span><i class="dot base"></i> <span data-i18n="legend.base">Base</span></span>
+              <span><i class="dot threat"></i> <span data-i18n="legend.crisis">Crise</span></span>
+              <span data-i18n="legend.source">Fonte do mapa: OpenStreetMap via Leaflet</span>
             </div>
           </section>
 
           <aside class="command-panel glass-panel">
             <div class="country-summary" id="countrySummary"></div>
             <div class="tabline" role="tablist">
-              <button class="side-tab is-active" data-panel="panelGuide">Guia</button>
-              <button class="side-tab" data-panel="panelBuild">Regiões</button>
-              <button class="side-tab" data-panel="panelForces">Produção</button>
-              <button class="side-tab" data-panel="panelArsenal">Arsenal</button>
-              <button class="side-tab" data-panel="panelMaintenance">Manut.</button>
-              <button class="side-tab" data-panel="panelGlobal">Mundo</button>
-              <button class="side-tab" data-panel="panelAiWorld">IA</button>
-              <button class="side-tab" data-panel="panelOps">Atacar</button>
-              <button class="side-tab" data-panel="panelIntel">Alerta</button>
+              <button class="side-tab is-active" data-panel="panelGuide" data-i18n="tab.guide">Guia</button>
+              <button class="side-tab" data-panel="panelBuild" data-i18n="tab.regions">Regiões</button>
+              <button class="side-tab" data-panel="panelForces" data-i18n="tab.production">Produção</button>
+              <button class="side-tab" data-panel="panelArsenal" data-i18n="tab.arsenal">Arsenal</button>
+              <button class="side-tab" data-panel="panelMaintenance" data-i18n="tab.maintenance">Manut.</button>
+              <button class="side-tab" data-panel="panelGlobal" data-i18n="tab.world">Mundo</button>
+              <button class="side-tab" data-panel="panelAiWorld" data-i18n="tab.ai">IA</button>
+              <button class="side-tab" data-panel="panelOps" data-i18n="tab.attack">Atacar</button>
+              <button class="side-tab" data-panel="panelIntel" data-i18n="tab.alert">Alerta</button>
             </div>
 
             <div class="side-panel is-active" id="panelGuide">
-              <h2>Quartel-General Mobile</h2>
-              <p class="muted">A tela Guia agora é a tela principal de jogo: veja seu país, sua bandeira, sua próxima missão e use ações grandes em um toque.</p>
+              <h2 data-i18n="guide.title">Quartel-General Mobile</h2>
+              <p class="muted" data-i18n="guide.text">A tela Guia agora é a tela principal de jogo: veja seu país, sua bandeira, sua próxima missão e use ações grandes em um toque.</p>
               <div id="commanderGuide" class="commander-guide"></div>
             </div>
 
             <div class="side-panel" id="panelBuild">
-              <h2>Regiões e bases</h2>
-              <p class="muted">Escolha uma região, construa bases, suba de nível e repare estruturas atingidas. A condição da base agora importa para a defesa.</p>
-              <label class="field-label">Região estratégica ativa</label>
+              <h2 data-i18n="build.title">Regiões e bases</h2>
+              <p class="muted" data-i18n="build.text">Escolha uma região, construa bases, suba de nível e repare estruturas atingidas. A condição da base agora importa para a defesa.</p>
+              <label class="field-label" data-i18n="build.activeRegion">Região estratégica ativa</label>
               <select id="regionSelect"></select>
               <div id="regionBoard" class="region-board"></div>
-              <h2 class="section-subtitle">Construções disponíveis</h2>
+              <h2 class="section-subtitle" data-i18n="build.available">Construções disponíveis</h2>
               <div id="buildList" class="build-list"></div>
             </div>
 
             <div class="side-panel" id="panelForces">
-              <h2>Produção e prontidão</h2>
-              <p class="muted">A produção continua por fila, e a prontidão regional depende da saúde das bases e da defesa aérea.</p>
+              <h2 data-i18n="production.title">Produção e prontidão</h2>
+              <p class="muted" data-i18n="production.text">A produção continua por fila, e a prontidão regional depende da saúde das bases e da defesa aérea.</p>
               <div id="selectedRegionSummary" class="event"></div>
               <div id="productionQueue" class="queue-list"></div>
               <div id="unitList" class="unit-list"></div>
@@ -142,8 +147,8 @@
 
 
             <div class="side-panel" id="panelArsenal">
-              <h2>Arsenal detalhado</h2>
-              <p class="muted">Catálogo por classe com estatísticas, alcance, custo, manutenção e requisito de base. Use isso para decidir o que produzir.</p>
+              <h2 data-i18n="arsenal.title">Arsenal detalhado</h2>
+              <p class="muted" data-i18n="arsenal.text">Catálogo por classe com estatísticas, alcance, custo, manutenção e requisito de base. Use isso para decidir o que produzir.</p>
               <div class="arsenal-filters" id="arsenalFilters">
                 <button class="arsenal-filter is-active" data-class="Todos">Todos</button>
                 <button class="arsenal-filter" data-class="Terrestre">Terrestre</button>
@@ -155,64 +160,64 @@
             </div>
 
             <div class="side-panel" id="panelMaintenance">
-              <h2>Manutenção e reposição</h2>
-              <p class="muted">Unidades perdem condição com o tempo, em ataques e em operações. Mantenha suas forças prontas ou elas perderão desempenho e poderão sofrer baixas.</p>
+              <h2 data-i18n="maintenance.title">Manutenção e reposição</h2>
+              <p class="muted" data-i18n="maintenance.text">Unidades perdem condição com o tempo, em ataques e em operações. Mantenha suas forças prontas ou elas perderão desempenho e poderão sofrer baixas.</p>
               <div id="maintenanceSummary" class="maintenance-summary"></div>
               <div id="maintenanceList" class="maintenance-list"></div>
             </div>
 
             <div class="side-panel" id="panelGlobal">
-              <h2>Terceira Guerra Mundial</h2>
-              <p class="muted">Gerencie blocos, sanções, ultimatos, invasões e a crise nuclear. Cada decisão pode proteger sua nação ou empurrar o mundo para guerra total.</p>
+              <h2 data-i18n="global.title">Terceira Guerra Mundial</h2>
+              <p class="muted" data-i18n="global.text">Gerencie blocos, sanções, ultimatos, invasões e a crise nuclear. Cada decisão pode proteger sua nação ou empurrar o mundo para guerra total.</p>
               <div id="globalWarPanel" class="global-war-panel"></div>
             </div>
 
 
 
             <div class="side-panel" id="panelAiWorld">
-              <h2>IA dos países</h2>
-              <p class="muted">Os países agora crescem, mobilizam forças e reagem à tensão mundial. Use este painel para entender quem está ficando perigoso.</p>
+              <h2 data-i18n="ai.title">IA dos países</h2>
+              <p class="muted" data-i18n="ai.text">Os países crescem, mobilizam forças e reagem à tensão mundial. Use este painel para entender quem está ficando perigoso.</p>
               <div id="aiWorldPanel" class="ai-world-panel"></div>
             </div>
 
             <div class="side-panel" id="panelOps">
-              <h2>Operações militares</h2>
-              <p class="muted">Faça reconhecimento, ataque limitado ou operação combinada. Quanto maior o ataque, maior a escalada mundial.</p>
-              <label class="field-label">Alvo operacional</label>
+              <h2 data-i18n="ops.title">Operações militares</h2>
+              <p class="muted" data-i18n="ops.text">Faça reconhecimento, ataque limitado ou operação combinada. Quanto maior o ataque, maior a escalada mundial.</p>
+              <label class="field-label" data-i18n="ops.target">Alvo operacional</label>
               <select id="targetSelect"></select>
               <div class="ops-grid">
-                <button class="op-btn" data-op="recon">Reconhecimento</button>
-                <button class="op-btn" data-op="airstrike">Ataque aéreo</button>
-                <button class="op-btn" data-op="naval">Bloqueio naval</button>
-                <button class="op-btn danger" data-op="combined">Operação combinada</button>
+                <button class="op-btn" data-op="recon" data-i18n="ops.recon">Reconhecimento</button>
+                <button class="op-btn" data-op="airstrike" data-i18n="ops.airstrike">Ataque aéreo</button>
+                <button class="op-btn" data-op="naval" data-i18n="ops.naval">Bloqueio naval</button>
+                <button class="op-btn danger" data-op="combined" data-i18n="ops.combined">Operação combinada</button>
               </div>
             </div>
 
             <div class="side-panel" id="panelIntel">
-              <h2>Ameaça global</h2>
+              <h2 data-i18n="intel.title">Ameaça global</h2>
               <div class="threat-meter"><span id="threatFill"></span></div>
               <div class="intel-grid" id="intelGrid"></div>
               <div class="event-feed" id="eventFeed"></div>
             </div>
 
-            <button class="primary-btn next-month" id="nextMonthBtn">Avançar mês</button>
+            <button class="primary-btn next-month" id="nextMonthBtn" data-i18n="nextMonth">Avançar mês</button>
           </aside>
 
           <nav class="mobile-action-dock" id="mobileActionDock" aria-label="Ações rápidas de comando">
-            <button class="dock-btn is-active" data-panel="panelGuide">🏳️<span>Comando</span></button>
-            <button class="dock-btn" data-panel="panelBuild">🏗️<span>Bases</span></button>
-            <button class="dock-btn" data-panel="panelForces">🪖<span>Produzir</span></button>
-            <button class="dock-btn" data-panel="panelOps">⚔️<span>Atacar</span></button>
-            <button class="dock-btn" data-panel="panelGlobal">🌐<span>Mundo</span></button>
-            <button class="dock-btn dock-next" id="dockNextMonthBtn" type="button">⏭️<span>Mês</span></button>
+            <button class="dock-btn is-active" data-panel="panelGuide">🏳️<span data-i18n="dock.command">Comando</span></button>
+            <button class="dock-btn" data-panel="panelBuild">🏗️<span data-i18n="dock.bases">Bases</span></button>
+            <button class="dock-btn" data-panel="panelForces">🪖<span data-i18n="dock.produce">Produzir</span></button>
+            <button class="dock-btn" data-panel="panelOps">⚔️<span data-i18n="dock.attack">Atacar</span></button>
+            <button class="dock-btn" data-panel="panelGlobal">🌐<span data-i18n="dock.world">Mundo</span></button>
+            <button class="dock-btn dock-next" id="dockNextMonthBtn" type="button">⏭️<span data-i18n="dock.month">Mês</span></button>
           </nav>
         </div>
       </section>
 
       <section class="screen" id="screenRoadmap">
         <div class="roadmap glass-panel">
-          <p class="eyebrow">Fase 14 — rework mobile</p>
-          <h1>A prioridade desta fase foi transformar sistemas soltos em uma experiência mobile mais clara: jogar pelo Guia, usar botões grandes e entender a próxima decisão sem procurar em várias abas.</h1>
+          <p class="eyebrow" data-i18n="roadmap.eyebrow">Fase 15 — trilíngue</p>
+          <h1 data-i18n="roadmap.title">A interface principal já entende Português, Inglês e Espanhol.</h1>
           <div class="roadmap-grid">
             <article><strong>Fase 9</strong><span>Manutenção, desgaste, baixas, reposição de lotes e custo real de guerra longa.</span></article>
             <article><strong>Fase 10</strong><span>Terceira Guerra Mundial: blocos, ultimatos, sanções, invasões e crise nuclear.</span></article>
@@ -231,4 +236,4 @@
 </body>
 </html>
 
-<!-- Fase 14: rework total da jogabilidade mobile, HQ do comandante e bandeira como brasão. -->
+<!-- Fase 15: sistema trilíngue PT-BR / EN-US / ES-ES. -->

@@ -1,7 +1,7 @@
 {
   "project": "Modern War Dominion",
-  "version": "1.4.0",
-  "phase": "Fase 14 — Rework total da jogabilidade mobile",
+  "version": "1.5.0",
+  "phase": "Fase 15 — Sistema trilíngue base PT-BR / EN-US / ES-ES",
   "generated_at": "2026-06-24",
   "base": "Fase 5 assets integrados",
   "features": [
@@ -12,12 +12,17 @@
     "mapa real preservado"
   ],
   "notes": [
-    "Comando mobile reorganizado em Quartel-General",
-    "Bandeira real do país aparece como brasão/logo grande",
-    "Dock inferior com ações principais em um toque",
-    "Roteiro visual de campanha com Base, Unidade, Poder e Guerra",
-    "Mantida lista expandida com 249 países/territórios possíveis"
+    "Criados arquivos data/lang/pt-BR.json, en-US.json e es-ES.json",
+    "Adicionado seletor de idioma no topo",
+    "Textos principais da interface traduzidos",
+    "Guia do comandante e HQ mobile usam chaves de tradução",
+    "Base preparada para traduzir eventos, países e relatórios nas próximas fases"
   ],
   "countries_count": 249,
-  "countries_available": 249
+  "countries_available": 249,
+  "languages": [
+    "pt-BR",
+    "en-US",
+    "es-ES"
+  ]
 }

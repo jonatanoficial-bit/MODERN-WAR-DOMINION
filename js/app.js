@@ -1,6 +1,6 @@
-const VERSION = "1.4.0";
-const PHASE = "Fase 14 — rework total da jogabilidade mobile";
-const SAVE_KEY = "MWD_SAVE_F14";
+const VERSION = "1.5.0";
+const PHASE = "Fase 15 — sistema trilíngue base";
+const SAVE_KEY = "MWD_SAVE_F15";
 
 const $ = (sel, root = document) => root.querySelector(sel);
 const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
@@ -17,6 +17,49 @@ const state = {
 };
 
 const monthNames = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
+const LANG_KEY = "MWD_LANG";
+const SUPPORTED_LANGS = ["pt-BR", "en-US", "es-ES"];
+let I18N = {};
+let currentLang = localStorage.getItem(LANG_KEY) || "pt-BR";
+
+async function loadLanguage(lang = currentLang) {
+  if (!SUPPORTED_LANGS.includes(lang)) lang = "pt-BR";
+  try {
+    const response = await fetch(`data/lang/${lang}.json`);
+    I18N = await response.json();
+    currentLang = lang;
+    localStorage.setItem(LANG_KEY, lang);
+  } catch (err) {
+    console.warn("Falha ao carregar idioma", err);
+    if (lang !== "pt-BR") return loadLanguage("pt-BR");
+  }
+}
+
+function t(key, fallback = "") {
+  return I18N[key] || fallback || key;
+}
+
+function applyStaticI18n() {
+  document.documentElement.lang = currentLang === "pt-BR" ? "pt-BR" : currentLang === "es-ES" ? "es" : "en";
+  document.title = `${t("app.title", "Modern War Dominion")} — ${t("phase.label", "Fase 15 · v1.5.0")}`;
+  const select = $("#languageSelect");
+  if (select) select.value = currentLang;
+  $$("[data-i18n]").forEach(el => {
+    const key = el.dataset.i18n;
+    el.textContent = t(key, el.textContent);
+  });
+  $$("[data-i18n-placeholder]").forEach(el => {
+    const key = el.dataset.i18nPlaceholder;
+    el.setAttribute("placeholder", t(key, el.getAttribute("placeholder") || ""));
+  });
+}
+
+async function setLanguage(lang) {
+  await loadLanguage(lang);
+  applyStaticI18n();
+  if (state.game) renderGame();
+  else renderNationGrid();
+}
 
 const FLAG_EXTENSIONS = ["png", "webp", "jpg", "jpeg", "svg", "gif"];
 
@@ -59,8 +102,10 @@ window.MWD_NEXT_FLAG = function(img) {
 
 
 async function boot() {
+  await loadLanguage(currentLang);
   await loadData();
   bindUi();
+  applyStaticI18n();
   renderNationGrid();
   checkSave();
   registerServiceWorker();
@@ -86,6 +131,7 @@ function bindUi() {
   $("#forceLandscapeBtn").addEventListener("click", enterImmersiveMode);
   $("#nationSearch").addEventListener("input", renderNationGrid);
   $("#nextMonthBtn").addEventListener("click", advanceMonth);
+  $("#languageSelect")?.addEventListener("change", event => setLanguage(event.target.value));
   $("#regionSelect").addEventListener("change", event => {
     if (!state.game) return;
     state.game.selectedRegionId = event.target.value;
@@ -361,13 +407,13 @@ function renderSummary() {
       ${flag}
       <div><h2>${c.name}</h2><small>${c.capital} · ${c.region}</small><span class="country-doctrine">${c.doctrine}</span></div>
     </div>
-    <div class="player-focus"><span>Próximo toque recomendado</span><strong>${commanderRecommendation().title}</strong></div>
+    <div class="player-focus"><span>${currentLang === "en-US" ? "Recommended next tap" : currentLang === "es-ES" ? "Próximo toque recomendado" : "Próximo toque recomendado"}</span><strong>${commanderRecommendation().title}</strong></div>
     <div class="metrics compact-metrics">
-      <div class="metric"><small>Finanças</small><strong>${g.finance}</strong></div>
-      <div class="metric"><small>Indústria</small><strong>${g.industry}</strong></div>
-      <div class="metric"><small>Energia</small><strong>${g.energy}</strong></div>
-      <div class="metric"><small>Poder</small><strong>${powerIndex()}</strong></div>
-      <div class="metric"><small>Força</small><strong>${cond}%</strong></div>
+      <div class="metric"><small>${currentLang === "en-US" ? "Funds" : currentLang === "es-ES" ? "Fondos" : "Finanças"}</small><strong>${g.finance}</strong></div>
+      <div class="metric"><small>${currentLang === "en-US" ? "Industry" : currentLang === "es-ES" ? "Industria" : "Indústria"}</small><strong>${g.industry}</strong></div>
+      <div class="metric"><small>${currentLang === "en-US" ? "Energy" : currentLang === "es-ES" ? "Energía" : "Energia"}</small><strong>${g.energy}</strong></div>
+      <div class="metric"><small>${currentLang === "en-US" ? "Power" : currentLang === "es-ES" ? "Poder" : "Poder"}</small><strong>${powerIndex()}</strong></div>
+      <div class="metric"><small>${currentLang === "en-US" ? "Force" : currentLang === "es-ES" ? "Fuerza" : "Força"}</small><strong>${cond}%</strong></div>
       <div class="metric"><small>DEFCON</small><strong>${g.globalWar?.defcon ?? 5}</strong></div>
     </div>`;
 }
@@ -387,23 +433,23 @@ function activatePanel(panelId) {
 
 function commanderRecommendation() {
   const g = state.game;
-  if (!g) return { title: "Iniciar campanha", text: "Escolha um país para começar.", action: "new", panel: "screenNation" };
+  if (!g) return { title: t("rec.start", "Iniciar campanha"), text: t("rec.startText", "Escolha um país para começar."), action: "new", panel: "screenNation" };
   const r = getSelectedRegion();
   const damaged = g.bases.find(b => b.condition < 60);
   const emptyRegion = state.game.regions.find(reg => regionBases(reg.id).length + g.construction.filter(j => j.regionId === reg.id).length < reg.slots);
   const hasBase = g.bases.length > 0;
   const hasProd = g.production.length > 0;
   const canProduce = state.units.some(u => hasOperationalBase(u.requires, r.id) && hasBaseAtLevel(u.requires, r.id, u.requiresLevel || 1) && g.finance >= u.cost);
-  if (damaged) return { title: "Reparar base danificada", text: `${getBuilding(damaged.type).name} está com ${damaged.condition}%. Toque em Reparar prioridade para recuperar defesa.`, action: "repair", panel: "panelBuild" };
-  if (!hasBase) return { title: "Construir primeira base", text: "Comece por Base terrestre na capital. Ela libera produção de infantaria e blindados.", action: "build", panel: "panelBuild" };
-  if (!canProduce && regionBases(r.id).length) return { title: "Evoluir ou construir estrutura", text: "Suba o nível de uma base ou construa a estrutura exigida pelo arsenal.", action: "build", panel: "panelBuild" };
-  if (canProduce && !hasProd) return { title: "Produzir unidade", text: "Há unidade disponível na região ativa. Toque em Produzir recomendado.", action: "produce", panel: "panelForces" };
-  if (hasProd) return { title: "Avançar mês", text: "Existe produção/obra em andamento. Avance o mês para concluir e receber novas forças.", action: "month", panel: "panelGuide" };
-  if ((g.globalWar?.nuclearRisk || 0) > 55) return { title: "Reduzir crise mundial", text: "O risco nuclear está alto. Abra Mundo e tente desescalar.", action: "world", panel: "panelGlobal" };
+  if (damaged) return { title: t("rec.repair", "Reparar base danificada"), text: `${getBuilding(damaged.type).name} ${currentLang === "en-US" ? "is at" : currentLang === "es-ES" ? "está con" : "está com"} ${damaged.condition}%.`, action: "repair", panel: "panelBuild" };
+  if (!hasBase) return { title: t("rec.firstBase", "Construir primeira base"), text: t("rec.firstBaseText", "Comece por Base terrestre na capital."), action: "build", panel: "panelBuild" };
+  if (!canProduce && regionBases(r.id).length) return { title: t("rec.infrastructure", "Evoluir ou construir estrutura"), text: t("rec.infrastructureText", "Suba o nível de uma base ou construa a estrutura exigida pelo arsenal."), action: "build", panel: "panelBuild" };
+  if (canProduce && !hasProd) return { title: t("rec.produce", "Produzir unidade"), text: t("rec.produceText", "Há unidade disponível na região ativa."), action: "produce", panel: "panelForces" };
+  if (hasProd) return { title: t("rec.month", "Avançar mês"), text: t("rec.monthText", "Existe produção/obra em andamento."), action: "month", panel: "panelGuide" };
+  if ((g.globalWar?.nuclearRisk || 0) > 55) return { title: t("rec.world", "Reduzir crise mundial"), text: t("rec.worldText", "O risco nuclear está alto."), action: "world", panel: "panelGlobal" };
   const hostile = topAiThreats(1)[0];
-  if (hostile && hostile.hostility > 75) return { title: "Monitorar rival perigoso", text: `${getCountry(hostile.id)?.name || "Rival"} está em postura ${hostile.posture}. Abra IA antes de atacar.`, action: "ai", panel: "panelAiWorld" };
-  if (emptyRegion) return { title: "Expandir para outra região", text: `${emptyRegion.kind} ainda tem slots livres. Expanda sua rede de bases.`, action: "build", panel: "panelBuild" };
-  return { title: "Preparar ataque", text: "Seu país já tem base e produção. Escolha um alvo, reconheça e ataque com cautela.", action: "ops", panel: "panelOps" };
+  if (hostile && hostile.hostility > 75) return { title: currentLang === "en-US" ? "Monitor dangerous rival" : currentLang === "es-ES" ? "Monitorear rival peligroso" : "Monitorar rival perigoso", text: `${getCountry(hostile.id)?.name || "Rival"} ${currentLang === "en-US" ? "is in" : currentLang === "es-ES" ? "está en postura" : "está em postura"} ${hostile.posture}.`, action: "ai", panel: "panelAiWorld" };
+  if (emptyRegion) return { title: t("rec.expand", "Expandir para outra região"), text: `${emptyRegion.kind} ${currentLang === "en-US" ? "still has free slots." : currentLang === "es-ES" ? "todavía tiene espacios libres." : "ainda tem slots livres."}`, action: "build", panel: "panelBuild" };
+  return { title: t("rec.attack", "Preparar ataque"), text: t("rec.attackText", "Seu país já tem base e produção."), action: "ops", panel: "panelOps" };
 }
 
 function renderCommanderGuide() {
@@ -417,12 +463,12 @@ function renderCommanderGuide() {
   const queue = g.construction.length + g.production.length;
   const cond = forceCondition();
   const flag = flagHtml(c, "hq-flag-img");
-  const mainActionLabel = rec.action === "repair" ? "Reparar agora" : rec.action === "produce" ? "Produzir agora" : rec.action === "month" ? "Avançar mês" : rec.action === "world" ? "Abrir Mundo" : rec.action === "ai" ? "Abrir IA" : rec.action === "ops" ? "Atacar" : "Construir agora";
+  const mainActionLabel = rec.action === "repair" ? t("guide.repair", "Reparar") : rec.action === "produce" ? t("guide.produce", "Produzir") : rec.action === "month" ? t("nextMonth", "Avançar mês") : rec.action === "world" ? t("guide.world", "Mundo") : rec.action === "ai" ? t("guide.ai", "IA") : rec.action === "ops" ? t("guide.attack", "Atacar") : t("guide.build", "Construir");
   box.innerHTML = `
     <article class="mobile-hq-card">
       <div class="hq-flag-block">${flag}</div>
       <div class="hq-main">
-        <small>Você comanda</small>
+        <small>${t("guide.youCommand", "Você comanda")}</small>
         <strong>${c.name}</strong>
         <span>${c.capital} · ${c.region}</span>
         <em>${c.doctrine}</em>
@@ -430,7 +476,7 @@ function renderCommanderGuide() {
     </article>
 
     <article class="guide-hero mobile-objective">
-      <div><small>Próxima decisão recomendada</small><strong>${rec.title}</strong><span>${rec.text}</span></div>
+      <div><small>${t("guide.nextDecision", "Próxima decisão recomendada")}</small><strong>${rec.title}</strong><span>${rec.text}</span></div>
       <button id="primaryRecommendedBtn">${mainActionLabel}</button>
     </article>
 
@@ -442,21 +488,21 @@ function renderCommanderGuide() {
     </div>
 
     <div class="quick-kpis">
-      <div><small>Região ativa</small><strong>${r.kind}</strong></div>
-      <div><small>Bases aqui</small><strong>${bases}/${r.slots}</strong></div>
-      <div><small>Fila</small><strong>${queue}</strong></div>
-      <div><small>Força</small><strong>${cond}%</strong></div>
-      <div><small>Tensão</small><strong>${g.worldTension}</strong></div>
-      <div><small>Países</small><strong>${state.countries.length}</strong></div>
+      <div><small>${t("guide.currentRegion", "Região ativa")}</small><strong>${r.kind}</strong></div>
+      <div><small>${t("guide.basesHere", "Bases aqui")}</small><strong>${bases}/${r.slots}</strong></div>
+      <div><small>${t("guide.queue", "Fila")}</small><strong>${queue}</strong></div>
+      <div><small>${currentLang === "en-US" ? "Force" : currentLang === "es-ES" ? "Fuerza" : "Força"}</small><strong>${cond}%</strong></div>
+      <div><small>${t("guide.tension", "Tensão")}</small><strong>${g.worldTension}</strong></div>
+      <div><small>${t("guide.countries", "Países")}</small><strong>${state.countries.length}</strong></div>
     </div>
 
     <div class="mobile-command-grid">
-      <button id="quickBuildBtn"><b>🏗️ Construir</b><span>base recomendada</span></button>
-      <button id="quickProduceBtn"><b>🪖 Produzir</b><span>melhor unidade</span></button>
-      <button id="quickRepairBtn"><b>🛠️ Reparar</b><span>base crítica</span></button>
-      <button id="quickOpsBtn"><b>⚔️ Atacar</b><span>abrir operações</span></button>
-      <button id="quickWorldBtn"><b>🌐 Mundo</b><span>DEFCON e crise</span></button>
-      <button id="quickAiBtn"><b>🛰️ IA</b><span>rivais ativos</span></button>
+      <button id="quickBuildBtn"><b>🏗️ ${t("guide.build", "Construir")}</b><span>${t("guide.buildSub", "base recomendada")}</span></button>
+      <button id="quickProduceBtn"><b>🪖 ${t("guide.produce", "Produzir")}</b><span>${t("guide.produceSub", "melhor unidade")}</span></button>
+      <button id="quickRepairBtn"><b>🛠️ ${t("guide.repair", "Reparar")}</b><span>${t("guide.repairSub", "base crítica")}</span></button>
+      <button id="quickOpsBtn"><b>⚔️ ${t("guide.attack", "Atacar")}</b><span>${t("guide.attackSub", "abrir operações")}</span></button>
+      <button id="quickWorldBtn"><b>🌐 ${t("guide.world", "Mundo")}</b><span>${t("guide.worldSub", "DEFCON e crise")}</span></button>
+      <button id="quickAiBtn"><b>🛰️ ${t("guide.ai", "IA")}</b><span>${t("guide.aiSub", "rivais ativos")}</span></button>
     </div>`;
   $("#primaryRecommendedBtn")?.addEventListener("click", () => runRecommendedAction(rec));
   $("#quickBuildBtn")?.addEventListener("click", quickBuildRecommended);
@@ -784,7 +830,7 @@ function renderAiWorld() {
     <div><small>Países IA</small><strong>${state.game.aiWorld.length}</strong></div>
     <div><small>Em alerta/hostis</small><strong>${active}</strong></div>
     <div><small>Poder médio</small><strong>${avgPower}</strong></div>
-    <div><small>Tensão</small><strong>${state.game.worldTension}</strong></div>
+    <div><small>${t("guide.tension", "Tensão")}</small><strong>${state.game.worldTension}</strong></div>
   </div><h3>Principais ameaças e potências ativas</h3><div class="ai-country-list">${cards}</div>`;
 }
 

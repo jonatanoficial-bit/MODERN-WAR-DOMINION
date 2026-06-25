@@ -1,11 +1,12 @@
 {
   "name": "modern-war-dominion",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "private": true,
   "type": "module",
   "scripts": {
     "test": "node tests/smoke-test.mjs",
     "audit": "node tools/audit.mjs",
     "integrity": "node tools/integrity.mjs"
-  }
+  },
+  "description": "Modern War Dominion Fase 15 — sistema trilíngue PT/EN/ES"
 }

@@ -63,3 +63,12 @@ Abra `index.html` ou publique no GitHub Pages. No celular, use tela deitada/full
 - Dock inferior com ações principais: Comando, Bases, Produzir, Atacar, Mundo e Mês.
 - Roteiro visual da campanha para reduzir confusão.
 - Mantidos 249 países/territórios possíveis e importação de bandeiras por código ISO.
+
+
+## Fase 15 — Sistema trilíngue base
+
+- Adicionado seletor de idioma PT / EN / ES.
+- Criados arquivos de tradução em `data/lang/`.
+- Interface principal, Guia/HQ, botões, abas, textos de home, mapa e comandos rápidos passam a usar chaves de idioma.
+- O jogo mantém os sistemas anteriores: 249 países, bandeiras reais, mapa real, IA mundial, guerra global, arsenal, manutenção e jogabilidade mobile.
+- Próxima etapa recomendada: traduzir eventos, países, relatórios de combate e tutorial completo.
