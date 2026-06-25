@@ -75,3 +75,12 @@
 - Interface principal, Guia/HQ, botões, abas, textos de home, mapa e comandos rápidos passam a usar chaves de idioma.
 - O jogo mantém os sistemas anteriores: 249 países, bandeiras reais, mapa real, IA mundial, guerra global, arsenal, manutenção e jogabilidade mobile.
 - Próxima etapa recomendada: traduzir eventos, países, relatórios de combate e tutorial completo.
+
+
+## Fase 16 — Tutorial guiado e missões iniciais
+
+- Adicionado tutorial de campanha no Quartel-General Mobile.
+- 6 missões iniciais com progresso e recompensas.
+- Missões ensinam: construir base, concluir base, produzir unidade, receber tropa, fazer reconhecimento e sobreviver 3 meses.
+- Botões diretos reduzem confusão no mobile.
+- Tutorial integrado aos três idiomas: PT-BR, EN-US e ES-ES.

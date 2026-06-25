@@ -163,3 +163,43 @@ main{min-height:0}.screen{display:none;height:100%;min-height:0}.screen-active{d
 @media (max-height:560px){
   .lang-select{min-width:50px;padding:7px 5px;font-size:.66rem}
 }
+
+
+/* Fase 16 — Tutorial guiado e missões iniciais */
+.tutorial-board{
+  margin:12px 0;
+  border:1px solid rgba(95,243,255,.22);
+  border-radius:20px;
+  background:linear-gradient(145deg,rgba(7,15,26,.66),rgba(7,12,20,.42));
+  padding:12px;
+  box-shadow:0 18px 42px rgba(0,0,0,.20);
+}
+.tutorial-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px}
+.tutorial-head small{display:block;color:var(--accent);text-transform:uppercase;letter-spacing:.12em;font-size:.62rem;font-weight:900}
+.tutorial-head strong{font-size:1rem}
+.tutorial-head > span{font-weight:900;color:#06121d;background:linear-gradient(135deg,var(--accent),var(--accent-2));padding:7px 10px;border-radius:999px}
+.tutorial-progress{height:8px;border-radius:999px;background:rgba(255,255,255,.08);overflow:hidden;margin-bottom:10px}
+.tutorial-progress i{display:block;height:100%;background:linear-gradient(90deg,var(--accent),var(--accent-2));border-radius:999px}
+.tutorial-list{display:grid;gap:8px}
+.tutorial-mission{display:grid;grid-template-columns:32px 1fr auto;gap:10px;align-items:center;border:1px solid rgba(255,255,255,.09);border-radius:16px;background:rgba(255,255,255,.045);padding:9px}
+.tutorial-mission b{display:grid;place-items:center;width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12)}
+.tutorial-mission strong{display:block;font-size:.84rem}
+.tutorial-mission span{display:block;color:#c8d9ea;font-size:.68rem;line-height:1.25;margin-top:2px}
+.tutorial-mission small{display:block;color:#9fb6cd;font-size:.62rem;margin-top:4px}
+.tutorial-mission.done{border-color:rgba(106,255,173,.30);background:rgba(40,108,76,.18)}
+.tutorial-mission.done b{background:rgba(106,255,173,.20);border-color:rgba(106,255,173,.34)}
+.tutorial-mission.next{border-color:rgba(95,243,255,.36);background:rgba(26,93,118,.20)}
+.tutorial-mission.locked{opacity:.62}
+.tutorial-mission em{font-style:normal;color:#b8ffd9;font-weight:900;font-size:.68rem}
+.tutorial-action{border-radius:12px;padding:8px 9px;background:linear-gradient(135deg,var(--accent),var(--accent-2));color:#03101b;font-weight:900;min-width:78px}
+.event-feed .event.tutorial,.event.tutorial{border-color:rgba(106,255,173,.35);background:rgba(33,97,70,.18)}
+@media (max-height:560px){
+  .tutorial-board{padding:9px;margin:8px 0}
+  .tutorial-list{gap:6px}
+  .tutorial-mission{grid-template-columns:26px 1fr auto;padding:7px;border-radius:13px}
+  .tutorial-mission b{width:24px;height:24px;font-size:.72rem}
+  .tutorial-mission strong{font-size:.72rem}
+  .tutorial-mission span{font-size:.58rem}
+  .tutorial-mission small{display:none}
+  .tutorial-action{padding:7px 8px;min-width:62px;font-size:.66rem}
+}

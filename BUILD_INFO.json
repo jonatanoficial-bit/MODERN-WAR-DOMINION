@@ -1,7 +1,7 @@
 {
   "project": "Modern War Dominion",
-  "version": "1.5.0",
-  "phase": "Fase 15 — Sistema trilíngue base PT-BR / EN-US / ES-ES",
+  "version": "1.6.0",
+  "phase": "Fase 16 — Tutorial guiado e missões iniciais",
   "generated_at": "2026-06-24",
   "base": "Fase 5 assets integrados",
   "features": [
@@ -12,11 +12,11 @@
     "mapa real preservado"
   ],
   "notes": [
-    "Criados arquivos data/lang/pt-BR.json, en-US.json e es-ES.json",
-    "Adicionado seletor de idioma no topo",
-    "Textos principais da interface traduzidos",
-    "Guia do comandante e HQ mobile usam chaves de tradução",
-    "Base preparada para traduzir eventos, países e relatórios nas próximas fases"
+    "Tutorial de campanha com 6 missões iniciais",
+    "Recompensas automáticas por missão concluída",
+    "Botões de ação direta dentro das missões",
+    "Reconhecimento agora completa missão de tutorial",
+    "Tutorial funciona com PT-BR, EN-US e ES-ES"
   ],
   "countries_count": 249,
   "countries_available": 249,
@@ -24,5 +24,6 @@
     "pt-BR",
     "en-US",
     "es-ES"
-  ]
+  ],
+  "tutorial_missions": 6
 }

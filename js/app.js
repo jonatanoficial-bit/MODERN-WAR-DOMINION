@@ -1,6 +1,6 @@
-const VERSION = "1.5.0";
-const PHASE = "Fase 15 — sistema trilíngue base";
-const SAVE_KEY = "MWD_SAVE_F15";
+const VERSION = "1.6.0";
+const PHASE = "Fase 16 — tutorial guiado e missões iniciais";
+const SAVE_KEY = "MWD_SAVE_F16";
 
 const $ = (sel, root = document) => root.querySelector(sel);
 const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
@@ -201,6 +201,109 @@ function renderNationGrid() {
   });
 }
 
+
+function makeTutorialState() {
+  return {
+    claimed: [],
+    reconDone: false,
+    startedAt: Date.now()
+  };
+}
+
+function ensureTutorial() {
+  if (!state.game) return null;
+  if (!state.game.tutorial) state.game.tutorial = makeTutorialState();
+  if (!Array.isArray(state.game.tutorial.claimed)) state.game.tutorial.claimed = [];
+  return state.game.tutorial;
+}
+
+function tutorialMissions() {
+  const g = state.game;
+  const hasBaseQueued = g.bases.length + g.construction.length > 0;
+  const hasOperationalBaseReady = g.bases.length > 0;
+  const hasUnitQueued = g.production.length + g.units.length > 0;
+  const hasOperationalUnit = g.units.length > 0;
+  const tutorial = ensureTutorial();
+  return [
+    { id: "build-base", title: t("tutorial.m1.title", "Construir sua primeira base"), text: t("tutorial.m1.text", "Toque em Construir para iniciar uma base na região da capital."), reward: t("tutorial.m1.reward", "+80 finanças, +60 indústria"), done: hasBaseQueued, action: "build" },
+    { id: "finish-base", title: t("tutorial.m2.title", "Concluir a construção"), text: t("tutorial.m2.text", "Avance o mês até a base ficar operacional."), reward: t("tutorial.m2.reward", "+40 energia, +4 defesa"), done: hasOperationalBaseReady, action: "month" },
+    { id: "queue-unit", title: t("tutorial.m3.title", "Produzir primeira unidade"), text: t("tutorial.m3.text", "Com a base pronta, produza uma unidade militar."), reward: t("tutorial.m3.reward", "+60 finanças"), done: hasUnitQueued, action: "produce" },
+    { id: "finish-unit", title: t("tutorial.m4.title", "Receber tropa operacional"), text: t("tutorial.m4.text", "Avance o mês até a unidade entrar no seu exército."), reward: t("tutorial.m4.reward", "+3 prontidão, +2 poder terrestre"), done: hasOperationalUnit, action: "month" },
+    { id: "recon", title: t("tutorial.m5.title", "Fazer reconhecimento"), text: t("tutorial.m5.text", "Abra Atacar e faça um reconhecimento antes de uma guerra maior."), reward: t("tutorial.m5.reward", "+5 inteligência, -2 tensão"), done: !!tutorial?.reconDone, action: "ops" },
+    { id: "survive-3", title: t("tutorial.m6.title", "Sobreviver aos 3 primeiros meses"), text: t("tutorial.m6.text", "Mantenha produção, recursos e defesa durante os primeiros meses."), reward: t("tutorial.m6.reward", "+100 finanças, +80 indústria, +5 estabilidade"), done: g.month >= 3, action: "month" }
+  ];
+}
+
+function applyTutorialReward(id) {
+  const g = state.game;
+  if (!g) return;
+  if (id === "build-base") { g.finance += 80; g.industry += 60; }
+  if (id === "finish-base") { g.energy += 40; g.defense += 4; }
+  if (id === "queue-unit") { g.finance += 60; }
+  if (id === "finish-unit") { g.readiness = clamp(g.readiness + 3, 0, 100); g.landPower += 2; }
+  if (id === "recon") { g.intel = clamp(g.intel + 5, 0, 100); g.worldTension = clamp(g.worldTension - 2, 0, 100); }
+  if (id === "survive-3") { g.finance += 100; g.industry += 80; g.stability = clamp(g.stability + 5, 0, 100); }
+}
+
+function evaluateTutorialMissions() {
+  if (!state.game) return;
+  const tutorial = ensureTutorial();
+  const missions = tutorialMissions();
+  let changed = false;
+  missions.forEach(mission => {
+    if (mission.done && !tutorial.claimed.includes(mission.id)) {
+      tutorial.claimed.push(mission.id);
+      applyTutorialReward(mission.id);
+      state.game.events.unshift(eventText("tutorial", `✅ ${mission.title} — ${mission.reward}`));
+      changed = true;
+    }
+  });
+  if (changed) saveGame();
+}
+
+function runTutorialAction(action) {
+  if (action === "build") return quickBuildRecommended();
+  if (action === "produce") return quickProduceRecommended();
+  if (action === "month") return advanceMonth();
+  if (action === "ops") return activatePanel("panelOps");
+  return runRecommendedAction(commanderRecommendation());
+}
+
+function renderTutorialMissions() {
+  const tutorial = ensureTutorial();
+  const missions = tutorialMissions();
+  const completed = missions.filter(m => tutorial.claimed.includes(m.id)).length;
+  const next = missions.find(m => !tutorial.claimed.includes(m.id));
+  return `
+    <section class="tutorial-board">
+      <div class="tutorial-head">
+        <div><small>${t("tutorial.progress", "Progresso")}</small><strong>${t("tutorial.title", "Missões iniciais")}</strong></div>
+        <span>${completed}/${missions.length}</span>
+      </div>
+      <div class="tutorial-progress"><i style="width:${Math.round((completed / missions.length) * 100)}%"></i></div>
+      <div class="tutorial-list">
+        ${missions.map((mission, index) => {
+          const claimed = tutorial.claimed.includes(mission.id);
+          const isNext = next && next.id === mission.id;
+          return `
+            <article class="tutorial-mission ${claimed ? "done" : isNext ? "next" : "locked"}">
+              <b>${claimed ? "✓" : index + 1}</b>
+              <div>
+                <strong>${mission.title}</strong>
+                <span>${mission.text}</span>
+                <small>${t("tutorial.reward", "Recompensa")}: ${mission.reward}</small>
+              </div>
+              ${claimed ? `<em>${t("tutorial.done", "Concluída")}</em>` : isNext ? `<button class="tutorial-action" data-tutorial-action="${mission.action}">${mission.action === "ops" ? t("tutorial.openOps", "Abrir ataque") : mission.action === "month" ? t("tutorial.advance", "Avançar mês") : t("tutorial.action", "Fazer")}</button>` : ""}
+            </article>`;
+        }).join("")}
+      </div>
+    </section>`;
+}
+
+function bindTutorialMissionButtons() {
+  $$(".tutorial-action").forEach(btn => btn.addEventListener("click", () => runTutorialAction(btn.dataset.tutorialAction)));
+}
+
 function makeInitialGame(countryId) {
   const country = state.countries.find(c => c.id === countryId) || state.countries[0];
   const regions = makeRegions(country);
@@ -237,6 +340,7 @@ function makeInitialGame(countryId) {
     monthlyLosses: 0,
     globalWar: makeGlobalWar(country),
     aiWorld: makeAiWorld(country),
+    tutorial: makeTutorialState(),
     relations: seedRelations(country),
     events: [eventText("sistema", `Campanha iniciada com ${country.name}. Agora sua prioridade é ocupar slots regionais, produzir forças e sustentar a manutenção militar.`)],
     threats: generateThreats(country)
@@ -377,6 +481,8 @@ function saveGame() {
 }
 
 function renderGame() {
+  ensureTutorial();
+  evaluateTutorialMissions();
   renderSummary();
   renderCommanderGuide();
   renderRegionSelect();
@@ -481,10 +587,10 @@ function renderCommanderGuide() {
     </article>
 
     <div class="mission-flow">
-      <article class="${g.bases.length ? 'done' : 'active'}"><b>1</b><span>Base</span><small>${g.bases.length ? "feito" : "toque em construir"}</small></article>
-      <article class="${g.units.length ? 'done' : (g.bases.length ? 'active' : 'locked')}"><b>2</b><span>Unidade</span><small>${g.units.length ? "operacional" : "produzir"}</small></article>
-      <article class="${powerIndex() > 70 ? 'done' : (g.units.length ? 'active' : 'locked')}"><b>3</b><span>Poder</span><small>${powerIndex()}</small></article>
-      <article class="${(g.globalWar?.warScore || 0) > 25 ? 'done' : 'active'}"><b>4</b><span>Guerra</span><small>DEFCON ${g.globalWar?.defcon ?? 5}</small></article>
+      <article class="${g.bases.length ? 'done' : 'active'}"><b>1</b><span>${t("mission.base", "Base")}</span><small>${g.bases.length ? t("mission.doneShort", "feito") : t("mission.buildShort", "construir")}</small></article>
+      <article class="${g.units.length ? 'done' : (g.bases.length ? 'active' : 'locked')}"><b>2</b><span>${t("mission.unit", "Unidade")}</span><small>${g.units.length ? t("mission.operational", "operacional") : t("mission.produceShort", "produzir")}</small></article>
+      <article class="${powerIndex() > 70 ? 'done' : (g.units.length ? 'active' : 'locked')}"><b>3</b><span>${t("mission.power", "Poder")}</span><small>${powerIndex()}</small></article>
+      <article class="${(g.globalWar?.warScore || 0) > 25 ? 'done' : 'active'}"><b>4</b><span>${t("mission.war", "Guerra")}</span><small>DEFCON ${g.globalWar?.defcon ?? 5}</small></article>
     </div>
 
     <div class="quick-kpis">
@@ -495,6 +601,8 @@ function renderCommanderGuide() {
       <div><small>${t("guide.tension", "Tensão")}</small><strong>${g.worldTension}</strong></div>
       <div><small>${t("guide.countries", "Países")}</small><strong>${state.countries.length}</strong></div>
     </div>
+
+    ${renderTutorialMissions()}
 
     <div class="mobile-command-grid">
       <button id="quickBuildBtn"><b>🏗️ ${t("guide.build", "Construir")}</b><span>${t("guide.buildSub", "base recomendada")}</span></button>
@@ -511,6 +619,7 @@ function renderCommanderGuide() {
   $("#quickOpsBtn")?.addEventListener("click", () => activatePanel("panelOps"));
   $("#quickWorldBtn")?.addEventListener("click", () => activatePanel("panelGlobal"));
   $("#quickAiBtn")?.addEventListener("click", () => activatePanel("panelAiWorld"));
+  bindTutorialMissionButtons();
 }
 
 function runRecommendedAction(rec) {
@@ -1013,6 +1122,8 @@ function launchOperation(kind) {
   const target = state.countries.find(c => c.id === targetId);
   if (!target) return;
   const g = state.game;
+  ensureTutorial();
+  if (kind === "recon" && g.tutorial) g.tutorial.reconDone = true;
   const costs = {
     recon: { finance: 12, energy: 4, tension: 2, power: g.intel + g.cyber },
     airstrike: { finance: 35, energy: 16, tension: 8, power: g.airPower + g.missilePower / 2 },
