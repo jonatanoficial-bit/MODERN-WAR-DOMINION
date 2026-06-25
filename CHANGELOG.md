@@ -43,3 +43,11 @@
 - Script `tools/import-flags-gitbash.sh` para copiar as bandeiras da pasta do Windows.
 - Cards de país, resumo e marcadores do mapa usam imagem real com fallback emoji.
 - Painel Mundo ganhou objetivos de campanha com progresso.
+
+
+## Fase 12 — Jogabilidade mobile e países do mundo
+- Países expandidos para praticamente toda a lista ISO disponível
+- Painel Guia do comandante com ações rápidas
+- Bandeira real vira logo visual do país do jogador
+- Importador de bandeiras normaliza nomes para minúsculo
+- Interface lateral mais usável no mobile com abas roláveis

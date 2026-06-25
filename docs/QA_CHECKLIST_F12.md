@@ -1,0 +1,5 @@
+- Testar tela de seleção com busca
+- Testar guia do comandante
+- Testar importação de bandeiras
+- Testar fallback por emoji
+- Testar mobile landscape

@@ -1,6 +1,6 @@
-const VERSION = "1.1.0";
+const VERSION = "1.2.0";
 const PHASE = "Fase 11 — bandeiras reais e objetivos de campanha";
-const SAVE_KEY = "MWD_SAVE_V11";
+const SAVE_KEY = "MWD_SAVE_V12";
 
 const $ = (sel, root = document) => root.querySelector(sel);
 const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
@@ -100,12 +100,7 @@ function bindUi() {
   });
 
   $$(".side-tab").forEach(btn => {
-    btn.addEventListener("click", () => {
-      $$(".side-tab").forEach(b => b.classList.remove("is-active"));
-      $$(".side-panel").forEach(p => p.classList.remove("is-active"));
-      btn.classList.add("is-active");
-      $("#" + btn.dataset.panel).classList.add("is-active");
-    });
+    btn.addEventListener("click", () => activatePanel(btn.dataset.panel));
   });
 
   $$(".op-btn").forEach(btn => btn.addEventListener("click", () => launchOperation(btn.dataset.op)));
@@ -143,7 +138,7 @@ function renderNationGrid() {
   const term = ($("#nationSearch")?.value || "").toLowerCase().trim();
   const grid = $("#nationGrid");
   grid.innerHTML = "";
-  const list = state.countries.filter(c => [c.name, c.capital, c.region, c.doctrine, c.bloc, c.iso].join(" ").toLowerCase().includes(term));
+  const list = state.countries.filter(c => [c.name, c.capital, c.region, c.doctrine, c.bloc, c.iso, c.flagCode, ...(c.flagAliases || [])].join(" ").toLowerCase().includes(term));
   list.forEach(country => {
     const card = document.createElement("article");
     card.className = "nation-card";
@@ -305,6 +300,7 @@ function saveGame() {
 
 function renderGame() {
   renderSummary();
+  renderCommanderGuide();
   renderRegionSelect();
   renderRegionBoard();
   renderBuildList();
@@ -322,12 +318,113 @@ function renderGame() {
 function renderSummary() {
   const g = state.game;
   const c = getPlayerCountry();
+  const cond = forceCondition();
+  const flag = flagHtml(c, "player-flag-img");
   $("#monthLabel").textContent = `${monthNames[g.month % 12]}/${g.year}`;
-  $("#countrySummary").innerHTML = `<h2>${flagHtml(c, "big-flag-img")} ${c.name}</h2><small>${c.capital} · ${c.doctrine}</small><div class="metrics"><div class="metric"><small>Finanças</small><strong>${g.finance}</strong></div><div class="metric"><small>Indústria</small><strong>${g.industry}</strong></div><div class="metric"><small>Energia</small><strong>${g.energy}</strong></div><div class="metric"><small>Soldados</small><strong>${formatSoldiers(g.soldiers)}</strong></div><div class="metric"><small>Poder</small><strong>${powerIndex()}</strong></div><div class="metric"><small>DEFCON</small><strong>${state.game.globalWar?.defcon ?? 5}</strong></div></div>`;
+  $("#countrySummary").innerHTML = `
+    <div class="player-identity">
+      ${flag}
+      <div><h2>${c.name}</h2><small>${c.capital} · ${c.region} · ${c.doctrine}</small></div>
+    </div>
+    <div class="player-focus"><span>Objetivo atual</span><strong>${commanderRecommendation().title}</strong></div>
+    <div class="metrics compact-metrics">
+      <div class="metric"><small>Finanças</small><strong>${g.finance}</strong></div>
+      <div class="metric"><small>Indústria</small><strong>${g.industry}</strong></div>
+      <div class="metric"><small>Energia</small><strong>${g.energy}</strong></div>
+      <div class="metric"><small>Poder</small><strong>${powerIndex()}</strong></div>
+      <div class="metric"><small>Força</small><strong>${cond}%</strong></div>
+      <div class="metric"><small>DEFCON</small><strong>${g.globalWar?.defcon ?? 5}</strong></div>
+    </div>`;
 }
 
 function getSelectedRegion() {
   return state.game.regions.find(r => r.id === state.game.selectedRegionId) || state.game.regions[0];
+}
+
+
+function activatePanel(panelId) {
+  $$(".side-tab").forEach(b => b.classList.toggle("is-active", b.dataset.panel === panelId));
+  $$(".side-panel").forEach(p => p.classList.toggle("is-active", p.id === panelId));
+}
+
+function commanderRecommendation() {
+  const g = state.game;
+  if (!g) return { title: "Iniciar campanha", text: "Escolha um país para começar.", action: "new" };
+  const r = getSelectedRegion();
+  const damaged = g.bases.find(b => b.condition < 60);
+  const hasBase = g.bases.length > 0;
+  const hasProd = g.production.length > 0;
+  const canProduce = state.units.some(u => hasOperationalBase(u.requires, r.id) && hasBaseAtLevel(u.requires, r.id, u.requiresLevel || 1) && g.finance >= u.cost);
+  if (damaged) return { title: "Reparar base danificada", text: `${getBuilding(damaged.type).name} está com ${damaged.condition}%. Repare para não perder defesa.`, action: "repair" };
+  if (!hasBase) return { title: "Construir primeira base", text: "Comece por Base terrestre ou Centro logístico na região da capital.", action: "build" };
+  if (!canProduce && regionBases(r.id).length) return { title: "Evoluir infraestrutura", text: "Suba o nível de uma base ou construa estrutura exigida pelo arsenal.", action: "build" };
+  if (canProduce && !hasProd) return { title: "Produzir unidade", text: "Há unidades disponíveis para produção na região ativa.", action: "produce" };
+  if (hasProd) return { title: "Avançar mês", text: "Há produção em andamento. Avance o mês para concluir obras/unidades.", action: "month" };
+  if ((g.globalWar?.nuclearRisk || 0) > 55) return { title: "Reduzir crise mundial", text: "O risco nuclear está alto. Use desescalar no painel Mundo.", action: "world" };
+  return { title: "Expandir poder militar", text: "Construa outra base, produza unidades e monitore ameaças.", action: "build" };
+}
+
+function renderCommanderGuide() {
+  const box = $("#commanderGuide");
+  if (!box || !state.game) return;
+  const g = state.game;
+  const r = getSelectedRegion();
+  const rec = commanderRecommendation();
+  const bases = regionBases(r.id).length;
+  const queue = g.construction.length + g.production.length;
+  box.innerHTML = `
+    <article class="guide-hero">
+      <div><small>Próxima decisão recomendada</small><strong>${rec.title}</strong><span>${rec.text}</span></div>
+    </article>
+    <div class="guide-steps">
+      <article class="${g.bases.length ? 'done' : 'todo'}"><b>1</b><span>Construir base</span></article>
+      <article class="${g.units.length ? 'done' : 'todo'}"><b>2</b><span>Produzir tropa</span></article>
+      <article class="${powerIndex() > 70 ? 'done' : 'todo'}"><b>3</b><span>Aumentar poder</span></article>
+      <article class="${(g.globalWar?.warScore || 0) > 25 ? 'done' : 'todo'}"><b>4</b><span>Dominar crise</span></article>
+    </div>
+    <div class="quick-kpis">
+      <div><small>Região ativa</small><strong>${r.kind}</strong></div>
+      <div><small>Bases aqui</small><strong>${bases}/${r.slots}</strong></div>
+      <div><small>Fila</small><strong>${queue}</strong></div>
+      <div><small>Tensão</small><strong>${g.worldTension}</strong></div>
+    </div>
+    <div class="quick-actions">
+      <button id="quickBuildBtn">Construir recomendado</button>
+      <button id="quickProduceBtn">Produzir recomendado</button>
+      <button id="quickRepairBtn">Reparar prioridade</button>
+      <button id="quickWorldBtn">Painel Mundo</button>
+    </div>`;
+  $("#quickBuildBtn")?.addEventListener("click", quickBuildRecommended);
+  $("#quickProduceBtn")?.addEventListener("click", quickProduceRecommended);
+  $("#quickRepairBtn")?.addEventListener("click", quickRepairPriority);
+  $("#quickWorldBtn")?.addEventListener("click", () => activatePanel("panelGlobal"));
+}
+
+function quickBuildRecommended() {
+  const r = getSelectedRegion();
+  const used = regionBases(r.id).length + state.game.construction.filter(j => j.regionId === r.id).length;
+  if (used >= r.slots) { state.game.events.push(eventText("warn", "Região sem slots livres. Escolha outra região.")); renderGame(); return; }
+  const order = ["army_base", "logistics_hub", "air_base", "radar_station", "naval_port", "missile_site", "cyber_command"];
+  const pick = order.map(id => getBuilding(id)).find(b => b && canAfford(b.cost)) || state.buildings.find(b => canAfford(b.cost));
+  if (!pick) { state.game.events.push(eventText("warn", "Recursos insuficientes para construção recomendada.")); renderGame(); return; }
+  buildBase(pick.id);
+  activatePanel("panelBuild");
+}
+
+function quickProduceRecommended() {
+  const r = getSelectedRegion();
+  const candidates = state.units.filter(u => hasOperationalBase(u.requires, r.id) && hasBaseAtLevel(u.requires, r.id, u.requiresLevel || 1) && state.game.finance >= u.cost);
+  if (!candidates.length) { state.game.events.push(eventText("warn", "Nenhuma unidade disponível nesta região. Construa ou evolua bases.")); renderGame(); return; }
+  const pick = candidates.sort((a,b) => (b.power + (b.attack || 0) + (b.defense || 0)) - (a.power + (a.attack || 0) + (a.defense || 0)))[0];
+  queueUnit(pick.id);
+  activatePanel("panelForces");
+}
+
+function quickRepairPriority() {
+  const damaged = state.game.bases.filter(b => b.condition < 100).sort((a,b) => a.condition - b.condition)[0];
+  if (!damaged) { state.game.events.push(eventText("sistema", "Nenhuma base precisa de reparo agora.")); renderGame(); return; }
+  repairBase(damaged.id);
+  activatePanel("panelBuild");
 }
 
 function renderRegionSelect() {

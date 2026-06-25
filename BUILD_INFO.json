@@ -1,7 +1,7 @@
 {
   "project": "Modern War Dominion",
-  "version": "1.1.0",
-  "phase": "Fase 11 — bandeiras reais e objetivos de campanha",
+  "version": "1.2.0",
+  "phase": "Fase 12 — jogabilidade mobile e países do mundo",
   "generated_at": "2026-06-24",
   "base": "Fase 5 assets integrados",
   "features": [
@@ -12,9 +12,10 @@
     "mapa real preservado"
   ],
   "notes": [
-    "Sistema de bandeiras reais via assets/flags",
-    "Script para importar bandeiras do Windows",
-    "Objetivos de campanha no painel Mundo",
-    "Fallback por emoji quando a imagem não existir"
-  ]
+    "Painel Guia com ações rápidas",
+    "Bandeira real como identidade do jogador",
+    "Lista de países expandida",
+    "Abas laterais ajustadas para mobile"
+  ],
+  "countries_count": 249
 }
