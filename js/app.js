@@ -1,6 +1,6 @@
-const VERSION = "1.2.0";
-const PHASE = "Fase 11 — bandeiras reais e objetivos de campanha";
-const SAVE_KEY = "MWD_SAVE_V12";
+const VERSION = "1.4.0";
+const PHASE = "Fase 14 — rework total da jogabilidade mobile";
+const SAVE_KEY = "MWD_SAVE_F14";
 
 const $ = (sel, root = document) => root.querySelector(sel);
 const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
@@ -110,6 +110,9 @@ function bindUi() {
     $$(".arsenal-filter").forEach(b => b.classList.toggle("is-active", b === btn));
     renderArsenal();
   }));
+
+  $$(".dock-btn[data-panel]").forEach(btn => btn.addEventListener("click", () => activatePanel(btn.dataset.panel)));
+  $("#dockNextMonthBtn")?.addEventListener("click", advanceMonth);
 }
 
 function showScreen(id) {
@@ -187,6 +190,7 @@ function makeInitialGame(countryId) {
     logisticsBudget: 100,
     monthlyLosses: 0,
     globalWar: makeGlobalWar(country),
+    aiWorld: makeAiWorld(country),
     relations: seedRelations(country),
     events: [eventText("sistema", `Campanha iniciada com ${country.name}. Agora sua prioridade é ocupar slots regionais, produzir forças e sustentar a manutenção militar.`)],
     threats: generateThreats(country)
@@ -245,6 +249,33 @@ function ensureGlobalWar() {
   if (!Array.isArray(state.game.globalWar.invasions)) state.game.globalWar.invasions = [];
 }
 
+
+function makeAiWorld(playerCountry) {
+  return state.countries
+    .filter(c => c.id !== playerCountry.id)
+    .map(c => {
+      const distance = getDistance(playerCountry.coords, c.coords);
+      const blocModifier = c.bloc === playerCountry.bloc ? -10 : 8;
+      const baseHostility = clamp(22 + c.military / 4 + (c.nuclear ? 8 : 0) + blocModifier - Math.round(distance / 5200), 5, 92);
+      return {
+        id: c.id,
+        power: clamp(c.military + c.defenseBudget / 3 + c.cyber / 5 + randomInt(-6, 8), 8, 180),
+        economy: clamp(c.economy + c.industry / 3 + randomInt(-8, 8), 8, 180),
+        readiness: clamp(34 + c.military / 2 + randomInt(-8, 12), 12, 100),
+        posture: baseHostility > 62 ? "hostil" : baseHostility > 42 ? "alerta" : c.bloc === playerCountry.bloc ? "aliado" : "neutro",
+        hostility: baseHostility,
+        mobilization: clamp(20 + c.defenseBudget / 3 + randomInt(-5, 10), 5, 100),
+        lastMove: "monitorando"
+      };
+    });
+}
+
+function ensureAiWorld() {
+  if (!state.game.aiWorld || !Array.isArray(state.game.aiWorld) || state.game.aiWorld.length < Math.max(20, state.countries.length - 10)) {
+    state.game.aiWorld = makeAiWorld(getPlayerCountry());
+  }
+}
+
 function seedRelations(playerCountry) {
   return state.countries.filter(c => c.id !== playerCountry.id).map(c => {
     const distance = getDistance(playerCountry.coords, c.coords);
@@ -288,6 +319,7 @@ function continueGame() {
   if (!raw) return;
   state.game = JSON.parse(raw);
   ensureGlobalWar();
+  ensureAiWorld();
   $(".tab-btn[data-screen='screenWar']").disabled = false;
   renderGame();
   showScreen("screenWar");
@@ -309,6 +341,7 @@ function renderGame() {
   renderArsenal();
   renderMaintenance();
   renderGlobalWar();
+  renderAiWorld();
   renderTargetSelect();
   renderIntel();
   initMap();
@@ -320,13 +353,15 @@ function renderSummary() {
   const c = getPlayerCountry();
   const cond = forceCondition();
   const flag = flagHtml(c, "player-flag-img");
+  const titleFlag = flagHtml(c, "title-flag-img");
   $("#monthLabel").textContent = `${monthNames[g.month % 12]}/${g.year}`;
+  $("#commandTitle").innerHTML = `${titleFlag}<span>${c.name} — Comando Nacional</span>`;
   $("#countrySummary").innerHTML = `
-    <div class="player-identity">
+    <div class="player-identity upgraded">
       ${flag}
-      <div><h2>${c.name}</h2><small>${c.capital} · ${c.region} · ${c.doctrine}</small></div>
+      <div><h2>${c.name}</h2><small>${c.capital} · ${c.region}</small><span class="country-doctrine">${c.doctrine}</span></div>
     </div>
-    <div class="player-focus"><span>Objetivo atual</span><strong>${commanderRecommendation().title}</strong></div>
+    <div class="player-focus"><span>Próximo toque recomendado</span><strong>${commanderRecommendation().title}</strong></div>
     <div class="metrics compact-metrics">
       <div class="metric"><small>Finanças</small><strong>${g.finance}</strong></div>
       <div class="metric"><small>Indústria</small><strong>${g.industry}</strong></div>
@@ -345,59 +380,102 @@ function getSelectedRegion() {
 function activatePanel(panelId) {
   $$(".side-tab").forEach(b => b.classList.toggle("is-active", b.dataset.panel === panelId));
   $$(".side-panel").forEach(p => p.classList.toggle("is-active", p.id === panelId));
+  $$(".dock-btn[data-panel]").forEach(b => b.classList.toggle("is-active", b.dataset.panel === panelId));
+  const panel = $("#" + panelId);
+  if (panel) panel.scrollTop = 0;
 }
 
 function commanderRecommendation() {
   const g = state.game;
-  if (!g) return { title: "Iniciar campanha", text: "Escolha um país para começar.", action: "new" };
+  if (!g) return { title: "Iniciar campanha", text: "Escolha um país para começar.", action: "new", panel: "screenNation" };
   const r = getSelectedRegion();
   const damaged = g.bases.find(b => b.condition < 60);
+  const emptyRegion = state.game.regions.find(reg => regionBases(reg.id).length + g.construction.filter(j => j.regionId === reg.id).length < reg.slots);
   const hasBase = g.bases.length > 0;
   const hasProd = g.production.length > 0;
   const canProduce = state.units.some(u => hasOperationalBase(u.requires, r.id) && hasBaseAtLevel(u.requires, r.id, u.requiresLevel || 1) && g.finance >= u.cost);
-  if (damaged) return { title: "Reparar base danificada", text: `${getBuilding(damaged.type).name} está com ${damaged.condition}%. Repare para não perder defesa.`, action: "repair" };
-  if (!hasBase) return { title: "Construir primeira base", text: "Comece por Base terrestre ou Centro logístico na região da capital.", action: "build" };
-  if (!canProduce && regionBases(r.id).length) return { title: "Evoluir infraestrutura", text: "Suba o nível de uma base ou construa estrutura exigida pelo arsenal.", action: "build" };
-  if (canProduce && !hasProd) return { title: "Produzir unidade", text: "Há unidades disponíveis para produção na região ativa.", action: "produce" };
-  if (hasProd) return { title: "Avançar mês", text: "Há produção em andamento. Avance o mês para concluir obras/unidades.", action: "month" };
-  if ((g.globalWar?.nuclearRisk || 0) > 55) return { title: "Reduzir crise mundial", text: "O risco nuclear está alto. Use desescalar no painel Mundo.", action: "world" };
-  return { title: "Expandir poder militar", text: "Construa outra base, produza unidades e monitore ameaças.", action: "build" };
+  if (damaged) return { title: "Reparar base danificada", text: `${getBuilding(damaged.type).name} está com ${damaged.condition}%. Toque em Reparar prioridade para recuperar defesa.`, action: "repair", panel: "panelBuild" };
+  if (!hasBase) return { title: "Construir primeira base", text: "Comece por Base terrestre na capital. Ela libera produção de infantaria e blindados.", action: "build", panel: "panelBuild" };
+  if (!canProduce && regionBases(r.id).length) return { title: "Evoluir ou construir estrutura", text: "Suba o nível de uma base ou construa a estrutura exigida pelo arsenal.", action: "build", panel: "panelBuild" };
+  if (canProduce && !hasProd) return { title: "Produzir unidade", text: "Há unidade disponível na região ativa. Toque em Produzir recomendado.", action: "produce", panel: "panelForces" };
+  if (hasProd) return { title: "Avançar mês", text: "Existe produção/obra em andamento. Avance o mês para concluir e receber novas forças.", action: "month", panel: "panelGuide" };
+  if ((g.globalWar?.nuclearRisk || 0) > 55) return { title: "Reduzir crise mundial", text: "O risco nuclear está alto. Abra Mundo e tente desescalar.", action: "world", panel: "panelGlobal" };
+  const hostile = topAiThreats(1)[0];
+  if (hostile && hostile.hostility > 75) return { title: "Monitorar rival perigoso", text: `${getCountry(hostile.id)?.name || "Rival"} está em postura ${hostile.posture}. Abra IA antes de atacar.`, action: "ai", panel: "panelAiWorld" };
+  if (emptyRegion) return { title: "Expandir para outra região", text: `${emptyRegion.kind} ainda tem slots livres. Expanda sua rede de bases.`, action: "build", panel: "panelBuild" };
+  return { title: "Preparar ataque", text: "Seu país já tem base e produção. Escolha um alvo, reconheça e ataque com cautela.", action: "ops", panel: "panelOps" };
 }
 
 function renderCommanderGuide() {
   const box = $("#commanderGuide");
   if (!box || !state.game) return;
   const g = state.game;
+  const c = getPlayerCountry();
   const r = getSelectedRegion();
   const rec = commanderRecommendation();
   const bases = regionBases(r.id).length;
   const queue = g.construction.length + g.production.length;
+  const cond = forceCondition();
+  const flag = flagHtml(c, "hq-flag-img");
+  const mainActionLabel = rec.action === "repair" ? "Reparar agora" : rec.action === "produce" ? "Produzir agora" : rec.action === "month" ? "Avançar mês" : rec.action === "world" ? "Abrir Mundo" : rec.action === "ai" ? "Abrir IA" : rec.action === "ops" ? "Atacar" : "Construir agora";
   box.innerHTML = `
-    <article class="guide-hero">
-      <div><small>Próxima decisão recomendada</small><strong>${rec.title}</strong><span>${rec.text}</span></div>
+    <article class="mobile-hq-card">
+      <div class="hq-flag-block">${flag}</div>
+      <div class="hq-main">
+        <small>Você comanda</small>
+        <strong>${c.name}</strong>
+        <span>${c.capital} · ${c.region}</span>
+        <em>${c.doctrine}</em>
+      </div>
     </article>
-    <div class="guide-steps">
-      <article class="${g.bases.length ? 'done' : 'todo'}"><b>1</b><span>Construir base</span></article>
-      <article class="${g.units.length ? 'done' : 'todo'}"><b>2</b><span>Produzir tropa</span></article>
-      <article class="${powerIndex() > 70 ? 'done' : 'todo'}"><b>3</b><span>Aumentar poder</span></article>
-      <article class="${(g.globalWar?.warScore || 0) > 25 ? 'done' : 'todo'}"><b>4</b><span>Dominar crise</span></article>
+
+    <article class="guide-hero mobile-objective">
+      <div><small>Próxima decisão recomendada</small><strong>${rec.title}</strong><span>${rec.text}</span></div>
+      <button id="primaryRecommendedBtn">${mainActionLabel}</button>
+    </article>
+
+    <div class="mission-flow">
+      <article class="${g.bases.length ? 'done' : 'active'}"><b>1</b><span>Base</span><small>${g.bases.length ? "feito" : "toque em construir"}</small></article>
+      <article class="${g.units.length ? 'done' : (g.bases.length ? 'active' : 'locked')}"><b>2</b><span>Unidade</span><small>${g.units.length ? "operacional" : "produzir"}</small></article>
+      <article class="${powerIndex() > 70 ? 'done' : (g.units.length ? 'active' : 'locked')}"><b>3</b><span>Poder</span><small>${powerIndex()}</small></article>
+      <article class="${(g.globalWar?.warScore || 0) > 25 ? 'done' : 'active'}"><b>4</b><span>Guerra</span><small>DEFCON ${g.globalWar?.defcon ?? 5}</small></article>
     </div>
+
     <div class="quick-kpis">
       <div><small>Região ativa</small><strong>${r.kind}</strong></div>
       <div><small>Bases aqui</small><strong>${bases}/${r.slots}</strong></div>
       <div><small>Fila</small><strong>${queue}</strong></div>
+      <div><small>Força</small><strong>${cond}%</strong></div>
       <div><small>Tensão</small><strong>${g.worldTension}</strong></div>
+      <div><small>Países</small><strong>${state.countries.length}</strong></div>
     </div>
-    <div class="quick-actions">
-      <button id="quickBuildBtn">Construir recomendado</button>
-      <button id="quickProduceBtn">Produzir recomendado</button>
-      <button id="quickRepairBtn">Reparar prioridade</button>
-      <button id="quickWorldBtn">Painel Mundo</button>
+
+    <div class="mobile-command-grid">
+      <button id="quickBuildBtn"><b>🏗️ Construir</b><span>base recomendada</span></button>
+      <button id="quickProduceBtn"><b>🪖 Produzir</b><span>melhor unidade</span></button>
+      <button id="quickRepairBtn"><b>🛠️ Reparar</b><span>base crítica</span></button>
+      <button id="quickOpsBtn"><b>⚔️ Atacar</b><span>abrir operações</span></button>
+      <button id="quickWorldBtn"><b>🌐 Mundo</b><span>DEFCON e crise</span></button>
+      <button id="quickAiBtn"><b>🛰️ IA</b><span>rivais ativos</span></button>
     </div>`;
+  $("#primaryRecommendedBtn")?.addEventListener("click", () => runRecommendedAction(rec));
   $("#quickBuildBtn")?.addEventListener("click", quickBuildRecommended);
   $("#quickProduceBtn")?.addEventListener("click", quickProduceRecommended);
   $("#quickRepairBtn")?.addEventListener("click", quickRepairPriority);
+  $("#quickOpsBtn")?.addEventListener("click", () => activatePanel("panelOps"));
   $("#quickWorldBtn")?.addEventListener("click", () => activatePanel("panelGlobal"));
+  $("#quickAiBtn")?.addEventListener("click", () => activatePanel("panelAiWorld"));
+}
+
+function runRecommendedAction(rec) {
+  if (!rec) rec = commanderRecommendation();
+  if (rec.action === "repair") return quickRepairPriority();
+  if (rec.action === "produce") return quickProduceRecommended();
+  if (rec.action === "month") return advanceMonth();
+  if (rec.action === "world") return activatePanel("panelGlobal");
+  if (rec.action === "ai") return activatePanel("panelAiWorld");
+  if (rec.action === "ops") return activatePanel("panelOps");
+  return quickBuildRecommended();
 }
 
 function quickBuildRecommended() {
@@ -683,6 +761,33 @@ function renderCampaignGoals() {
   return goals.map(goal => `<article class="goal-card"><strong>${goal.name}</strong><span>${goal.value}%</span><div class="goal-bar"><i style="width:${goal.value}%"></i></div><small>${goal.desc}</small></article>`).join("");
 }
 
+
+function renderAiWorld() {
+  const panel = $("#aiWorldPanel");
+  if (!panel || !state.game) return;
+  ensureAiWorld();
+  const list = topAiThreats(12);
+  const active = state.game.aiWorld.filter(a => a.posture === "hostil" || a.posture === "alerta").length;
+  const avgPower = Math.round(state.game.aiWorld.reduce((s,a)=>s+a.power,0) / Math.max(1,state.game.aiWorld.length));
+  const cards = list.map(ai => {
+    const c = getCountry(ai.id);
+    const rel = state.game.relations.find(r => r.id === ai.id);
+    const postureClass = ai.posture === "hostil" ? "danger" : ai.posture === "alerta" ? "warn" : ai.posture === "aliado" ? "good" : "";
+    return `<article class="ai-country-card ${postureClass}">
+      ${flagHtml(c, "ai-flag-img")}
+      <div><strong>${c?.name || ai.id}</strong><small>${c?.bloc || "Não alinhado"} · ${ai.lastMove}</small>
+      <div class="ai-bars"><span><i style="width:${clamp(ai.power,0,100)}%"></i></span><b>Poder ${ai.power}</b><span><i style="width:${clamp(ai.readiness,0,100)}%"></i></span><b>Pront. ${ai.readiness}</b></div></div>
+      <div class="ai-posture"><em>${ai.posture}</em><small>Host. ${ai.hostility}</small><small>Relação ${rel?.relation ?? 50}</small></div>
+    </article>`;
+  }).join("");
+  panel.innerHTML = `<div class="ai-world-kpis">
+    <div><small>Países IA</small><strong>${state.game.aiWorld.length}</strong></div>
+    <div><small>Em alerta/hostis</small><strong>${active}</strong></div>
+    <div><small>Poder médio</small><strong>${avgPower}</strong></div>
+    <div><small>Tensão</small><strong>${state.game.worldTension}</strong></div>
+  </div><h3>Principais ameaças e potências ativas</h3><div class="ai-country-list">${cards}</div>`;
+}
+
 function renderTargetSelect() {
   const select = $("#targetSelect");
   select.innerHTML = "";
@@ -919,6 +1024,7 @@ function advanceMonth() {
   progressConstruction();
   progressProduction();
   monthlyWorldEvent();
+  progressAiWorld();
   decayRelations();
   if (g.worldTension > 58 || Math.random() < .22) aiRaid();
   saveGame();
@@ -1053,6 +1159,56 @@ function updateGlobalPhase() {
   gw.defcon = gw.phase === "crise nuclear" ? Math.min(gw.defcon, 2) : gw.phase === "guerra mundial aberta" ? Math.min(gw.defcon, 3) : gw.phase === "guerra regionalizada" ? Math.min(gw.defcon, 4) : Math.max(gw.defcon, 4);
 }
 
+
+
+function progressAiWorld() {
+  ensureAiWorld();
+  const g = state.game;
+  const player = getPlayerCountry();
+  const events = [];
+  g.aiWorld.forEach(ai => {
+    const c = getCountry(ai.id);
+    if (!c) return;
+    const blocSame = c.bloc === player.bloc;
+    const tensionPush = g.worldTension > 65 ? 2 : g.worldTension > 48 ? 1 : 0;
+    const economyGain = Math.max(1, Math.round((ai.economy / 85) + Math.random() * 2));
+    const powerGain = Math.max(0, Math.round((ai.mobilization / 55) + Math.random() * 2 + tensionPush));
+    ai.economy = clamp(ai.economy + economyGain - (ai.posture === "hostil" ? 1 : 0), 1, 220);
+    ai.power = clamp(ai.power + powerGain + (ai.posture === "hostil" ? 1 : 0), 1, 230);
+    ai.readiness = clamp(ai.readiness + randomInt(-2, 4) + tensionPush, 1, 100);
+    ai.hostility = clamp(ai.hostility + (blocSame ? -1 : tensionPush) + randomInt(-2, 3), 0, 100);
+    if (ai.hostility > 74) ai.posture = "hostil";
+    else if (ai.hostility > 50 || ai.readiness > 76) ai.posture = "alerta";
+    else if (blocSame && ai.hostility < 48) ai.posture = "aliado";
+    else ai.posture = "neutro";
+    const roll = Math.random();
+    if (roll < .08 + g.worldTension / 900) {
+      ai.lastMove = "mobilizou forças";
+      ai.power = clamp(ai.power + randomInt(2, 7), 1, 230);
+      ai.readiness = clamp(ai.readiness + randomInt(3, 8), 1, 100);
+      if (ai.posture === "hostil" || ai.posture === "alerta") events.push(`${c.name} mobilizou forças e elevou prontidão.`);
+    } else if (roll < .13 + g.worldTension / 1000) {
+      ai.lastMove = "pressionou bloco rival";
+      ai.hostility = clamp(ai.hostility + randomInt(2, 6), 0, 100);
+      g.globalWar.warScore = clamp((g.globalWar.warScore || 0) + 1, 0, 100);
+    } else if (roll < .18 && !blocSame) {
+      ai.lastMove = "expandiu indústria militar";
+      ai.economy = clamp(ai.economy + randomInt(2, 5), 1, 220);
+    } else {
+      ai.lastMove = ai.posture === "hostil" ? "em prontidão ofensiva" : "monitorando";
+    }
+  });
+  const topHostile = topAiThreats(1)[0];
+  if (topHostile && topHostile.hostility > 82 && Math.random() < .28) {
+    const enemy = getCountry(topHostile.id);
+    g.threats.push({ id: cryptoId(), countryId: enemy.id, level: clamp(topHostile.power / 2 + topHostile.readiness / 2, 35, 98), type: "pressão militar IA", coords: jitter(enemy.coords, 1.8) });
+    g.threats = g.threats.slice(-8);
+    g.worldTension = clamp(g.worldTension + 2, 0, 100);
+    events.push(`${enemy.name} iniciou pressão militar direta contra sua zona de influência.`);
+  }
+  events.slice(0, 2).forEach(text => g.events.push(eventText("warn", text)));
+  updateGlobalPhase();
+}
 
 function monthlyWorldEvent() {
   const g = state.game;
@@ -1317,6 +1473,8 @@ function destroyBase(baseId, reason) { const idx = state.game.bases.findIndex(b 
 function ownedUnitQty(unitId) { return state.game?.units?.filter(u => u.id === unitId).reduce((sum,u)=>sum+u.qty,0) || 0; }
 function slug(text) { return String(text || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-"); }
 function getBuilding(id) { return state.buildings.find(b => b.id === id); }
+function getCountry(id) { return state.countries.find(c => c.id === id); }
+function topAiThreats(limit = 8) { ensureAiWorld(); return [...state.game.aiWorld].sort((a,b) => ((b.power + b.readiness + b.hostility) - (a.power + a.readiness + a.hostility))).slice(0, limit); }
 function getUnit(id) { return state.units.find(u => u.id === id); }
 function getRegion(id) { return state.game.regions.find(r => r.id === id) || state.game.regions[0]; }
 function getPlayerCountry() { return state.countries.find(c => c.id === state.game?.countryId) || state.selectedCountry || state.countries[0]; }

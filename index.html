@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
   <meta name="theme-color" content="#050914">
   <meta name="description" content="Modern War Dominion — jogo mobile de dominação militar global com mapa real, bases regionais, produção de unidades e escalada de guerra mundial.">
-  <title>Modern War Dominion — Fase 12</title>
+  <title>Modern War Dominion — Fase 14</title>
   <link rel="manifest" href="manifest.json">
   <link rel="icon" href="assets/img/icon.svg" type="image/svg+xml">
   <link rel="preconnect" href="https://unpkg.com">
@@ -37,7 +37,7 @@
       <div class="top-actions">
         <button class="mini-btn" id="fullscreenBtn">Tela cheia</button>
         <button class="mini-btn" id="installBtn" hidden>Instalar</button>
-        <div class="build-chip">Fase 12 · v1.2.0</div>
+        <div class="build-chip">Fase 14 · v1.4.0</div>
       </div>
     </header>
 
@@ -45,22 +45,22 @@
       <section class="screen screen-active" id="screenHome">
         <div class="home-layout">
           <article class="hero-card glass-panel">
-            <p class="eyebrow">Fase 12 — Jogabilidade Mobile e Países do Mundo</p>
-            <h1>Mais países, bandeiras reais e comando mobile mais claro.</h1>
-            <p>Esta fase reorganiza a jogabilidade para celular: um painel de guia mostra o que fazer, a bandeira real vira identidade visual do jogador e a lista de países foi expandida para praticamente todo o mundo, mantendo fallback por emoji quando a imagem da bandeira ainda não existir.</p>
+            <p class="eyebrow">Fase 14 — Rework total da jogabilidade mobile</p>
+            <h1>Comando mobile claro, bandeira como logo e decisões em um toque.</h1>
+            <p>Esta fase reorganiza a jogabilidade para celular: menos confusão de abas, mais comando visual, bandeira real como identidade do país, ações principais em um toque e roteiro claro para construir, produzir, defender, atacar e avançar mês.</p>
             <div class="hero-actions">
               <button class="primary-btn" id="newGameBtn">Nova campanha militar</button>
               <button class="ghost-btn" id="continueBtn" disabled>Continuar campanha</button>
             </div>
             <div class="status-strip">
-              <span>Mobile mais claro</span><span>Bandeira como logo</span><span>+240 países</span><span>Ações rápidas</span><span>Guia do comandante</span><span>Mapa real</span>
+              <span>Mobile primeiro</span><span>Bandeira como brasão</span><span>Ações em um toque</span><span>HQ do comandante</span><span>249 países</span><span>Fluxo claro</span>
             </div>
           </article>
           <aside class="glass-panel doctrine-panel">
-            <h2>Comando mais fácil</h2>
-            <p>A jogabilidade agora começa pelo painel Guia, com ações rápidas e passos claros para construir, produzir, reparar, avançar mês e entender o próximo objetivo militar.</p>
+            <h2>Jogabilidade mais clara</h2>
+            <p>Agora a tela principal do jogador funciona como um Quartel-General mobile. A bandeira do país aparece como logo, o próximo objetivo fica visível e os botões grandes guiam a campanha.</p>
             <div class="doctrine-grid">
-              <span>🎯 Guia</span><span>🏳️ Bandeiras</span><span>🧭 Países</span><span>🏗️ Bases</span><span>🪖 Produção</span><span>📱 Mobile</span>
+              <span>🏳️ País</span><span>🎯 Objetivo</span><span>🏗️ Construir</span><span>🪖 Produzir</span><span>⚔️ Atacar</span><span>📱 Mobile</span>
             </div>
           </aside>
         </div>
@@ -71,7 +71,7 @@
           <div>
             <p class="eyebrow">Escolha da Nação</p>
             <h1>Escolha o país inicial</h1>
-            <p class="muted">Escolha qualquer país disponível. As bandeiras reais são buscadas em assets/flags pelo código ISO em minúsculo, como br.png, us.png, fr.png.</p>
+            <p class="muted">A lista mantém 249 países/territórios possíveis. As bandeiras reais são buscadas em assets/flags pelo código ISO em minúsculo, como br.png, us.png, fr.png.</p>
           </div>
           <input id="nationSearch" class="search-box" type="search" placeholder="Buscar país, região, doutrina...">
         </div>
@@ -111,13 +111,14 @@
               <button class="side-tab" data-panel="panelArsenal">Arsenal</button>
               <button class="side-tab" data-panel="panelMaintenance">Manut.</button>
               <button class="side-tab" data-panel="panelGlobal">Mundo</button>
+              <button class="side-tab" data-panel="panelAiWorld">IA</button>
               <button class="side-tab" data-panel="panelOps">Atacar</button>
               <button class="side-tab" data-panel="panelIntel">Alerta</button>
             </div>
 
             <div class="side-panel is-active" id="panelGuide">
-              <h2>Guia do comandante</h2>
-              <p class="muted">Painel rápido para jogar sem se perder. Siga a recomendação principal e avance mês quando a produção estiver em andamento.</p>
+              <h2>Quartel-General Mobile</h2>
+              <p class="muted">A tela Guia agora é a tela principal de jogo: veja seu país, sua bandeira, sua próxima missão e use ações grandes em um toque.</p>
               <div id="commanderGuide" class="commander-guide"></div>
             </div>
 
@@ -166,6 +167,14 @@
               <div id="globalWarPanel" class="global-war-panel"></div>
             </div>
 
+
+
+            <div class="side-panel" id="panelAiWorld">
+              <h2>IA dos países</h2>
+              <p class="muted">Os países agora crescem, mobilizam forças e reagem à tensão mundial. Use este painel para entender quem está ficando perigoso.</p>
+              <div id="aiWorldPanel" class="ai-world-panel"></div>
+            </div>
+
             <div class="side-panel" id="panelOps">
               <h2>Operações militares</h2>
               <p class="muted">Faça reconhecimento, ataque limitado ou operação combinada. Quanto maior o ataque, maior a escalada mundial.</p>
@@ -188,20 +197,29 @@
 
             <button class="primary-btn next-month" id="nextMonthBtn">Avançar mês</button>
           </aside>
+
+          <nav class="mobile-action-dock" id="mobileActionDock" aria-label="Ações rápidas de comando">
+            <button class="dock-btn is-active" data-panel="panelGuide">🏳️<span>Comando</span></button>
+            <button class="dock-btn" data-panel="panelBuild">🏗️<span>Bases</span></button>
+            <button class="dock-btn" data-panel="panelForces">🪖<span>Produzir</span></button>
+            <button class="dock-btn" data-panel="panelOps">⚔️<span>Atacar</span></button>
+            <button class="dock-btn" data-panel="panelGlobal">🌐<span>Mundo</span></button>
+            <button class="dock-btn dock-next" id="dockNextMonthBtn" type="button">⏭️<span>Mês</span></button>
+          </nav>
         </div>
       </section>
 
       <section class="screen" id="screenRoadmap">
         <div class="roadmap glass-panel">
-          <p class="eyebrow">Fase 12 — foco em jogabilidade</p>
-          <h1>A prioridade agora é tornar o jogo mais claro no celular, com identidade visual por bandeira e decisões mais rápidas.</h1>
+          <p class="eyebrow">Fase 14 — rework mobile</p>
+          <h1>A prioridade desta fase foi transformar sistemas soltos em uma experiência mobile mais clara: jogar pelo Guia, usar botões grandes e entender a próxima decisão sem procurar em várias abas.</h1>
           <div class="roadmap-grid">
             <article><strong>Fase 9</strong><span>Manutenção, desgaste, baixas, reposição de lotes e custo real de guerra longa.</span></article>
             <article><strong>Fase 10</strong><span>Terceira Guerra Mundial: blocos, ultimatos, sanções, invasões e crise nuclear.</span></article>
             <article><strong>Fase 11</strong><span>Objetivos de campanha, vitórias por dominação, dissuasão e supremacia econômica.</span></article>
-            <article><strong>Fase 12</strong><span>Missões especiais, inteligência avançada, eventos globais e diplomacia em guerra aberta.</span></article>
-            <article><strong>Fase 13</strong><span>Arsenal visual por nação, fabricantes e modelos militares exclusivos.</span></article>
-            <article><strong>Fase 14</strong><span>Campanha mundial persistente com frentes, alianças e crises simultâneas.</span></article>
+            <article><strong>Fase 12</strong><span>Jogabilidade mobile, guia do comandante, bandeiras reais e todos os países possíveis.</span></article>
+            <article><strong>Fase 13</strong><span>Mundo vivo: IA dos países, crescimento militar, postura, mobilização e crises contra o jogador.</span></article>
+            <article><strong>Fase 14</strong><span>Guerra terrestre profunda: frentes, ocupação, resistência e controle regional.</span></article>
           </div>
         </div>
       </section>
@@ -213,4 +231,4 @@
 </body>
 </html>
 
-<!-- Fase 12: jogabilidade mobile, países expandidos e bandeiras como identidade do jogador. -->
+<!-- Fase 14: rework total da jogabilidade mobile, HQ do comandante e bandeira como brasão. -->

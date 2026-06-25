@@ -1,7 +1,7 @@
 {
   "project": "Modern War Dominion",
-  "version": "1.2.0",
-  "phase": "Fase 12 — jogabilidade mobile e países do mundo",
+  "version": "1.4.0",
+  "phase": "Fase 14 — Rework total da jogabilidade mobile",
   "generated_at": "2026-06-24",
   "base": "Fase 5 assets integrados",
   "features": [
@@ -12,10 +12,12 @@
     "mapa real preservado"
   ],
   "notes": [
-    "Painel Guia com ações rápidas",
-    "Bandeira real como identidade do jogador",
-    "Lista de países expandida",
-    "Abas laterais ajustadas para mobile"
+    "Comando mobile reorganizado em Quartel-General",
+    "Bandeira real do país aparece como brasão/logo grande",
+    "Dock inferior com ações principais em um toque",
+    "Roteiro visual de campanha com Base, Unidade, Poder e Guerra",
+    "Mantida lista expandida com 249 países/territórios possíveis"
   ],
-  "countries_count": 249
+  "countries_count": 249,
+  "countries_available": 249
 }

@@ -48,3 +48,18 @@ Abra `index.html` ou publique no GitHub Pages. No celular, use tela deitada/full
 - Bandeira real vira logo visual do país do jogador
 - Importador de bandeiras normaliza nomes para minúsculo
 - Interface lateral mais usável no mobile com abas roláveis
+
+
+## Fase 13 — Mundo Vivo e IA dos Países
+- Países controlados pela IA agora evoluem poder, economia, prontidão e postura.
+- Novo painel IA com rivais e principais ameaças.
+- Eventos mensais deixam a campanha menos parada e mais fácil de entender no mobile.
+- Abas laterais ajustadas para rolagem horizontal em celular.
+
+
+## Fase 14 — Rework total da jogabilidade mobile
+- Tela Guia virou Quartel-General mobile.
+- Bandeira real aparece como brasão/logo grande do país escolhido.
+- Dock inferior com ações principais: Comando, Bases, Produzir, Atacar, Mundo e Mês.
+- Roteiro visual da campanha para reduzir confusão.
+- Mantidos 249 países/territórios possíveis e importação de bandeiras por código ISO.
