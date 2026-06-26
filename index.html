@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
   <meta name="theme-color" content="#050914">
   <meta name="description" content="Modern War Dominion — jogo mobile de dominação militar global com mapa real, bases regionais, produção de unidades e escalada de guerra mundial.">
-  <title>Modern War Dominion — Fase 19</title>
+  <title>Modern War Dominion — Fase 20</title>
   <link rel="manifest" href="manifest.json">
   <link rel="icon" href="assets/img/icon.svg" type="image/svg+xml">
   <link rel="preconnect" href="https://unpkg.com">
@@ -42,7 +42,7 @@
         </select>
         <button class="mini-btn" id="fullscreenBtn" data-i18n="top.fullscreen">Tela cheia</button>
         <button class="mini-btn" id="installBtn" hidden data-i18n="top.install">Instalar</button>
-        <div class="build-chip" data-i18n="phase.label">Fase 19 · v1.9.0</div>
+        <div class="build-chip" data-i18n="phase.label">Fase 20 · v2.0.0</div>
       </div>
     </header>
 
@@ -50,15 +50,15 @@
       <section class="screen screen-active" id="screenHome">
         <div class="home-layout">
           <article class="hero-card glass-panel">
-            <p class="eyebrow" data-i18n="home.eyebrow">Fase 19 — Espionagem e Cyberwar</p>
-            <h1 data-i18n="home.title">Agora a guerra também acontece nas sombras.</h1>
-            <p data-i18n="home.text">A campanha ganha inteligência, contraespionagem, rede de espiões, ataques cyber, sabotagem industrial, roubo de tecnologia e operações psicológicas.</p>
+            <p class="eyebrow" data-i18n="home.eyebrow">Fase 20 — Guerra Terrestre e Ocupação</p>
+            <h1 data-i18n="home.title">Agora o jogador conquista território, sustenta frentes e enfrenta resistência.</h1>
+            <p data-i18n="home.text">A campanha ganha frentes terrestres, invasão, reforço, ocupação, resistência local, suprimento e desgaste de guerra prolongada.</p>
             <div class="hero-actions">
               <button class="primary-btn" id="newGameBtn" data-i18n="home.new">Nova campanha militar</button>
               <button class="ghost-btn" id="continueBtn" disabled data-i18n="home.continue">Continuar campanha</button>
             </div>
             <div class="status-strip">
-              <span data-i18n="home.tag1">Guerra invisível</span><span data-i18n="home.tag2">Mobilização</span><span data-i18n="home.tag3">Inflação</span><span data-i18n="home.tag4">Moral civil</span><span data-i18n="home.tag5">Indústria</span><span data-i18n="home.tag6">Mobile</span>
+              <span data-i18n="home.tag1">Conquista territorial</span><span data-i18n="home.tag2">Mobilização</span><span data-i18n="home.tag3">Inflação</span><span data-i18n="home.tag4">Moral civil</span><span data-i18n="home.tag5">Indústria</span><span data-i18n="home.tag6">Mobile</span>
             </div>
           </article>
           <aside class="glass-panel doctrine-panel">
@@ -121,6 +121,7 @@
               <button class="side-tab" data-panel="panelGlobal" data-i18n="tab.world">Mundo</button>
               <button class="side-tab" data-panel="panelAiWorld" data-i18n="tab.ai">IA</button>
               <button class="side-tab" data-panel="panelOps" data-i18n="tab.attack">Atacar</button>
+              <button class="side-tab" data-panel="panelGround" data-i18n="tab.ground">Frente</button>
               <button class="side-tab" data-panel="panelBattle" data-i18n="tab.battle">Batalha</button>
               <button class="side-tab" data-panel="panelIntel" data-i18n="tab.alert">Alerta</button>
             </div>
@@ -210,6 +211,12 @@
               </div>
             </div>
 
+            <div class="side-panel" id="panelGround">
+              <h2 data-i18n="ground.title">Guerra Terrestre</h2>
+              <p class="muted" data-i18n="ground.text">Abra frentes de invasão, reforce avanços, ocupe território e controle resistência local.</p>
+              <div id="groundWarPanel" class="ground-war-panel"></div>
+            </div>
+
             <div class="side-panel" id="panelBattle">
               <h2 data-i18n="battle.title">Relatório de batalha</h2>
               <p class="muted" data-i18n="battle.text">Veja o resultado da última operação, perdas, dano causado e impacto na guerra global.</p>
@@ -231,6 +238,7 @@
             <button class="dock-btn" data-panel="panelBuild">🏗️<span data-i18n="dock.bases">Bases</span></button>
             <button class="dock-btn" data-panel="panelForces">🪖<span data-i18n="dock.produce">Produzir</span></button>
             <button class="dock-btn" data-panel="panelOps">⚔️<span data-i18n="dock.attack">Atacar</span></button>
+            <button class="dock-btn" data-panel="panelGround">🗺️<span data-i18n="dock.ground">Frente</span></button>
             <button class="dock-btn" data-panel="panelBattle">📊<span data-i18n="dock.battle">Batalha</span></button>
             <button class="dock-btn" data-panel="panelCyber">🛰️<span data-i18n="dock.cyber">Cyber</span></button>
             <button class="dock-btn" data-panel="panelEconomy">🏭<span data-i18n="dock.economy">Economia</span></button>
@@ -242,8 +250,8 @@
 
       <section class="screen" id="screenRoadmap">
         <div class="roadmap glass-panel">
-          <p class="eyebrow" data-i18n="roadmap.eyebrow">Fase 19 — espionagem e cyberwar</p>
-          <h1 data-i18n="roadmap.title">A campanha agora inclui guerra invisível: espionagem, sabotagem, tecnologia e operações psicológicas.</h1>
+          <p class="eyebrow" data-i18n="roadmap.eyebrow">Fase 20 — guerra terrestre</p>
+          <h1 data-i18n="roadmap.title">A campanha agora tem frente de invasão, ocupação, resistência e suprimento.</h1>
           <div class="roadmap-grid">
             <article><strong>Fase 9</strong><span>Manutenção, desgaste, baixas, reposição de lotes e custo real de guerra longa.</span></article>
             <article><strong>Fase 10</strong><span>Terceira Guerra Mundial: blocos, ultimatos, sanções, invasões e crise nuclear.</span></article>
@@ -262,4 +270,4 @@
 </body>
 </html>
 
-<!-- Fase 19: espionagem, contrainteligência, cyberwar, sabotagem e roubo de tecnologia. -->
+<!-- Fase 20: guerra terrestre, frentes de invasão, ocupação, resistência e suprimento. -->

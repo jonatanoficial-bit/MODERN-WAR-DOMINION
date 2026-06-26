@@ -1,7 +1,7 @@
 {
   "project": "Modern War Dominion",
-  "version": "1.9.0",
-  "phase": "Fase 19 — Espionagem e Cyberwar",
+  "version": "2.0.0",
+  "phase": "Fase 20 — Guerra Terrestre e Ocupação",
   "generated_at": "2026-06-24",
   "base": "Fase 5 assets integrados",
   "features": [
@@ -12,10 +12,11 @@
     "mapa real preservado"
   ],
   "notes": [
-    "Novo painel Cyber/Espionagem",
-    "Rede de espiões, segurança digital, ataque cyber, contrainteligência e risco de exposição",
-    "Operações secretas contra rivais: sabotagem de infraestrutura, roubo de tecnologia e operações psicológicas",
-    "Histórico das últimas operações secretas",
+    "Novo painel Frente/Guerra Terrestre",
+    "Frentes de invasão contra países rivais",
+    "Avanço territorial, suprimento, resistência local e baixas",
+    "Ações: iniciar invasão, reforçar frente, pacificar território e retirar frente",
+    "Frentes aparecem no mapa real com linha de operação",
     "Sistema integrado ao HQ mobile e aos três idiomas"
   ],
   "countries_count": 249,
@@ -44,6 +45,11 @@
     "cyberwar",
     "contrainteligência",
     "sabotagem",
-    "roubo de tecnologia"
+    "roubo de tecnologia",
+    "guerra terrestre",
+    "frentes de invasão",
+    "ocupação",
+    "resistência",
+    "suprimento"
   ]
 }

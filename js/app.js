@@ -1,5 +1,5 @@
-const VERSION = "1.9.0";
-const PHASE = "Fase 19 — espionagem e cyberwar";
+const VERSION = "2.0.0";
+const PHASE = "Fase 20 — guerra terrestre e ocupação";
 const SAVE_KEY = "MWD_SAVE_F17";
 
 const $ = (sel, root = document) => root.querySelector(sel);
@@ -12,7 +12,7 @@ const state = {
   selectedCountry: null,
   game: null,
   map: null,
-  layers: { countries: null, regions: null, bases: null, threats: null },
+  layers: { countries: null, regions: null, bases: null, threats: null, fronts: null },
   arsenalFilter: "Todos"
 };
 
@@ -887,6 +887,282 @@ function renderCyberOps() {
   $$("#cyberOpsPanel [data-cyber-action]").forEach(btn => btn.addEventListener("click", () => cyberOperation(btn.dataset.cyberAction)));
 }
 
+
+function makeGroundWar() {
+  return {
+    selectedTargetId: null,
+    fronts: [],
+    history: [],
+    occupiedZones: 0
+  };
+}
+
+function ensureGroundWar() {
+  if (!state.game) return null;
+  if (!state.game.groundWar) state.game.groundWar = makeGroundWar();
+  const gw = state.game.groundWar;
+  if (!Array.isArray(gw.fronts)) gw.fronts = [];
+  if (!Array.isArray(gw.history)) gw.history = [];
+  if (typeof gw.occupiedZones !== "number") gw.occupiedZones = 0;
+  if (!gw.selectedTargetId || !getCountry(gw.selectedTargetId) || gw.selectedTargetId === state.game.countryId) {
+    const threat = topAiThreats(1)[0];
+    gw.selectedTargetId = threat?.id || state.countries.find(c => c.id !== state.game.countryId)?.id;
+  }
+  gw.fronts.forEach(front => {
+    front.progress = clamp(front.progress ?? 0, 0, 100);
+    front.supply = clamp(front.supply ?? 50, 0, 100);
+    front.resistance = clamp(front.resistance ?? 40, 0, 100);
+    front.casualties = Math.max(0, Math.round(front.casualties || 0));
+    front.status = front.status || "advancing";
+  });
+  return gw;
+}
+
+function groundTargets() {
+  ensureAiWorld();
+  return topAiThreats(14).map(ai => ({ ...ai, country: getCountry(ai.id) })).filter(item => item.country);
+}
+
+function groundCost(kind) {
+  const costs = {
+    start: { finance: 120, industry: 45, energy: 35 },
+    reinforce: { finance: 75, industry: 30, energy: 22 },
+    pacify: { finance: 46, industry: 16, energy: 12 },
+    withdraw: { finance: 18, industry: 0, energy: 8 }
+  };
+  return costs[kind] || costs.start;
+}
+
+function canPayGround(cost) {
+  const g = state.game;
+  return g.finance >= (cost.finance || 0) && g.industry >= (cost.industry || 0) && g.energy >= (cost.energy || 0);
+}
+
+function payGround(cost) {
+  const g = state.game;
+  g.finance -= cost.finance || 0;
+  g.industry -= cost.industry || 0;
+  g.energy -= cost.energy || 0;
+}
+
+function groundFrontStatus(front) {
+  if (front.progress >= 100) return "occupied";
+  if (front.supply < 22) return "collapsing";
+  if (front.resistance > 68) return "contested";
+  return "advancing";
+}
+
+function groundStatusLabel(status) {
+  const labels = {
+    occupied: t("ground.occupied", "ocupado"),
+    advancing: t("ground.advancing", "avançando"),
+    contested: t("ground.contested", "contestado"),
+    collapsing: t("ground.collapsing", "em colapso")
+  };
+  return labels[status] || status;
+}
+
+function recordGroundHistory(kind, front, text) {
+  const gw = ensureGroundWar();
+  const item = {
+    id: cryptoId(),
+    kind,
+    targetId: front.targetId,
+    targetName: front.targetName,
+    text,
+    progress: front.progress,
+    supply: front.supply,
+    resistance: front.resistance,
+    casualties: front.casualties,
+    at: `${monthNames[state.game.month % 12]}/${state.game.year}`
+  };
+  gw.history.unshift(item);
+  gw.history = gw.history.slice(0, 12);
+}
+
+function groundOperation(kind) {
+  const g = state.game;
+  const gw = ensureGroundWar();
+  const targetId = $("#groundTargetSelect")?.value || gw.selectedTargetId;
+  const target = getCountry(targetId);
+  if (!target) return;
+  gw.selectedTargetId = targetId;
+  const cost = groundCost(kind);
+  if (!canPayGround(cost)) {
+    g.events.push(eventText("warn", currentLang === "en-US" ? "Insufficient resources for ground operation." : currentLang === "es-ES" ? "Recursos insuficientes para operación terrestre." : "Recursos insuficientes para operação terrestre."));
+    saveGame(); renderGame(); return;
+  }
+  let front = gw.fronts.find(f => f.targetId === targetId && f.status !== "withdrawn");
+
+  if (kind === "start") {
+    if (front) {
+      g.events.push(eventText("warn", currentLang === "en-US" ? "There is already an active front against this target." : currentLang === "es-ES" ? "Ya existe un frente activo contra este objetivo." : "Já existe uma frente ativa contra este alvo."));
+      renderGroundWar(); return;
+    }
+    payGround(cost);
+    const ai = g.aiWorld?.find(a => a.id === targetId);
+    const initialSupply = clamp(40 + Math.round(g.logistics / 2.5) + regionBases(g.selectedRegionId).length * 4 - Math.round((ai?.readiness || 50) / 6), 24, 92);
+    const resistance = clamp(26 + Math.round((target.stability || 55) / 2) + Math.round((ai?.hostility || 40) / 5), 18, 90);
+    front = {
+      id: cryptoId(),
+      targetId,
+      targetName: target.name,
+      coords: jitter(target.coords, .65),
+      progress: randomInt(6, 15),
+      supply: initialSupply,
+      resistance,
+      casualties: randomInt(60, 240),
+      status: "advancing",
+      months: 0
+    };
+    gw.fronts.push(front);
+    g.worldTension = clamp(g.worldTension + 10, 0, 100);
+    g.escalation = clamp(g.escalation + 5, 0, 100);
+    g.readiness = clamp(g.readiness - 3, 0, 100);
+    recordGroundHistory(kind, front, `Frente aberta contra ${target.name}.`);
+    g.events.push(eventText("danger", `Frente terrestre aberta contra ${target.name}. Suprimento inicial ${front.supply}%.`));
+    saveGame(); renderGame(); activatePanel("panelGround"); return;
+  }
+
+  if (!front) {
+    g.events.push(eventText("warn", currentLang === "en-US" ? "Open an invasion front first." : currentLang === "es-ES" ? "Abre primero un frente de invasión." : "Abra uma frente de invasão primeiro."));
+    renderGroundWar(); return;
+  }
+
+  payGround(cost);
+
+  if (kind === "reinforce") {
+    const attack = Math.round(g.landPower * .45 + g.logistics * .22 + g.readiness * .25 + regionalForceBonus() * .18 + Math.random() * 18);
+    const enemy = Math.round(front.resistance * .45 + (target.military || 50) * .25 + Math.random() * 20);
+    const gain = clamp(Math.round((attack - enemy) / 5) + randomInt(4, 11), 1, 24);
+    const casualties = clamp(Math.round(enemy * 5 + Math.random() * 260 - front.supply * 2), 40, 950);
+    front.progress = clamp(front.progress + gain, 0, 100);
+    front.supply = clamp(front.supply - randomInt(3, 8) + Math.round(g.logistics / 50), 0, 100);
+    front.resistance = clamp(front.resistance + randomInt(-3, 5) - (front.progress > 70 ? 2 : 0), 0, 100);
+    front.casualties += casualties;
+    front.months += 1;
+    g.readiness = clamp(g.readiness - randomInt(1, 4), 0, 100);
+    g.soldiers = Math.max(0, g.soldiers - casualties);
+    applyOperationalWear("combined", attack >= enemy);
+    if (front.progress >= 100 && front.status !== "occupied") {
+      front.progress = 100;
+      front.status = "occupied";
+      gw.occupiedZones += 1;
+      const ai = g.aiWorld?.find(a => a.id === targetId);
+      if (ai) {
+        ai.power = clamp(ai.power - randomInt(8, 18), 1, 230);
+        ai.readiness = clamp(ai.readiness - randomInt(8, 16), 1, 100);
+        ai.lastMove = "perdeu território";
+      }
+      g.industry += randomInt(20, 55);
+      g.events.push(eventText("sistema", `${target.name}: zona estratégica ocupada. Resistência local ainda precisa ser controlada.`));
+    } else {
+      front.status = groundFrontStatus(front);
+      g.events.push(eventText("sistema", `${target.name}: avanço terrestre +${gain}%. Baixas aproximadas: ${casualties}.`));
+    }
+    recordGroundHistory(kind, front, `Reforço na frente: +${gain}% de avanço, ${casualties} baixas.`);
+  }
+
+  if (kind === "pacify") {
+    const reduction = randomInt(7, 15) + Math.round(g.intel / 50) + Math.round(g.stability / 60);
+    front.resistance = clamp(front.resistance - reduction, 0, 100);
+    front.supply = clamp(front.supply + randomInt(3, 9), 0, 100);
+    g.stability = clamp(g.stability + (front.status === "occupied" ? 1 : 0), 0, 100);
+    front.status = groundFrontStatus(front);
+    recordGroundHistory(kind, front, `Resistência reduzida em ${reduction} pontos.`);
+    g.events.push(eventText("sistema", `${target.name}: pacificação reduziu resistência para ${front.resistance}%.`));
+  }
+
+  if (kind === "withdraw") {
+    front.status = "withdrawn";
+    gw.fronts = gw.fronts.filter(f => f.id !== front.id);
+    g.readiness = clamp(g.readiness - 2, 0, 100);
+    g.worldTension = clamp(g.worldTension - 2, 0, 100);
+    recordGroundHistory(kind, front, `Retirada da frente contra ${target.name}.`);
+    g.events.push(eventText("warn", `${target.name}: frente retirada. Parte do avanço territorial foi perdida.`));
+  }
+
+  saveGame();
+  renderGame();
+  activatePanel("panelGround");
+}
+
+function progressGroundWar() {
+  const gw = ensureGroundWar();
+  if (!gw) return;
+  const g = state.game;
+  gw.fronts.forEach(front => {
+    if (front.status === "withdrawn") return;
+    front.months += 1;
+    const attrition = clamp(Math.round((front.resistance + 20) * (front.status === "occupied" ? 2.2 : 3.8) - front.supply * 1.3 + Math.random() * 140), 10, 650);
+    front.casualties += attrition;
+    g.soldiers = Math.max(0, g.soldiers - attrition);
+    front.supply = clamp(front.supply - randomInt(2, 7) + Math.round(g.logistics / 55), 0, 100);
+    if (front.status === "occupied") {
+      front.resistance = clamp(front.resistance + randomInt(-5, 4) - Math.round(g.intel / 70), 0, 100);
+      if (front.resistance > 72 && Math.random() < .22) {
+        front.progress = clamp(front.progress - randomInt(4, 10), 65, 100);
+        front.status = "contested";
+        g.events.push(eventText("warn", `${front.targetName}: resistência local iniciou levante contra a ocupação.`));
+      }
+    } else {
+      if (front.supply < 25) front.progress = clamp(front.progress - randomInt(1, 5), 0, 100);
+      if (front.resistance > 70) front.progress = clamp(front.progress - randomInt(0, 3), 0, 100);
+    }
+    front.status = groundFrontStatus(front);
+    if (Math.random() < .12) g.events.push(eventText("warn", `${front.targetName}: atrito terrestre causou ${attrition} baixas.`));
+  });
+}
+
+function groundBar(label, value) {
+  return `<div class="ground-bar"><div><span>${label}</span><strong>${value}</strong></div><i><b style="width:${clamp(value,0,100)}%"></b></i></div>`;
+}
+
+function renderGroundWar() {
+  const panel = $("#groundWarPanel");
+  if (!panel || !state.game) return;
+  const gw = ensureGroundWar();
+  const targets = groundTargets();
+  const active = gw.fronts.filter(f => f.status !== "withdrawn");
+  panel.innerHTML = `
+    <div class="ground-target-row">
+      <label class="field-label">${t("ground.target", "Alvo terrestre")}</label>
+      <select id="groundTargetSelect">
+        ${targets.map(tg => `<option value="${tg.id}" ${tg.id === gw.selectedTargetId ? "selected" : ""}>${tg.country.flag || ""} ${tg.country.name} · ${tg.posture} · ${tg.hostility}</option>`).join("")}
+      </select>
+    </div>
+    <div class="ground-actions">
+      <button data-ground-action="start"><b>🪖 ${t("ground.start", "Iniciar invasão")}</b><span>120/45/35</span></button>
+      <button data-ground-action="reinforce"><b>🚚 ${t("ground.reinforce", "Reforçar frente")}</b><span>75/30/22</span></button>
+      <button data-ground-action="pacify"><b>🛡️ ${t("ground.pacify", "Pacificar território")}</b><span>46/16/12</span></button>
+      <button data-ground-action="withdraw"><b>↩️ ${t("ground.withdraw", "Retirar frente")}</b><span>18/0/8</span></button>
+    </div>
+    <section class="ground-fronts">
+      <h3>${t("ground.active", "Frentes ativas")}</h3>
+      ${active.length ? active.map(front => `
+        <article class="ground-front ${front.status}">
+          <div class="ground-front-title"><strong>${front.targetName}</strong><span>${groundStatusLabel(front.status)}</span></div>
+          ${groundBar(t("ground.progress", "Avanço"), front.progress)}
+          ${groundBar(t("ground.supply", "Suprimento"), front.supply)}
+          ${groundBar(t("ground.resistance", "Resistência"), front.resistance)}
+          <div class="ground-kpis">
+            <div><small>${t("ground.casualties", "Baixas")}</small><b>${front.casualties.toLocaleString(currentLang === "en-US" ? "en-US" : "pt-BR")}</b></div>
+            <div><small>${t("ground.status", "Status")}</small><b>${groundStatusLabel(front.status)}</b></div>
+          </div>
+        </article>`).join("") : `<p class="muted">${t("ground.noFront", "Nenhuma frente terrestre ativa.")}</p>`}
+    </section>
+    <section class="ground-history">
+      <h3>${t("ground.history", "Histórico terrestre")}</h3>
+      ${gw.history.length ? gw.history.slice(0,6).map(item => `<article><strong>${item.targetName}</strong><span>${item.at} · ${item.text}</span><small>${t("ground.progress","Avanço")}: ${item.progress}% · ${t("ground.supply","Suprimento")}: ${item.supply}%</small></article>`).join("") : `<p class="muted">${t("ground.noFront", "Nenhuma frente terrestre ativa.")}</p>`}
+    </section>`;
+  $("#groundTargetSelect")?.addEventListener("change", event => {
+    gw.selectedTargetId = event.target.value;
+    saveGame();
+    renderGroundWar();
+  });
+  $$("#groundWarPanel [data-ground-action]").forEach(btn => btn.addEventListener("click", () => groundOperation(btn.dataset.groundAction)));
+}
+
 function makeInitialGame(countryId) {
   const country = state.countries.find(c => c.id === countryId) || state.countries[0];
   const regions = makeRegions(country);
@@ -1070,6 +1346,7 @@ function renderGame() {
   evaluateTutorialMissions();
   ensureWarEconomy();
   ensureCyberOps();
+  ensureGroundWar();
   renderSummary();
   renderCommanderGuide();
   renderRegionSelect();
@@ -1081,6 +1358,7 @@ function renderGame() {
   renderMaintenance();
   renderWarEconomy();
   renderCyberOps();
+  renderGroundWar();
   renderGlobalWar();
   renderAiWorld();
   renderTargetSelect();
@@ -1147,6 +1425,8 @@ function commanderRecommendation() {
   const cyberOps = ensureCyberOps();
   const mainThreat = topAiThreats(1)[0];
   if (mainThreat && mainThreat.hostility > 70 && cyberOps.spyNetwork < 45 && g.month > 1) return { title: t("rec.cyber", "Executar inteligência"), text: t("rec.cyberText", "Rivais hostis estão crescendo."), action: "cyber", panel: "panelCyber" };
+  const ground = ensureGroundWar();
+  if (g.units.length && ground.fronts.filter(f => f.status !== "withdrawn").length === 0 && g.month > 2) return { title: t("rec.ground", "Abrir frente terrestre"), text: t("rec.groundText", "Você já tem tropas."), action: "ground", panel: "panelGround" };
   if ((g.globalWar?.nuclearRisk || 0) > 55) return { title: t("rec.world", "Reduzir crise mundial"), text: t("rec.worldText", "O risco nuclear está alto."), action: "world", panel: "panelGlobal" };
   const hostile = topAiThreats(1)[0];
   if (hostile && hostile.hostility > 75) return { title: currentLang === "en-US" ? "Monitor dangerous rival" : currentLang === "es-ES" ? "Monitorear rival peligroso" : "Monitorar rival perigoso", text: `${getCountry(hostile.id)?.name || "Rival"} ${currentLang === "en-US" ? "is in" : currentLang === "es-ES" ? "está en postura" : "está em postura"} ${hostile.posture}.`, action: "ai", panel: "panelAiWorld" };
@@ -1165,7 +1445,7 @@ function renderCommanderGuide() {
   const queue = g.construction.length + g.production.length;
   const cond = forceCondition();
   const flag = flagHtml(c, "hq-flag-img");
-  const mainActionLabel = rec.action === "repair" ? t("guide.repair", "Reparar") : rec.action === "produce" ? t("guide.produce", "Produzir") : rec.action === "month" ? t("nextMonth", "Avançar mês") : rec.action === "economy" ? t("guide.economy", "Economia") : rec.action === "cyber" ? t("guide.cyber", "Cyber") : rec.action === "world" ? t("guide.world", "Mundo") : rec.action === "ai" ? t("guide.ai", "IA") : rec.action === "ops" ? t("guide.attack", "Atacar") : t("guide.build", "Construir");
+  const mainActionLabel = rec.action === "repair" ? t("guide.repair", "Reparar") : rec.action === "produce" ? t("guide.produce", "Produzir") : rec.action === "month" ? t("nextMonth", "Avançar mês") : rec.action === "economy" ? t("guide.economy", "Economia") : rec.action === "cyber" ? t("guide.cyber", "Cyber") : rec.action === "ground" ? t("guide.ground", "Frente") : rec.action === "world" ? t("guide.world", "Mundo") : rec.action === "ai" ? t("guide.ai", "IA") : rec.action === "ops" ? t("guide.attack", "Atacar") : t("guide.build", "Construir");
   box.innerHTML = `
     <article class="mobile-hq-card">
       <div class="hq-flag-block">${flag}</div>
@@ -1207,6 +1487,7 @@ function renderCommanderGuide() {
       <button id="quickProduceBtn"><b>🪖 ${t("guide.produce", "Produzir")}</b><span>${t("guide.produceSub", "melhor unidade")}</span></button>
       <button id="quickRepairBtn"><b>🛠️ ${t("guide.repair", "Reparar")}</b><span>${t("guide.repairSub", "base crítica")}</span></button>
       <button id="quickOpsBtn"><b>⚔️ ${t("guide.attack", "Atacar")}</b><span>${t("guide.attackSub", "abrir operações")}</span></button>
+      <button id="quickGroundBtn"><b>🗺️ ${t("guide.ground", "Frente")}</b><span>${t("guide.groundSub", "ocupar território")}</span></button>
       <button id="quickCyberBtn"><b>🕵️ ${t("guide.cyber", "Cyber")}</b><span>${t("guide.cyberSub", "espionar rivais")}</span></button>
       <button id="quickEconomyBtn"><b>🏭 ${t("guide.economy", "Economia")}</b><span>${t("guide.economySub", "mobilização e inflação")}</span></button>
       <button id="quickWorldBtn"><b>🌐 ${t("guide.world", "Mundo")}</b><span>${t("guide.worldSub", "DEFCON e crise")}</span></button>
@@ -1217,6 +1498,7 @@ function renderCommanderGuide() {
   $("#quickProduceBtn")?.addEventListener("click", quickProduceRecommended);
   $("#quickRepairBtn")?.addEventListener("click", quickRepairPriority);
   $("#quickOpsBtn")?.addEventListener("click", () => activatePanel("panelOps"));
+  $("#quickGroundBtn")?.addEventListener("click", () => activatePanel("panelGround"));
   $("#quickCyberBtn")?.addEventListener("click", () => activatePanel("panelCyber"));
   $("#quickEconomyBtn")?.addEventListener("click", () => activatePanel("panelEconomy"));
   $("#quickWorldBtn")?.addEventListener("click", () => activatePanel("panelGlobal"));
@@ -1232,6 +1514,7 @@ function runRecommendedAction(rec) {
   if (rec.action === "month") return advanceMonth();
   if (rec.action === "economy") return activatePanel("panelEconomy");
   if (rec.action === "cyber") return activatePanel("panelCyber");
+  if (rec.action === "ground") return activatePanel("panelGround");
   if (rec.action === "world") return activatePanel("panelGlobal");
   if (rec.action === "ai") return activatePanel("panelAiWorld");
   if (rec.action === "ops") return activatePanel("panelOps");
@@ -1591,6 +1874,7 @@ function initMap() {
   state.layers.regions = L.layerGroup().addTo(state.map);
   state.layers.bases = L.layerGroup().addTo(state.map);
   state.layers.threats = L.layerGroup().addTo(state.map);
+  state.layers.fronts = L.layerGroup().addTo(state.map);
   state.map.on("tileerror", () => {
     if (!document.querySelector(".leaflet-tile-loaded")) $("#mapFallback").hidden = false;
   });
@@ -1625,6 +1909,12 @@ function updateMapLayers() {
     const c = state.countries.find(x => x.id === t.countryId);
     const icon = L.divIcon({ className: "", html: `<div class="marker-threat">!</div>`, iconSize: [28, 28], iconAnchor: [14, 14] });
     L.marker(t.coords, { icon }).addTo(state.layers.threats).bindPopup(`<strong>${c?.flag || ""} ${c?.name || "Ameaça"}</strong><br>${t.type}<br>Nível ${t.level}`);
+  });
+  ensureGroundWar()?.fronts?.filter(f => f.status !== "withdrawn").forEach(front => {
+    const target = getCountry(front.targetId);
+    const icon = L.divIcon({ className: "", html: `<div class="marker-front">⚔</div>`, iconSize: [30, 30], iconAnchor: [15, 15] });
+    L.marker(front.coords || target?.coords || player.coords, { icon }).addTo(state.layers.fronts).bindPopup(`<strong>${target?.flag || ""} ${front.targetName}</strong><br>${groundStatusLabel(front.status)}<br>${t("ground.progress","Avanço")}: ${front.progress}% · ${t("ground.supply","Suprimento")}: ${front.supply}%`);
+    if (target?.coords) L.polyline([player.coords, target.coords], { color: "#ffdf6b", weight: 2, opacity: .55, dashArray: "7 7" }).addTo(state.layers.fronts);
   });
   state.map.setView(player.coords, Math.max(state.map.getZoom(), 3));
 }
@@ -1759,6 +2049,10 @@ function launchOperation(kind) {
     g.events.push(eventText("danger", `${label} contra ${target.name} falhou. Perdas políticas e alerta inimigo aumentaram.`));
   }
   const report = makeBattleReport(kind, target, attack, defense, success, op);
+  if (success && kind === "combined") {
+    const ground = ensureGroundWar();
+    if (ground) ground.selectedTargetId = target.id;
+  }
   const rel = g.relations.find(r => r.id === target.id);
   if (rel) {
     rel.tension = clamp(rel.tension + op.tension * 2, 0, 100);
@@ -1789,6 +2083,7 @@ function advanceMonth() {
   progressConstruction();
   progressProduction();
   progressCyberOps();
+  progressGroundWar();
   monthlyWorldEvent();
   progressAiWorld();
   decayRelations();

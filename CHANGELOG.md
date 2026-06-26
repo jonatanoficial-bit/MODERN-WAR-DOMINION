@@ -124,3 +124,14 @@
 - Operações podem ser detectadas e elevar tensão mundial.
 - Sistema integrado ao HQ mobile, IA dos países e três idiomas.
 - Save key mantida para preservar campanhas da Fase 17/18.
+
+
+## Fase 20 — Guerra Terrestre e Ocupação
+
+- Novo painel Frente/Guerra Terrestre.
+- Frentes de invasão com avanço, suprimento, resistência e baixas.
+- Ações: iniciar invasão, reforçar frente, pacificar território e retirar frente.
+- Frentes aparecem no mapa real com marcador e linha operacional.
+- Ocupação reduz poder/prontidão do rival, mas exige pacificação.
+- Sistema integrado ao HQ mobile, IA dos países, cyberwar, economia e três idiomas.
+- Save key mantida para preservar campanhas da Fase 17/18/19.
