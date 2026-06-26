@@ -195,3 +195,15 @@ Abra `index.html` ou publique no GitHub Pages. No celular, use tela deitada/full
 - Frentes terrestres, comboios logísticos, operações aéreas, navais e mísseis ganharam rotas animadas.
 - Visual do mapa ficou mais próximo de estratégia em tempo real, com veículos/colunas se movimentando rumo às frentes.
 - Save key mantida para preservar campanhas da Fase 17/18/19/20/21/22/23/24.
+
+
+## Fase 25 — Teatro Dinâmico e Movimentação Tática
+
+- Novo painel Movimento / Movimentação Tática.
+- Reposicionamento de forças entre regiões.
+- Envio de reforços para frentes terrestres ativas.
+- Colunas em trânsito com progresso e tempo de chegada.
+- Tropas, transportes e rotas de deslocamento aparecem no mapa real.
+- O teatro de operações ficou mais vivo e próximo de jogos estratégicos com movimentação militar visível.
+- Sistema integrado ao HQ mobile, logística, frentes terrestres, guerra aérea, naval, mísseis, IA, economia e três idiomas.
+- Save key mantida para preservar campanhas anteriores.

@@ -792,3 +792,33 @@ main{min-height:0}.screen{display:none;height:100%;min-height:0}.screen-active{d
   .marker-production,.marker-unit-stack,.marker-base-visual{width:34px;height:34px}
   .marker-moving-war{width:30px;height:30px}
 }
+
+
+/* Fase 25 — movimento tático e teatro dinâmico */
+.movement-panel{display:grid;gap:12px}
+.movement-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.movement-grid label,.movement-eta{display:grid;gap:6px;border:1px solid rgba(95,243,255,.16);background:rgba(255,255,255,.035);padding:10px;border-radius:16px}
+.movement-grid label span,.movement-eta small{font-size:.68rem;text-transform:uppercase;letter-spacing:.08em;color:#9fd5f0;font-weight:900}
+.movement-grid select{width:100%;border:1px solid rgba(95,243,255,.24);background:rgba(4,10,18,.58);color:var(--text);border-radius:12px;padding:10px}
+.movement-eta strong{font-size:1rem;color:#6affad}
+.movement-eta span{color:var(--muted);font-size:.68rem}
+.movement-actions{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.movement-actions button{min-height:56px;border-radius:16px;background:rgba(7,12,20,.58);border:1px solid rgba(106,255,173,.18);padding:10px;color:var(--text);font-weight:900}
+.movement-actions button:disabled{opacity:.45}
+.movement-transit,.movement-history{display:grid;gap:8px}
+.movement-transit h3,.movement-history h3{font-size:.9rem;margin:2px 0}
+.movement-transit article,.movement-history article{border:1px solid rgba(255,255,255,.08);border-radius:15px;background:rgba(255,255,255,.035);padding:10px;display:grid;gap:6px}
+.movement-transit article>div{display:flex;justify-content:space-between;gap:8px;align-items:center}
+.movement-transit strong,.movement-history strong{display:block;font-size:.84rem}
+.movement-transit span,.movement-history span,.movement-transit small,.movement-history small{display:block;color:#d7e6f5;font-size:.66rem}
+.movement-transit i{display:block;height:7px;border-radius:999px;background:rgba(255,255,255,.08);overflow:hidden}
+.movement-transit b{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,#6affad,#5ff3ff)}
+.marker-moving-transport{background:linear-gradient(135deg,#11281b,#1f5d3a)!important;box-shadow:0 0 24px rgba(106,255,173,.50),0 10px 24px rgba(0,0,0,.45)!important}
+.leaflet-overlay-pane path.movement-route{filter:drop-shadow(0 0 7px rgba(106,255,173,.55))}
+@media (max-width:980px){
+  .movement-grid{grid-template-columns:1fr}
+}
+@media (max-height:560px){
+  .movement-actions{grid-template-columns:repeat(3,1fr);gap:6px}
+  .movement-actions button{min-height:46px;padding:8px;border-radius:12px;font-size:.72rem}
+}

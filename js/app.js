@@ -1,5 +1,5 @@
-const VERSION = "2.4.1";
-const PHASE = "Hotfix Fase 24.1 — mapa interativo e visual tático";
+const VERSION = "2.5.0";
+const PHASE = "Fase 25 — teatro dinâmico e movimentação tática";
 const SAVE_KEY = "MWD_SAVE_F17";
 
 const $ = (sel, root = document) => root.querySelector(sel);
@@ -2163,6 +2163,277 @@ function renderLogisticsSystem() {
   $$("#logisticsPanel [data-logistics-action]").forEach(btn => btn.addEventListener("click", () => logisticsAction(btn.dataset.logisticsAction)));
 }
 
+
+function makeMovementSystem() {
+  return {
+    originRegionId: "capital",
+    selectedStackUid: null,
+    destinationRegionId: "border",
+    deployments: [],
+    history: []
+  };
+}
+
+function ensureStackUids() {
+  if (!state.game?.units) return;
+  state.game.units.forEach(stack => {
+    if (!stack.uid) stack.uid = cryptoId();
+  });
+}
+
+function ensureMovementSystem() {
+  if (!state.game) return null;
+  if (!state.game.movementSystem) state.game.movementSystem = makeMovementSystem();
+  const ms = state.game.movementSystem;
+  ensureStackUids();
+  if (!Array.isArray(ms.deployments)) ms.deployments = [];
+  if (!Array.isArray(ms.history)) ms.history = [];
+  ms.originRegionId = ms.originRegionId || state.game.selectedRegionId || "capital";
+  ms.destinationRegionId = ms.destinationRegionId || "border";
+  const originUnits = regionUnits(ms.originRegionId);
+  if ((!ms.selectedStackUid || !findUnitStackByUid(ms.selectedStackUid)) && originUnits.length) {
+    ms.selectedStackUid = originUnits[0].uid;
+  }
+  return ms;
+}
+
+function findUnitStackByUid(uid) {
+  ensureStackUids();
+  return state.game.units.find(s => s.uid === uid);
+}
+
+function movementTravelTime(stack, originId, destinationId) {
+  const o = getRegion(originId);
+  const d = getRegion(destinationId);
+  const unit = getUnit(stack.id);
+  const latDelta = Math.abs((o.coords?.[0] || 0) - (d.coords?.[0] || 0));
+  const lngDelta = Math.abs((o.coords?.[1] || 0) - (d.coords?.[1] || 0));
+  const distanceScore = latDelta + lngDelta / 1.8;
+  const base = unit?.class === "Aéreo" ? 1 : unit?.class === "Naval" ? 2 : 2;
+  const logisticsBonus = Math.round((state.game.logistics || 0) / 40);
+  return clamp(Math.ceil(base + distanceScore / 4.2 - logisticsBonus), 1, 6);
+}
+
+function movementStackLabel(stack) {
+  const unit = getUnit(stack.id);
+  return `${unit?.icon || "🪖"} ${unit?.name || stack.id} · ${t("movement.stack","Lotes")}: ${stack.qty} · ${getRegion(stack.regionId).name}`;
+}
+
+function recordMovementHistory(kind, payload) {
+  const ms = ensureMovementSystem();
+  ms.history.unshift({
+    id: cryptoId(),
+    kind,
+    at: `${monthNames[state.game.month % 12]}/${state.game.year}`,
+    ...payload
+  });
+  ms.history = ms.history.slice(0, 12);
+}
+
+function mergeArrivedStack(stackData, regionId) {
+  const existing = state.game.units.find(s => s.id === stackData.id && s.regionId === regionId);
+  if (existing) {
+    existing.qty += stackData.qty;
+    existing.condition = Math.round((existing.condition + stackData.condition) / 2);
+    existing.veteran = Math.max(existing.veteran || 0, stackData.veteran || 0);
+  } else {
+    state.game.units.push({ ...stackData, regionId, uid: cryptoId() });
+  }
+}
+
+function dispatchMovement(kind = "redeploy") {
+  const g = state.game;
+  const ms = ensureMovementSystem();
+  const stack = findUnitStackByUid($("#movementUnitSelect")?.value || ms.selectedStackUid);
+  const destinationId = $("#movementDestinationSelect")?.value || ms.destinationRegionId;
+  if (!stack) return;
+  const origin = getRegion(stack.regionId);
+  const destination = getRegion(destinationId);
+  if (!origin || !destination || origin.id === destination.id) return;
+  ms.originRegionId = origin.id;
+  ms.destinationRegionId = destination.id;
+  ms.selectedStackUid = stack.uid;
+
+  const existingFront = ensureGroundWar()?.fronts?.find(f => f.status !== "withdrawn");
+  const travel = movementTravelTime(stack, origin.id, destination.id);
+  const unit = getUnit(stack.id);
+  const cost = { finance: Math.max(6, Math.round(stack.qty * (unit?.class === "Aéreo" ? 14 : 8))), energy: Math.max(3, Math.round(travel * 4)), industry: 0 };
+  if (g.finance < cost.finance || g.energy < cost.energy) {
+    g.events.push(eventText("warn", currentLang === "en-US" ? "Not enough resources to move this force." : currentLang === "es-ES" ? "No hay recursos suficientes para mover esta fuerza." : "Recursos insuficientes para mover esta força."));
+    saveGame(); renderGame(); return;
+  }
+  g.finance -= cost.finance;
+  g.energy -= cost.energy;
+
+  const payload = {
+    id: cryptoId(),
+    kind,
+    unitId: stack.id,
+    unitIcon: unit?.icon || unitMapIcon(unit),
+    unitName: unit?.name || stack.id,
+    qty: stack.qty,
+    condition: stack.condition ?? 100,
+    veteran: stack.veteran || 0,
+    fromRegionId: origin.id,
+    fromRegionName: origin.name,
+    toRegionId: destination.id,
+    toRegionName: destination.name,
+    total: travel,
+    remaining: travel,
+    progress: 0,
+    frontTargetId: kind === "front" ? existingFront?.targetId || null : null,
+    frontTargetName: kind === "front" ? existingFront?.targetName || null : null
+  };
+
+  g.units = g.units.filter(s => s.uid !== stack.uid);
+  ms.deployments.push(payload);
+  recordMovementHistory("dispatch", {
+    label: `${payload.unitIcon} ${payload.unitName}`,
+    text: `${origin.name} → ${destination.name}`,
+    eta: travel,
+    success: true
+  });
+  g.events.push(eventText("sistema", `${payload.unitName} saiu de ${origin.name} rumo a ${destination.name}.`));
+  saveGame();
+  renderGame();
+  activatePanel("panelMovement");
+}
+
+function cancelMovements() {
+  const ms = ensureMovementSystem();
+  if (!ms.deployments.length) return;
+  ms.deployments.forEach(dep => {
+    mergeArrivedStack({ id: dep.unitId, qty: dep.qty, condition: dep.condition, veteran: dep.veteran }, dep.fromRegionId);
+  });
+  state.game.events.push(eventText("warn", currentLang === "en-US" ? "Transit orders canceled. Forces returned to origin." : currentLang === "es-ES" ? "Órdenes canceladas. Las fuerzas regresaron al origen." : "Ordens canceladas. As forças retornaram à origem."));
+  recordMovementHistory("cancel", {
+    label: "↩️ Cancelado",
+    text: currentLang === "en-US" ? "Transit orders canceled." : currentLang === "es-ES" ? "Tránsitos cancelados." : "Trânsitos cancelados.",
+    eta: 0,
+    success: true
+  });
+  ms.deployments = [];
+  saveGame();
+  renderGame();
+  activatePanel("panelMovement");
+}
+
+function progressMovementSystem() {
+  const g = state.game;
+  const ms = ensureMovementSystem();
+  const arrived = [];
+  ms.deployments.forEach(dep => {
+    dep.remaining -= 1;
+    dep.progress = clamp(100 - Math.round((dep.remaining / dep.total) * 100), 0, 100);
+    if (dep.remaining <= 0) arrived.push(dep);
+  });
+  ms.deployments = ms.deployments.filter(dep => dep.remaining > 0);
+  arrived.forEach(dep => {
+    mergeArrivedStack({ id: dep.unitId, qty: dep.qty, condition: dep.condition, veteran: dep.veteran }, dep.toRegionId);
+    if (dep.frontTargetId) {
+      const front = ensureGroundWar()?.fronts?.find(f => f.targetId === dep.frontTargetId && f.status !== "withdrawn");
+      if (front) {
+        front.supply = clamp(front.supply + 8 + dep.qty * 2, 0, 100);
+        front.progress = clamp(front.progress + 3 + dep.qty, 0, 100);
+        front.resistance = clamp(front.resistance - (2 + dep.qty), 0, 100);
+      }
+    }
+    recordMovementHistory("arrival", {
+      label: `${dep.unitIcon} ${dep.unitName}`,
+      text: `${dep.toRegionName}${dep.frontTargetName ? ` · reforço para ${dep.frontTargetName}` : ""}`,
+      eta: 0,
+      success: true
+    });
+    g.events.push(eventText("sistema", `${dep.unitName} chegou em ${dep.toRegionName}${dep.frontTargetName ? ` e reforçou a frente contra ${dep.frontTargetName}` : ""}.`));
+  });
+}
+
+function renderMovementSystem() {
+  const panel = $("#movementPanel");
+  if (!panel || !state.game) return;
+  const ms = ensureMovementSystem();
+  const regions = state.game.regions;
+  const originId = ms.originRegionId || state.game.selectedRegionId || regions[0]?.id;
+  const originStacks = regionUnits(originId);
+  if ((!ms.selectedStackUid || !findUnitStackByUid(ms.selectedStackUid)) && originStacks.length) ms.selectedStackUid = originStacks[0].uid;
+  if (!ms.destinationRegionId) ms.destinationRegionId = regions.find(r => r.id !== originId)?.id || originId;
+  const activeFront = ensureGroundWar()?.fronts?.find(f => f.status !== "withdrawn");
+  const selectedStack = findUnitStackByUid(ms.selectedStackUid);
+  const travel = selectedStack ? movementTravelTime(selectedStack, originId, ms.destinationRegionId) : 0;
+
+  panel.innerHTML = `
+    <div class="movement-grid">
+      <label><span>${t("movement.origin","Origem")}</span>
+        <select id="movementOriginSelect">
+          ${regions.map(r => `<option value="${r.id}" ${r.id === originId ? "selected" : ""}>${r.name}</option>`).join("")}
+        </select>
+      </label>
+      <label><span>${t("movement.unit","Unidade")}</span>
+        <select id="movementUnitSelect">
+          ${originStacks.length ? originStacks.map(stack => `<option value="${stack.uid}" ${stack.uid === ms.selectedStackUid ? "selected" : ""}>${movementStackLabel(stack)}</option>`).join("") : `<option value="">${t("movement.noTransit","Nenhuma força em trânsito.")}</option>`}
+        </select>
+      </label>
+      <label><span>${t("movement.destination","Destino")}</span>
+        <select id="movementDestinationSelect">
+          ${regions.map(r => `<option value="${r.id}" ${r.id === ms.destinationRegionId ? "selected" : ""}>${r.name}</option>`).join("")}
+        </select>
+      </label>
+      <div class="movement-eta">
+        <small>${t("movement.travel","Tempo de deslocamento")}</small>
+        <strong>${selectedStack ? `${travel} ${t("movement.days","meses")}` : "—"}</strong>
+        <span>${activeFront ? `${t("movement.activeFront","Frente ativa")}: ${activeFront.targetName}` : t("ground.noFront", "Nenhuma frente terrestre ativa.")}</span>
+      </div>
+    </div>
+
+    <div class="movement-actions">
+      <button id="movementDeployBtn" ${selectedStack ? "" : "disabled"}>🚛 ${t("movement.deploy","Reposicionar força")}</button>
+      <button id="movementFrontBtn" ${(selectedStack && activeFront) ? "" : "disabled"}>🪖 ${t("movement.reinforce","Enviar à frente")}</button>
+      <button id="movementCancelBtn" ${ms.deployments.length ? "" : "disabled"}>↩️ ${t("movement.cancel","Cancelar trânsitos")}</button>
+    </div>
+
+    <section class="movement-transit">
+      <h3>${t("movement.inTransit","Em trânsito")}</h3>
+      ${ms.deployments.length ? ms.deployments.map(dep => `
+        <article>
+          <div><strong>${dep.unitIcon} ${dep.unitName}</strong><span>${dep.fromRegionName} → ${dep.toRegionName}</span></div>
+          <small>${t("movement.eta","Chega em")} ${dep.remaining} ${t("movement.days","meses")} · ${dep.qty} ${t("movement.stack","Lotes")}</small>
+          <i><b style="width:${dep.progress || 0}%"></b></i>
+        </article>`).join("") : `<p class="muted">${t("movement.noTransit","Nenhuma força em trânsito.")}</p>`}
+    </section>
+
+    <section class="movement-history">
+      <h3>${t("movement.history","Histórico de deslocamentos")}</h3>
+      ${ms.history.length ? ms.history.slice(0,6).map(item => `<article><strong>${item.label}</strong><span>${item.at} · ${item.text}</span><small>${item.eta ? `${t("movement.eta","Chega em")} ${item.eta} ${t("movement.days","meses")}` : t("movement.arrival","Chegada")}</small></article>`).join("") : `<p class="muted">${t("movement.noHistory","Nenhum deslocamento realizado.")}</p>`}
+    </section>`;
+  $("#movementOriginSelect")?.addEventListener("change", e => {
+    ms.originRegionId = e.target.value;
+    const arr = regionUnits(ms.originRegionId);
+    ms.selectedStackUid = arr[0]?.uid || null;
+    saveGame();
+    renderMovementSystem();
+  });
+  $("#movementUnitSelect")?.addEventListener("change", e => {
+    ms.selectedStackUid = e.target.value || null;
+    saveGame();
+    renderMovementSystem();
+  });
+  $("#movementDestinationSelect")?.addEventListener("change", e => {
+    ms.destinationRegionId = e.target.value;
+    saveGame();
+    renderMovementSystem();
+  });
+  $("#movementDeployBtn")?.addEventListener("click", () => dispatchMovement("redeploy"));
+  $("#movementFrontBtn")?.addEventListener("click", () => {
+    const front = ensureGroundWar()?.fronts?.find(f => f.status !== "withdrawn");
+    if (front) {
+      ms.destinationRegionId = "border";
+      saveGame();
+      dispatchMovement("front");
+    }
+  });
+  $("#movementCancelBtn")?.addEventListener("click", cancelMovements);
+}
+
 function makeInitialGame(countryId) {
   const country = state.countries.find(c => c.id === countryId) || state.countries[0];
   const regions = makeRegions(country);
@@ -2353,6 +2624,7 @@ function renderGame() {
   ensureNavalWar();
   ensureMissileWar();
   ensureLogisticsSystem();
+  ensureMovementSystem();
   renderSummary();
   renderCommanderGuide();
   renderRegionSelect();
@@ -2369,6 +2641,7 @@ function renderGame() {
   renderAirWar();
   renderNavalWar();
   renderMissileWar();
+  renderMovementSystem();
   renderGlobalWar();
   renderAiWorld();
   renderTargetSelect();
@@ -2510,6 +2783,7 @@ function renderCommanderGuide() {
       <button id="quickNavalBtn"><b>⚓ ${t("guide.naval", "Naval")}</b><span>${t("guide.navalSub", "controlar mares")}</span></button>
       <button id="quickMissileBtn"><b>🚀 ${t("guide.missile", "Mísseis")}</b><span>${t("guide.missileSub", "defesa estratégica")}</span></button>
       <button id="quickGroundBtn"><b>🗺️ ${t("guide.ground", "Frente")}</b><span>${t("guide.groundSub", "ocupar território")}</span></button>
+      <button id="quickMoveBtn"><b>🚛 ${t("guide.movement", "Mover")}</b><span>${t("guide.movementSub", "redistribuir forças")}</span></button>
       <button id="quickCyberBtn"><b>🕵️ ${t("guide.cyber", "Cyber")}</b><span>${t("guide.cyberSub", "espionar rivais")}</span></button>
       <button id="quickEconomyBtn"><b>🏭 ${t("guide.economy", "Economia")}</b><span>${t("guide.economySub", "mobilização e inflação")}</span></button>
       <button id="quickWorldBtn"><b>🌐 ${t("guide.world", "Mundo")}</b><span>${t("guide.worldSub", "DEFCON e crise")}</span></button>
@@ -2525,6 +2799,7 @@ function renderCommanderGuide() {
   $("#quickNavalBtn")?.addEventListener("click", () => activatePanel("panelNaval"));
   $("#quickMissileBtn")?.addEventListener("click", () => activatePanel("panelMissile"));
   $("#quickGroundBtn")?.addEventListener("click", () => activatePanel("panelGround"));
+  $("#quickMoveBtn")?.addEventListener("click", () => activatePanel("panelMovement"));
   $("#quickCyberBtn")?.addEventListener("click", () => activatePanel("panelCyber"));
   $("#quickEconomyBtn")?.addEventListener("click", () => activatePanel("panelEconomy"));
   $("#quickWorldBtn")?.addEventListener("click", () => activatePanel("panelGlobal"));
@@ -2975,6 +3250,18 @@ function renderTacticalMapOverlays(player) {
 
   ensureLogisticsSystem()?.history?.slice(0,3).filter(item => item.coords).forEach((item, index) => {
     addTacticalRoute(player.coords, item.coords, `<strong>🚚 ${item.label}</strong><br>${item.regionName}<br>${item.effect}`, "🚚", index * .7);
+  });
+
+  ensureMovementSystem()?.deployments?.forEach((dep, index) => {
+    const from = getRegion(dep.fromRegionId);
+    const to = getRegion(dep.toRegionId);
+    if (!from || !to) return;
+    L.polyline([from.coords, to.coords], { color: "#6affad", weight: 3, opacity: .75, dashArray: "8 10", className: "tactical-route movement-route" }).addTo(state.layers.tactical)
+      .bindPopup(`<strong>${dep.unitIcon} ${dep.unitName}</strong><br>${dep.fromRegionName} → ${dep.toRegionName}<br>${t("movement.eta","Chega em")} ${dep.remaining} ${t("movement.days","meses")}`);
+    const ratio = clamp((dep.total - dep.remaining) / Math.max(1, dep.total), 0.08, 0.92);
+    const markerPoint = interpolateCoords(from.coords, to.coords, ratio);
+    const movingIcon = L.divIcon({ className: "", html: `<div class="marker-moving-war marker-moving-transport" style="--delay:${index * .45}s">${dep.unitIcon}</div>`, iconSize: [34, 34], iconAnchor: [17, 17] });
+    L.marker(markerPoint, { icon: movingIcon }).addTo(state.layers.tactical).bindPopup(`<strong>${dep.unitIcon} ${dep.unitName}</strong><br>${dep.qty} ${t("movement.stack","Lotes")} · ${dep.fromRegionName} → ${dep.toRegionName}`);
   });
 
   ensureAirWar()?.history?.slice(0,3).filter(item => item.coords).forEach((item, index) => {

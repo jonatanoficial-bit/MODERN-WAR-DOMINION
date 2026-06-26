@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
   <meta name="theme-color" content="#050914">
   <meta name="description" content="Modern War Dominion — jogo mobile de dominação militar global com mapa real, bases regionais, produção de unidades e escalada de guerra mundial.">
-  <title>Modern War Dominion — Fase 24.1</title>
+  <title>Modern War Dominion — Fase 25</title>
   <link rel="manifest" href="manifest.json">
   <link rel="icon" href="assets/img/icon.svg" type="image/svg+xml">
   <link rel="preconnect" href="https://unpkg.com">
@@ -42,7 +42,7 @@
         </select>
         <button class="mini-btn" id="fullscreenBtn" data-i18n="top.fullscreen">Tela cheia</button>
         <button class="mini-btn" id="installBtn" hidden data-i18n="top.install">Instalar</button>
-        <div class="build-chip" data-i18n="phase.label">Fase 24.1 · v2.4.1</div>
+        <div class="build-chip" data-i18n="phase.label">Fase 25 · v2.5.0</div>
       </div>
     </header>
 
@@ -50,7 +50,7 @@
       <section class="screen screen-active" id="screenHome">
         <div class="home-layout">
           <article class="hero-card glass-panel">
-            <p class="eyebrow" data-i18n="home.eyebrow">Hotfix Fase 24.1 — Mapa interativo e visual tático</p>
+            <p class="eyebrow" data-i18n="home.eyebrow">Fase 25 — Teatro Dinâmico e Movimentação Tática</p>
             <h1 data-i18n="home.title">Agora a dissuasão estratégica muda o equilíbrio da guerra.</h1>
             <p data-i18n="home.text">A campanha ganha estoque de mísseis, escudo antimíssil, alerta antecipado, ataque convencional de precisão e postura de dissuasão nuclear simulada.</p>
             <div class="hero-actions">
@@ -114,6 +114,7 @@
               <button class="side-tab is-active" data-panel="panelGuide" data-i18n="tab.guide">Guia</button>
               <button class="side-tab" data-panel="panelBuild" data-i18n="tab.regions">Regiões</button>
               <button class="side-tab" data-panel="panelForces" data-i18n="tab.production">Produção</button>
+              <button class="side-tab" data-panel="panelMovement" data-i18n="tab.movement">Movimento</button>
               <button class="side-tab" data-panel="panelArsenal" data-i18n="tab.arsenal">Arsenal</button>
               <button class="side-tab" data-panel="panelMaintenance" data-i18n="tab.maintenance">Manut.</button>
               <button class="side-tab" data-panel="panelLogistics" data-i18n="tab.logistics">Logística</button>
@@ -154,6 +155,12 @@
               <div id="unitList" class="unit-list"></div>
             </div>
 
+
+            <div class="side-panel" id="panelMovement">
+              <h2 data-i18n="movement.title">Movimentação Tática</h2>
+              <p class="muted" data-i18n="movement.text">Reposicione tropas entre regiões, envie reforços à frente e acompanhe colunas em trânsito no mapa.</p>
+              <div id="movementPanel" class="movement-panel"></div>
+            </div>
 
             <div class="side-panel" id="panelArsenal">
               <h2 data-i18n="arsenal.title">Arsenal detalhado</h2>
@@ -265,6 +272,7 @@
             <button class="dock-btn is-active" data-panel="panelGuide">🏳️<span data-i18n="dock.command">Comando</span></button>
             <button class="dock-btn" data-panel="panelBuild">🏗️<span data-i18n="dock.bases">Bases</span></button>
             <button class="dock-btn" data-panel="panelForces">🪖<span data-i18n="dock.produce">Produzir</span></button>
+            <button class="dock-btn" data-panel="panelMovement">🚛<span data-i18n="dock.movement">Mover</span></button>
             <button class="dock-btn" data-panel="panelLogistics">🚚<span data-i18n="dock.logistics">Logística</span></button>
             <button class="dock-btn" data-panel="panelOps">⚔️<span data-i18n="dock.attack">Atacar</span></button>
             <button class="dock-btn" data-panel="panelAir">✈️<span data-i18n="dock.air">Aérea</span></button>
@@ -282,8 +290,8 @@
 
       <section class="screen" id="screenRoadmap">
         <div class="roadmap glass-panel">
-          <p class="eyebrow" data-i18n="roadmap.eyebrow">Fase 23 — mísseis e defesa estratégica</p>
-          <h1 data-i18n="roadmap.title">A campanha agora tem mísseis, escudo antimíssil, alerta antecipado e dissuasão.</h1>
+          <p class="eyebrow" data-i18n="roadmap.eyebrow">Fase 25 — teatro dinâmico</p>
+          <h1 data-i18n="roadmap.title">A campanha agora tem deslocamento de tropas, reforços e colunas vivas no mapa.</h1>
           <div class="roadmap-grid">
             <article><strong>Fase 9</strong><span>Manutenção, desgaste, baixas, reposição de lotes e custo real de guerra longa.</span></article>
             <article><strong>Fase 10</strong><span>Terceira Guerra Mundial: blocos, ultimatos, sanções, invasões e crise nuclear.</span></article>
