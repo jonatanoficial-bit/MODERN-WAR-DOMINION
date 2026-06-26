@@ -1,6 +1,6 @@
 {
   "name": "modern-war-dominion",
-  "version": "2.4.0",
+  "version": "2.4.1",
   "private": true,
   "type": "module",
   "scripts": {
@@ -8,5 +8,5 @@
     "audit": "node tools/audit.mjs",
     "integrity": "node tools/integrity.mjs"
   },
-  "description": "Modern War Dominion Fase 24 — logística global, suprimentos e gargalos"
+  "description": "Modern War Dominion Hotfix Fase 24.1 — mapa arrastável e visual tático"
 }

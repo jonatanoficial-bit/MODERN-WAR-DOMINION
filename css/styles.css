@@ -750,3 +750,45 @@ main{min-height:0}.screen{display:none;height:100%;min-height:0}.screen-active{d
   .logistics-bar{padding:7px}
   .logistics-last{padding:8px}
 }
+
+
+/* Hotfix Fase 24.1 — mapa arrastável e visual tático imersivo */
+.real-map,.leaflet-container,.leaflet-pane,.leaflet-map-pane,.leaflet-tile-pane,.leaflet-overlay-pane,.leaflet-marker-pane{
+  pointer-events:auto!important;
+}
+.real-map,.leaflet-container{
+  touch-action:none!important;
+  cursor:grab;
+  user-select:none;
+  -webkit-user-select:none;
+}
+.leaflet-dragging .real-map,.leaflet-dragging .leaflet-container,.leaflet-container.leaflet-dragging{
+  cursor:grabbing!important;
+}
+.map-fallback[hidden]{display:none!important}
+.leaflet-marker-icon,.leaflet-interactive{pointer-events:auto!important}
+
+.marker-base-visual{position:relative;display:grid;place-items:center;width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,rgba(106,255,173,.94),rgba(95,243,255,.94));color:#06111c;border:2px solid rgba(255,255,255,.70);box-shadow:0 0 22px rgba(95,243,255,.45),0 10px 24px rgba(0,0,0,.38);font-size:1.04rem}
+.marker-base-visual b{line-height:1}
+.marker-base-visual i{position:absolute;right:-4px;bottom:-4px;display:grid;place-items:center;width:18px;height:18px;border-radius:50%;background:#07101d;color:#fff;border:1px solid rgba(255,255,255,.40);font-size:.58rem;font-style:normal;font-weight:900}
+
+.marker-construction,.marker-production,.marker-unit-stack{position:relative;display:grid;place-items:center;border-radius:16px;border:2px solid rgba(255,255,255,.68);box-shadow:0 0 26px rgba(255,209,102,.40),0 12px 24px rgba(0,0,0,.42);animation:tacticalPulse 1.55s ease-in-out infinite}
+.marker-construction{width:46px;height:46px;background:linear-gradient(135deg,#ffd166,#ff784f);color:#160d03}
+.marker-production{width:42px;height:42px;background:linear-gradient(135deg,#5ff3ff,#6affad);color:#06121c}
+.marker-unit-stack{width:40px;height:40px;background:linear-gradient(135deg,#1b2434,#31425a);color:#fff;border-color:rgba(95,243,255,.65)}
+.marker-construction b,.marker-production b,.marker-unit-stack b{font-size:1.05rem;line-height:1}
+.marker-construction i,.marker-production i,.marker-unit-stack i{position:absolute;right:-6px;bottom:-6px;display:grid;place-items:center;min-width:22px;height:18px;padding:0 4px;border-radius:999px;background:#07101d;color:#fff;border:1px solid rgba(255,255,255,.34);font-size:.55rem;font-style:normal;font-weight:900}
+
+.marker-moving-war{display:grid;place-items:center;width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#111a28,#263f5f);border:2px solid rgba(255,255,255,.68);box-shadow:0 0 24px rgba(255,209,102,.45),0 10px 24px rgba(0,0,0,.45);font-size:1.05rem;animation:tacticalDrive 1.1s ease-in-out infinite alternate;animation-delay:var(--delay,0s)}
+.leaflet-overlay-pane path.tactical-route{animation:tacticalDash 1.4s linear infinite;filter:drop-shadow(0 0 6px rgba(255,209,102,.55))}
+@keyframes tacticalPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
+@keyframes tacticalDrive{0%{transform:translate(-5px,3px) rotate(-3deg)}100%{transform:translate(7px,-3px) rotate(4deg)}}
+@keyframes tacticalDash{to{stroke-dashoffset:-26}}
+@media (max-width:980px){
+  .real-map{min-height:320px}
+}
+@media (max-height:560px){
+  .marker-construction{width:38px;height:38px}
+  .marker-production,.marker-unit-stack,.marker-base-visual{width:34px;height:34px}
+  .marker-moving-war{width:30px;height:30px}
+}

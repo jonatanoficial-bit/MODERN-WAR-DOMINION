@@ -183,3 +183,15 @@ Abra `index.html` ou publique no GitHub Pages. No celular, use tela deitada/full
 - Ações logísticas aparecem no mapa real com marcador.
 - Sistema integrado ao HQ mobile, guerra terrestre, aérea, naval, mísseis, IA, cyberwar, economia e três idiomas.
 - Save key mantida para preservar campanhas da Fase 17 em diante.
+
+
+## Hotfix Fase 24.1 — Mapa Interativo e Visual Tático
+
+- Corrigido arraste do mapa com mouse e toque.
+- O mapa não recentraliza sozinho depois que o jogador move ou aproxima.
+- Bases aparecem com ícone mais forte e nível no mapa.
+- Construções em andamento aparecem no mapa com progresso.
+- Unidades e produção militar aparecem como marcadores táticos.
+- Frentes terrestres, comboios logísticos, operações aéreas, navais e mísseis ganharam rotas animadas.
+- Visual do mapa ficou mais próximo de estratégia em tempo real, com veículos/colunas se movimentando rumo às frentes.
+- Save key mantida para preservar campanhas da Fase 17/18/19/20/21/22/23/24.

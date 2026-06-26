@@ -1,5 +1,5 @@
-const VERSION = "2.4.0";
-const PHASE = "Fase 24 — logística global e suprimentos";
+const VERSION = "2.4.1";
+const PHASE = "Hotfix Fase 24.1 — mapa interativo e visual tático";
 const SAVE_KEY = "MWD_SAVE_F17";
 
 const $ = (sel, root = document) => root.querySelector(sel);
@@ -12,7 +12,9 @@ const state = {
   selectedCountry: null,
   game: null,
   map: null,
-  layers: { countries: null, regions: null, bases: null, threats: null, fronts: null, airOps: null, navalOps: null, missiles: null, logistics: null },
+  mapUserMoved: false,
+  mapAutoCentered: false,
+  layers: { countries: null, regions: null, bases: null, threats: null, fronts: null, airOps: null, navalOps: null, missiles: null, logistics: null, tactical: null },
   arsenalFilter: "Todos"
 };
 
@@ -2316,6 +2318,8 @@ function generateThreats(playerCountry) {
 
 function startGame(countryId) {
   state.game = makeInitialGame(countryId);
+  state.mapUserMoved = false;
+  state.mapAutoCentered = false;
   saveGame();
   $(".tab-btn[data-screen='screenWar']").disabled = false;
   renderGame();
@@ -2883,6 +2887,109 @@ function renderIntel() {
   });
 }
 
+
+function interpolateCoords(a, b, ratio) {
+  return [a[0] + (b[0] - a[0]) * ratio, a[1] + (b[1] - a[1]) * ratio];
+}
+
+function unitMapIcon(unit) {
+  if (!unit) return "🪖";
+  if (unit.class === "Aéreo") return "✈️";
+  if (unit.class === "Naval") return "🚢";
+  if (unit.class === "Estratégico") return "🚀";
+  return unit.icon || "🪖";
+}
+
+function addTacticalRoute(from, to, label, icon = "🚚", offset = 0) {
+  if (!state.map || !state.layers.tactical || !from || !to || !window.L) return;
+  L.polyline([from, to], {
+    color: "#ffd166",
+    weight: 3,
+    opacity: .72,
+    dashArray: "12 14",
+    className: "tactical-route"
+  }).addTo(state.layers.tactical).bindPopup(label);
+  const ratio = .26 + ((Date.now() / 9000 + offset) % .48);
+  const markerPoint = interpolateCoords(from, to, ratio);
+  const movingIcon = L.divIcon({
+    className: "",
+    html: `<div class="marker-moving-war" style="--delay:${offset}s">${icon}</div>`,
+    iconSize: [34, 34],
+    iconAnchor: [17, 17]
+  });
+  L.marker(markerPoint, { icon: movingIcon }).addTo(state.layers.tactical).bindPopup(label);
+}
+
+function renderTacticalMapOverlays(player) {
+  const g = state.game;
+  if (!state.layers.tactical || !window.L || !g) return;
+
+  g.construction.forEach(job => {
+    const building = getBuilding(job.buildingId);
+    const region = getRegion(job.regionId);
+    const total = Math.max(1, building?.buildMonths || job.remaining || 1);
+    const progress = clamp(100 - Math.round((job.remaining / total) * 100), 0, 100);
+    const icon = L.divIcon({
+      className: "",
+      html: `<div class="marker-construction"><b>${building?.icon || "🏗️"}</b><i>${progress}%</i></div>`,
+      iconSize: [46, 46],
+      iconAnchor: [23, 23]
+    });
+    L.marker(jitter(region.coords, .18), { icon }).addTo(state.layers.tactical)
+      .bindPopup(`<strong>🏗️ ${building?.name || "Construção"}</strong><br>${region.name}<br>Progresso: ${progress}% · faltam ${job.remaining} mês(es)`);
+  });
+
+  g.production.forEach((job, index) => {
+    const unit = getUnit(job.unitId);
+    const region = getRegion(job.regionId);
+    const icon = L.divIcon({
+      className: "",
+      html: `<div class="marker-production"><b>${unitMapIcon(unit)}</b><i>${job.remaining}m</i></div>`,
+      iconSize: [42, 42],
+      iconAnchor: [21, 21]
+    });
+    L.marker(jitter(region.coords, .26), { icon }).addTo(state.layers.tactical)
+      .bindPopup(`<strong>${unitMapIcon(unit)} ${unit?.name || "Unidade"}</strong><br>${region.name}<br>Produção em andamento · faltam ${job.remaining} mês(es)`);
+    addTacticalRoute(region.coords, jitter(region.coords, .8), `${unit?.name || "Unidade"} em deslocamento interno`, unitMapIcon(unit), index * .65);
+  });
+
+  g.units.forEach((stack, index) => {
+    const unit = getUnit(stack.id);
+    const region = getRegion(stack.regionId);
+    const icon = L.divIcon({
+      className: "",
+      html: `<div class="marker-unit-stack"><b>${unitMapIcon(unit)}</b><i>${stack.qty}</i></div>`,
+      iconSize: [40, 40],
+      iconAnchor: [20, 20]
+    });
+    L.marker(jitter(region.coords, .30), { icon }).addTo(state.layers.tactical)
+      .bindPopup(`<strong>${unitMapIcon(unit)} ${unit?.name || "Força"}</strong><br>${region.name}<br>Quantidade: ${stack.qty} · condição ${stack.condition ?? 100}%`);
+  });
+
+  ensureGroundWar()?.fronts?.filter(f => f.status !== "withdrawn").forEach((front, index) => {
+    const target = getCountry(front.targetId);
+    if (!target) return;
+    addTacticalRoute(player.coords, target.coords, `<strong>🪖 Coluna terrestre rumo a ${front.targetName}</strong><br>Avanço: ${front.progress}% · suprimento ${front.supply}%`, "🪖", index * .9);
+    addTacticalRoute(player.coords, jitter(target.coords, 1.1), `<strong>🚚 Comboio logístico para ${front.targetName}</strong><br>Suprimento da frente: ${front.supply}%`, "🚚", index * 1.2);
+  });
+
+  ensureLogisticsSystem()?.history?.slice(0,3).filter(item => item.coords).forEach((item, index) => {
+    addTacticalRoute(player.coords, item.coords, `<strong>🚚 ${item.label}</strong><br>${item.regionName}<br>${item.effect}`, "🚚", index * .7);
+  });
+
+  ensureAirWar()?.history?.slice(0,3).filter(item => item.coords).forEach((item, index) => {
+    addTacticalRoute(player.coords, item.coords, `<strong>✈️ ${item.label}</strong><br>${item.targetName}`, "✈️", index * .55);
+  });
+
+  ensureNavalWar()?.history?.slice(0,3).filter(item => item.coords).forEach((item, index) => {
+    addTacticalRoute(player.coords, item.coords, `<strong>🚢 ${item.label}</strong><br>${item.targetName}`, "🚢", index * .8);
+  });
+
+  ensureMissileWar()?.history?.slice(0,2).filter(item => item.coords).forEach((item, index) => {
+    addTacticalRoute(player.coords, item.coords, `<strong>🚀 ${item.label}</strong><br>${item.targetName}`, "🚀", index * .6);
+  });
+}
+
 function initMap() {
   if (state.map) return;
   if (!window.L) {
@@ -2890,7 +2997,21 @@ function initMap() {
     return;
   }
   const c = getPlayerCountry();
-  state.map = L.map("realMap", { zoomControl: true, attributionControl: true, worldCopyJump: true, minZoom: 2, maxZoom: 7 }).setView(c.coords, 3);
+  state.map = L.map("realMap", {
+    zoomControl: true,
+    attributionControl: true,
+    worldCopyJump: true,
+    minZoom: 2,
+    maxZoom: 7,
+    dragging: true,
+    tap: false,
+    inertia: true,
+    keyboard: true,
+    scrollWheelZoom: true,
+    doubleClickZoom: true,
+    touchZoom: true,
+    boxZoom: true
+  }).setView(c.coords, 3);
   L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
     maxZoom: 19,
     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
@@ -2905,6 +3026,15 @@ function initMap() {
   state.layers.navalOps = L.layerGroup().addTo(state.map);
   state.layers.missiles = L.layerGroup().addTo(state.map);
   state.layers.logistics = L.layerGroup().addTo(state.map);
+  state.layers.tactical = L.layerGroup().addTo(state.map);
+  state.map.dragging.enable();
+  state.map.scrollWheelZoom.enable();
+  state.map.doubleClickZoom.enable();
+  state.map.touchZoom.enable();
+  state.map.boxZoom.enable();
+  state.map.on("dragstart zoomstart movestart", () => { state.mapUserMoved = true; });
+  setTimeout(() => state.map?.invalidateSize(), 60);
+  setTimeout(() => state.map?.invalidateSize(), 420);
   state.map.on("tileerror", () => {
     if (!document.querySelector(".leaflet-tile-loaded")) $("#mapFallback").hidden = false;
   });
@@ -2931,7 +3061,7 @@ function updateMapLayers() {
 
   g.bases.forEach(base => {
     const b = getBuilding(base.type);
-    const icon = L.divIcon({ className: "", html: `<div class="marker-base">${b.icon}</div>`, iconSize: [30, 30], iconAnchor: [15, 15] });
+    const icon = L.divIcon({ className: "", html: `<div class="marker-base marker-base-visual"><b>${b.icon}</b><i>${base.level}</i></div>`, iconSize: [40, 40], iconAnchor: [20, 20] });
     L.marker(base.coords, { icon }).addTo(state.layers.bases).bindPopup(`<strong>${b.name}</strong><br>${getRegion(base.regionId).name}<br>Nível ${base.level} · condição ${base.condition}%`);
   });
 
@@ -2965,7 +3095,12 @@ function updateMapLayers() {
     const icon = L.divIcon({ className: "", html: `<div class="marker-logistics">🚚</div>`, iconSize: [30, 30], iconAnchor: [15, 15] });
     L.marker(item.coords, { icon }).addTo(state.layers.logistics).bindPopup(`<strong>${item.regionName}</strong><br>${item.label}<br>${item.effect}`);
   });
-  state.map.setView(player.coords, Math.max(state.map.getZoom(), 3));
+  renderTacticalMapOverlays(player);
+  if (!state.mapUserMoved && !state.mapAutoCentered) {
+    state.map.setView(player.coords, Math.max(state.map.getZoom(), 3), { animate: false });
+    state.mapAutoCentered = true;
+  }
+  requestAnimationFrame(() => state.map?.invalidateSize());
 }
 
 function buildBase(buildingId) {

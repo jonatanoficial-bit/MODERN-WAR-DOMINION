@@ -1,7 +1,7 @@
 {
   "project": "Modern War Dominion",
-  "version": "2.4.0",
-  "phase": "Fase 24 — Logística Global e Suprimentos",
+  "version": "2.4.1",
+  "phase": "Hotfix Fase 24.1 — Mapa Interativo e Visual Tático",
   "generated_at": "2026-06-24",
   "base": "Fase 5 assets integrados",
   "features": [
@@ -12,12 +12,13 @@
     "mapa real preservado"
   ],
   "notes": [
-    "Novo painel Logística Global",
-    "Rede de suprimentos, reserva de combustível, estoque de munição, transporte, segurança de rotas e gargalos",
-    "Ações: expandir rede, estocar munição, reservar combustível, proteger rotas, ponte aérea e reparo emergencial",
-    "Logística afeta frentes terrestres, prontidão, produção e riscos de guerra longa",
-    "Ações logísticas aparecem no mapa real com marcador",
-    "Sistema integrado ao HQ mobile e aos três idiomas"
+    "Corrigido arraste do mapa com mouse e toque",
+    "Mapa não recentraliza sozinho depois que o jogador arrasta/usa zoom",
+    "Ícones visuais de bases com nível no mapa",
+    "Construções em andamento agora aparecem no mapa com progresso",
+    "Unidades produzidas e pilhas militares aparecem como marcadores táticos",
+    "Rotas animadas e comboios/veículos indicam deslocamento rumo à guerra",
+    "Frentes, logística, operações aéreas, navais e mísseis ganham rotas visuais mais imersivas"
   ],
   "countries_count": 249,
   "countries_available": 249,
