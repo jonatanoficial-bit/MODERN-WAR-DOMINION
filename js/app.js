@@ -1,5 +1,5 @@
-const VERSION = "2.3.0";
-const PHASE = "Fase 23 — mísseis e defesa estratégica";
+const VERSION = "2.4.0";
+const PHASE = "Fase 24 — logística global e suprimentos";
 const SAVE_KEY = "MWD_SAVE_F17";
 
 const $ = (sel, root = document) => root.querySelector(sel);
@@ -12,7 +12,7 @@ const state = {
   selectedCountry: null,
   game: null,
   map: null,
-  layers: { countries: null, regions: null, bases: null, threats: null, fronts: null, airOps: null, navalOps: null, missiles: null },
+  layers: { countries: null, regions: null, bases: null, threats: null, fronts: null, airOps: null, navalOps: null, missiles: null, logistics: null },
   arsenalFilter: "Todos"
 };
 
@@ -1918,6 +1918,249 @@ function renderMissileWar() {
   $$("#missileWarPanel [data-missile-action]").forEach(btn => btn.addEventListener("click", () => missileOperation(btn.dataset.missileAction)));
 }
 
+
+function makeLogisticsSystem() {
+  return {
+    selectedRegionId: null,
+    supplyNetwork: 34,
+    fuelReserve: 32,
+    ammoStock: 36,
+    transportCapacity: 30,
+    routeSecurity: 28,
+    bottleneck: 18,
+    airliftReady: 20,
+    convoys: 0,
+    history: []
+  };
+}
+
+function ensureLogisticsSystem() {
+  if (!state.game) return null;
+  if (!state.game.logisticsSystem) state.game.logisticsSystem = makeLogisticsSystem();
+  const ls = state.game.logisticsSystem;
+  if (!Array.isArray(ls.history)) ls.history = [];
+  ls.supplyNetwork = clamp(ls.supplyNetwork ?? 34, 0, 180);
+  ls.fuelReserve = clamp(ls.fuelReserve ?? 32, 0, 180);
+  ls.ammoStock = clamp(ls.ammoStock ?? 36, 0, 180);
+  ls.transportCapacity = clamp(ls.transportCapacity ?? 30, 0, 180);
+  ls.routeSecurity = clamp(ls.routeSecurity ?? 28, 0, 180);
+  ls.bottleneck = clamp(ls.bottleneck ?? 18, 0, 100);
+  ls.airliftReady = clamp(ls.airliftReady ?? 20, 0, 180);
+  ls.convoys = Math.max(0, Math.round(ls.convoys || 0));
+  if (!ls.selectedRegionId || !getRegion(ls.selectedRegionId)) ls.selectedRegionId = state.game.selectedRegionId || state.game.regions[0]?.id;
+  return ls;
+}
+
+function logisticsCost(kind) {
+  const costs = {
+    expand: { finance: 70, industry: 35, energy: 18 },
+    ammo: { finance: 55, industry: 42, energy: 8 },
+    fuel: { finance: 50, industry: 15, energy: 30 },
+    secure: { finance: 42, industry: 18, energy: 12 },
+    airlift: { finance: 65, industry: 18, energy: 38 },
+    emergency: { finance: 60, industry: 28, energy: 18 }
+  };
+  return costs[kind] || costs.expand;
+}
+
+function canPayLogistics(cost) {
+  const g = state.game;
+  return g.finance >= (cost.finance || 0) && g.industry >= (cost.industry || 0) && g.energy >= (cost.energy || 0);
+}
+
+function payLogistics(cost) {
+  const g = state.game;
+  g.finance -= cost.finance || 0;
+  g.industry -= cost.industry || 0;
+  g.energy -= cost.energy || 0;
+}
+
+function recordLogisticsHistory(kind, region, effect, impact = 0) {
+  const ls = ensureLogisticsSystem();
+  const labels = {
+    expand: t("logistics.expand", "Expandir rede"),
+    ammo: t("logistics.ammoAction", "Estocar munição"),
+    fuel: t("logistics.fuelAction", "Reservar combustível"),
+    secure: t("logistics.secure", "Proteger rotas"),
+    airlift: t("logistics.airlift", "Ponte aérea"),
+    emergency: t("logistics.emergency", "Reparo emergencial")
+  };
+  const item = {
+    id: cryptoId(),
+    kind,
+    label: labels[kind] || kind,
+    regionId: region?.id || ls.selectedRegionId,
+    regionName: region?.name || "Região",
+    effect,
+    impact,
+    at: `${monthNames[state.game.month % 12]}/${state.game.year}`,
+    coords: region?.coords ? jitter(region.coords, .42) : null
+  };
+  ls.history.unshift(item);
+  ls.history = ls.history.slice(0, 12);
+}
+
+function logisticsAction(kind) {
+  const g = state.game;
+  const ls = ensureLogisticsSystem();
+  const regionId = $("#logisticsRegionSelect")?.value || ls.selectedRegionId || g.selectedRegionId;
+  const region = getRegion(regionId);
+  const cost = logisticsCost(kind);
+  if (!canPayLogistics(cost)) {
+    g.events.push(eventText("warn", currentLang === "en-US" ? "Insufficient resources for logistics action." : currentLang === "es-ES" ? "Recursos insuficientes para acción logística." : "Recursos insuficientes para ação logística."));
+    saveGame(); renderGame(); return;
+  }
+  ls.selectedRegionId = region.id;
+  payLogistics(cost);
+  let effect = "";
+  let impact = 0;
+
+  if (kind === "expand") {
+    impact = randomInt(8, 16) + Math.round(g.logistics / 55);
+    ls.supplyNetwork = clamp(ls.supplyNetwork + impact, 0, 180);
+    ls.transportCapacity = clamp(ls.transportCapacity + randomInt(4, 10), 0, 180);
+    ls.bottleneck = clamp(ls.bottleneck - randomInt(3, 8), 0, 100);
+    g.logistics = clamp(g.logistics + 3, 0, 180);
+    effect = currentLang === "en-US" ? "Supply network expanded." : currentLang === "es-ES" ? "Red de suministros expandida." : "Rede de suprimentos expandida.";
+  }
+
+  if (kind === "ammo") {
+    impact = randomInt(10, 20);
+    ls.ammoStock = clamp(ls.ammoStock + impact, 0, 180);
+    g.readiness = clamp(g.readiness + 1, 0, 100);
+    effect = currentLang === "en-US" ? "Ammunition stockpile reinforced." : currentLang === "es-ES" ? "Stock de munición reforzado." : "Estoque de munição reforçado.";
+  }
+
+  if (kind === "fuel") {
+    impact = randomInt(9, 18);
+    ls.fuelReserve = clamp(ls.fuelReserve + impact, 0, 180);
+    ls.bottleneck = clamp(ls.bottleneck - randomInt(1, 5), 0, 100);
+    effect = currentLang === "en-US" ? "Fuel reserves secured." : currentLang === "es-ES" ? "Reservas de combustible aseguradas." : "Reservas de combustível garantidas.";
+  }
+
+  if (kind === "secure") {
+    impact = randomInt(8, 16);
+    ls.routeSecurity = clamp(ls.routeSecurity + impact, 0, 180);
+    ls.bottleneck = clamp(ls.bottleneck - randomInt(4, 9), 0, 100);
+    const naval = ensureNavalWar();
+    if (naval) naval.convoySecurity = clamp(naval.convoySecurity + randomInt(2, 6), 0, 180);
+    effect = currentLang === "en-US" ? "Routes secured and convoy risk reduced." : currentLang === "es-ES" ? "Rutas protegidas y riesgo de convoy reducido." : "Rotas protegidas e risco de comboio reduzido.";
+  }
+
+  if (kind === "airlift") {
+    impact = randomInt(8, 18) + Math.round(ls.airliftReady / 50);
+    ls.airliftReady = clamp(ls.airliftReady + randomInt(3, 8), 0, 180);
+    ls.fuelReserve = clamp(ls.fuelReserve - randomInt(2, 8), 0, 180);
+    const fronts = ensureGroundWar()?.fronts?.filter(f => f.status !== "withdrawn") || [];
+    if (fronts.length) {
+      const weakest = fronts.sort((a,b) => a.supply - b.supply)[0];
+      weakest.supply = clamp(weakest.supply + impact, 0, 100);
+      weakest.resistance = clamp(weakest.resistance - randomInt(1, 5), 0, 100);
+      effect = `${weakest.targetName}: ${currentLang === "en-US" ? "front supplied by airlift." : currentLang === "es-ES" ? "frente abastecido por puente aéreo." : "frente abastecida por ponte aérea."}`;
+    } else {
+      region.supply = clamp((region.supply || 50) + impact, 0, 100);
+      effect = currentLang === "en-US" ? "Airlift increased regional supply." : currentLang === "es-ES" ? "Puente aéreo aumentó suministro regional." : "Ponte aérea aumentou suprimento regional.";
+    }
+  }
+
+  if (kind === "emergency") {
+    const damaged = g.bases.filter(b => b.regionId === region.id && b.condition < 95);
+    if (damaged.length) {
+      const repaired = damaged.slice(0, 2);
+      repaired.forEach(base => base.condition = clamp(base.condition + randomInt(10, 22), 0, 100));
+      impact = repaired.length;
+      effect = currentLang === "en-US" ? "Emergency teams repaired damaged structures." : currentLang === "es-ES" ? "Equipos emergenciales repararon estructuras dañadas." : "Equipes emergenciais repararam estruturas danificadas.";
+    } else {
+      ls.bottleneck = clamp(ls.bottleneck - randomInt(4, 9), 0, 100);
+      ls.supplyNetwork = clamp(ls.supplyNetwork + randomInt(2, 6), 0, 180);
+      effect = currentLang === "en-US" ? "Emergency logistics cleared bottlenecks." : currentLang === "es-ES" ? "Logística emergencial liberó cuellos." : "Logística emergencial liberou gargalos.";
+    }
+  }
+
+  ls.convoys += 1;
+  recordLogisticsHistory(kind, region, effect, impact);
+  g.events.push(eventText("sistema", effect));
+  saveGame();
+  renderGame();
+  activatePanel("panelLogistics");
+}
+
+function progressLogisticsSystem() {
+  const ls = ensureLogisticsSystem();
+  if (!ls) return;
+  const g = state.game;
+  const activeFronts = ensureGroundWar()?.fronts?.filter(f => f.status !== "withdrawn") || [];
+  const pressure = activeFronts.length * 2 + Math.max(0, Math.round((g.worldTension - 52) / 18));
+  const naval = ensureNavalWar();
+  const air = ensureAirWar();
+  const convoyHelp = Math.round((naval?.convoySecurity || 0) / 85);
+  const airHelp = Math.round((air?.airSupremacy || 0) / 95);
+  ls.bottleneck = clamp(ls.bottleneck + pressure - Math.round(ls.routeSecurity / 70) - convoyHelp - airHelp, 0, 100);
+  ls.fuelReserve = clamp(ls.fuelReserve - activeFronts.length - Math.round((air?.enemyAirPressure || 0) / 60) + Math.round(ls.supplyNetwork / 95), 0, 180);
+  ls.ammoStock = clamp(ls.ammoStock - activeFronts.length - Math.round(g.production.length / 3) + Math.round(ls.transportCapacity / 100), 0, 180);
+  ls.supplyNetwork = clamp(ls.supplyNetwork + Math.round(g.logistics / 120) - (ls.bottleneck > 70 ? 2 : 0), 0, 180);
+  activeFronts.forEach(front => {
+    const gain = Math.round((ls.supplyNetwork + ls.transportCapacity + ls.routeSecurity) / 120) - Math.round(ls.bottleneck / 45);
+    front.supply = clamp(front.supply + gain, 0, 100);
+    if (ls.ammoStock < 20 || ls.fuelReserve < 20) front.supply = clamp(front.supply - randomInt(2, 6), 0, 100);
+  });
+  if (ls.bottleneck > 78 && Math.random() < .25) {
+    g.readiness = clamp(g.readiness - randomInt(1, 4), 0, 100);
+    g.events.push(eventText("warn", currentLang === "en-US" ? "Logistics bottleneck reduced operational readiness." : currentLang === "es-ES" ? "Cuello logístico redujo preparación operacional." : "Gargalo logístico reduziu prontidão operacional."));
+  }
+}
+
+function logisticsBar(label, value, dangerReverse = false) {
+  const danger = dangerReverse ? value > 65 : value < 28;
+  return `<div class="logistics-bar ${danger ? "danger" : ""}"><div><span>${label}</span><strong>${value}</strong></div><i><b style="width:${clamp(value,0,100)}%"></b></i></div>`;
+}
+
+function renderLogisticsSystem() {
+  const panel = $("#logisticsPanel");
+  if (!panel || !state.game) return;
+  const ls = ensureLogisticsSystem();
+  const region = getRegion(ls.selectedRegionId);
+  const fronts = ensureGroundWar()?.fronts?.filter(f => f.status !== "withdrawn") || [];
+  panel.innerHTML = `
+    <div class="logistics-target-row">
+      <label class="field-label">${t("logistics.region", "Região logística")}</label>
+      <select id="logisticsRegionSelect">
+        ${state.game.regions.map(r => `<option value="${r.id}" ${r.id === ls.selectedRegionId ? "selected" : ""}>${r.kind} · ${r.name}</option>`).join("")}
+      </select>
+    </div>
+    <div class="logistics-dashboard">
+      ${logisticsBar(t("logistics.network", "Rede de suprimentos"), ls.supplyNetwork)}
+      ${logisticsBar(t("logistics.fuel", "Reserva de combustível"), ls.fuelReserve)}
+      ${logisticsBar(t("logistics.ammo", "Estoque de munição"), ls.ammoStock)}
+      ${logisticsBar(t("logistics.transport", "Capacidade de transporte"), ls.transportCapacity)}
+      ${logisticsBar(t("logistics.routeSecurity", "Segurança de rotas"), ls.routeSecurity)}
+      ${logisticsBar(t("logistics.bottleneck", "Gargalo logístico"), ls.bottleneck, true)}
+    </div>
+    <div class="logistics-last">
+      <small>${t("logistics.effect", "Efeito")}: ${fronts.length} ${currentLang === "en-US" ? "fronts supplied" : currentLang === "es-ES" ? "frentes abastecidos" : "frentes abastecidas"}</small>
+      <strong>${ls.history[0] ? `${ls.history[0].label} · ${ls.history[0].regionName}` : t("logistics.noHistory", "Nenhuma ação logística realizada.")}</strong>
+      ${ls.history[0] ? `<span>${ls.history[0].effect}</span>` : ""}
+    </div>
+    <div class="logistics-actions">
+      <button data-logistics-action="expand"><b>🚚 ${t("logistics.expand", "Expandir rede")}</b><span>${t("logistics.cost","Custo")}: 70/35/18</span></button>
+      <button data-logistics-action="ammo"><b>🧨 ${t("logistics.ammoAction", "Estocar munição")}</b><span>${t("logistics.cost","Custo")}: 55/42/8</span></button>
+      <button data-logistics-action="fuel"><b>⛽ ${t("logistics.fuelAction", "Reservar combustível")}</b><span>${t("logistics.cost","Custo")}: 50/15/30</span></button>
+      <button data-logistics-action="secure"><b>🛡️ ${t("logistics.secure", "Proteger rotas")}</b><span>${t("logistics.cost","Custo")}: 42/18/12</span></button>
+      <button data-logistics-action="airlift"><b>🛫 ${t("logistics.airlift", "Ponte aérea")}</b><span>${t("logistics.cost","Custo")}: 65/18/38</span></button>
+      <button data-logistics-action="emergency"><b>🛠️ ${t("logistics.emergency", "Reparo emergencial")}</b><span>${region?.kind || ""}</span></button>
+    </div>
+    <section class="logistics-history">
+      <h3>${t("logistics.history", "Histórico logístico")}</h3>
+      ${ls.history.length ? ls.history.slice(0,7).map(item => `<article><strong>${item.label}</strong><span>${item.regionName} · ${item.at}</span><small>${item.effect}</small></article>`).join("") : `<p class="muted">${t("logistics.noHistory", "Nenhuma ação logística realizada.")}</p>`}
+    </section>`;
+  $("#logisticsRegionSelect")?.addEventListener("change", event => {
+    ls.selectedRegionId = event.target.value;
+    saveGame();
+    renderLogisticsSystem();
+  });
+  $$("#logisticsPanel [data-logistics-action]").forEach(btn => btn.addEventListener("click", () => logisticsAction(btn.dataset.logisticsAction)));
+}
+
 function makeInitialGame(countryId) {
   const country = state.countries.find(c => c.id === countryId) || state.countries[0];
   const regions = makeRegions(country);
@@ -2105,6 +2348,7 @@ function renderGame() {
   ensureAirWar();
   ensureNavalWar();
   ensureMissileWar();
+  ensureLogisticsSystem();
   renderSummary();
   renderCommanderGuide();
   renderRegionSelect();
@@ -2114,6 +2358,7 @@ function renderGame() {
   renderUnitList();
   renderArsenal();
   renderMaintenance();
+  renderLogisticsSystem();
   renderWarEconomy();
   renderCyberOps();
   renderGroundWar();
@@ -2183,6 +2428,8 @@ function commanderRecommendation() {
   if (hasProd) return { title: t("rec.month", "Avançar mês"), text: t("rec.monthText", "Existe produção/obra em andamento."), action: "month", panel: "panelGuide" };
   const econ = ensureWarEconomy();
   if ((g.finance < 120 || g.industry < 100 || econ.inflation > 35 || econ.civilianMorale < 35) && g.month > 0) return { title: t("rec.economy", "Ajustar economia de guerra"), text: t("rec.economyText", "Recursos baixos ou inflação alta."), action: "economy", panel: "panelEconomy" };
+  const logisticsSystem = ensureLogisticsSystem();
+  if (g.month > 1 && (logisticsSystem.bottleneck > 58 || logisticsSystem.fuelReserve < 24 || logisticsSystem.ammoStock < 24)) return { title: t("rec.logistics", "Reforçar logística"), text: t("rec.logisticsText", "Gargalos ou suprimentos baixos podem travar produção e frentes."), action: "logistics", panel: "panelLogistics" };
   const cyberOps = ensureCyberOps();
   const mainThreat = topAiThreats(1)[0];
   if (mainThreat && mainThreat.hostility > 70 && cyberOps.spyNetwork < 45 && g.month > 1) return { title: t("rec.cyber", "Executar inteligência"), text: t("rec.cyberText", "Rivais hostis estão crescendo."), action: "cyber", panel: "panelCyber" };
@@ -2212,7 +2459,7 @@ function renderCommanderGuide() {
   const queue = g.construction.length + g.production.length;
   const cond = forceCondition();
   const flag = flagHtml(c, "hq-flag-img");
-  const mainActionLabel = rec.action === "repair" ? t("guide.repair", "Reparar") : rec.action === "produce" ? t("guide.produce", "Produzir") : rec.action === "month" ? t("nextMonth", "Avançar mês") : rec.action === "economy" ? t("guide.economy", "Economia") : rec.action === "cyber" ? t("guide.cyber", "Cyber") : rec.action === "air" ? t("guide.air", "Aérea") : rec.action === "naval" ? t("guide.naval", "Naval") : rec.action === "missile" ? t("guide.missile", "Mísseis") : rec.action === "ground" ? t("guide.ground", "Frente") : rec.action === "world" ? t("guide.world", "Mundo") : rec.action === "ai" ? t("guide.ai", "IA") : rec.action === "ops" ? t("guide.attack", "Atacar") : t("guide.build", "Construir");
+  const mainActionLabel = rec.action === "repair" ? t("guide.repair", "Reparar") : rec.action === "produce" ? t("guide.produce", "Produzir") : rec.action === "month" ? t("nextMonth", "Avançar mês") : rec.action === "economy" ? t("guide.economy", "Economia") : rec.action === "logistics" ? t("guide.logistics", "Logística") : rec.action === "cyber" ? t("guide.cyber", "Cyber") : rec.action === "air" ? t("guide.air", "Aérea") : rec.action === "naval" ? t("guide.naval", "Naval") : rec.action === "missile" ? t("guide.missile", "Mísseis") : rec.action === "ground" ? t("guide.ground", "Frente") : rec.action === "world" ? t("guide.world", "Mundo") : rec.action === "ai" ? t("guide.ai", "IA") : rec.action === "ops" ? t("guide.attack", "Atacar") : t("guide.build", "Construir");
   box.innerHTML = `
     <article class="mobile-hq-card">
       <div class="hq-flag-block">${flag}</div>
@@ -2252,6 +2499,7 @@ function renderCommanderGuide() {
     <div class="mobile-command-grid">
       <button id="quickBuildBtn"><b>🏗️ ${t("guide.build", "Construir")}</b><span>${t("guide.buildSub", "base recomendada")}</span></button>
       <button id="quickProduceBtn"><b>🪖 ${t("guide.produce", "Produzir")}</b><span>${t("guide.produceSub", "melhor unidade")}</span></button>
+      <button id="quickLogisticsBtn"><b>🚚 ${t("guide.logistics", "Logística")}</b><span>${t("guide.logisticsSub", "suprir tropas")}</span></button>
       <button id="quickRepairBtn"><b>🛠️ ${t("guide.repair", "Reparar")}</b><span>${t("guide.repairSub", "base crítica")}</span></button>
       <button id="quickOpsBtn"><b>⚔️ ${t("guide.attack", "Atacar")}</b><span>${t("guide.attackSub", "abrir operações")}</span></button>
       <button id="quickAirBtn"><b>✈️ ${t("guide.air", "Aérea")}</b><span>${t("guide.airSub", "dominar o céu")}</span></button>
@@ -2266,6 +2514,7 @@ function renderCommanderGuide() {
   $("#primaryRecommendedBtn")?.addEventListener("click", () => runRecommendedAction(rec));
   $("#quickBuildBtn")?.addEventListener("click", quickBuildRecommended);
   $("#quickProduceBtn")?.addEventListener("click", quickProduceRecommended);
+  $("#quickLogisticsBtn")?.addEventListener("click", () => activatePanel("panelLogistics"));
   $("#quickRepairBtn")?.addEventListener("click", quickRepairPriority);
   $("#quickOpsBtn")?.addEventListener("click", () => activatePanel("panelOps"));
   $("#quickAirBtn")?.addEventListener("click", () => activatePanel("panelAir"));
@@ -2286,6 +2535,7 @@ function runRecommendedAction(rec) {
   if (rec.action === "produce") return quickProduceRecommended();
   if (rec.action === "month") return advanceMonth();
   if (rec.action === "economy") return activatePanel("panelEconomy");
+  if (rec.action === "logistics") return activatePanel("panelLogistics");
   if (rec.action === "cyber") return activatePanel("panelCyber");
   if (rec.action === "air") return activatePanel("panelAir");
   if (rec.action === "naval") return activatePanel("panelNaval");
@@ -2654,6 +2904,7 @@ function initMap() {
   state.layers.airOps = L.layerGroup().addTo(state.map);
   state.layers.navalOps = L.layerGroup().addTo(state.map);
   state.layers.missiles = L.layerGroup().addTo(state.map);
+  state.layers.logistics = L.layerGroup().addTo(state.map);
   state.map.on("tileerror", () => {
     if (!document.querySelector(".leaflet-tile-loaded")) $("#mapFallback").hidden = false;
   });
@@ -2709,6 +2960,10 @@ function updateMapLayers() {
     const target = getCountry(item.targetId);
     const icon = L.divIcon({ className: "", html: `<div class="marker-missile">🚀</div>`, iconSize: [30, 30], iconAnchor: [15, 15] });
     L.marker(item.coords, { icon }).addTo(state.layers.missiles).bindPopup(`<strong>${target?.flag || ""} ${item.targetName}</strong><br>${item.label}<br>${item.success ? t("missile.success","sucesso") : t("missile.fail","falha")}`);
+  });
+  ensureLogisticsSystem()?.history?.slice(0,5).filter(item => item.coords).forEach(item => {
+    const icon = L.divIcon({ className: "", html: `<div class="marker-logistics">🚚</div>`, iconSize: [30, 30], iconAnchor: [15, 15] });
+    L.marker(item.coords, { icon }).addTo(state.layers.logistics).bindPopup(`<strong>${item.regionName}</strong><br>${item.label}<br>${item.effect}`);
   });
   state.map.setView(player.coords, Math.max(state.map.getZoom(), 3));
 }
@@ -2877,6 +3132,7 @@ function advanceMonth() {
   progressConstruction();
   progressProduction();
   progressCyberOps();
+  progressLogisticsSystem();
   progressGroundWar();
   progressAirWar();
   progressNavalWar();

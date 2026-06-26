@@ -1,6 +1,6 @@
 {
   "name": "modern-war-dominion",
-  "version": "2.3.0",
+  "version": "2.4.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -8,5 +8,5 @@
     "audit": "node tools/audit.mjs",
     "integrity": "node tools/integrity.mjs"
   },
-  "description": "Modern War Dominion Fase 23 — mísseis, defesa antimíssil e dissuasão estratégica"
+  "description": "Modern War Dominion Fase 24 — logística global, suprimentos e gargalos"
 }

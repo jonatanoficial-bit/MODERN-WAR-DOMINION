@@ -173,3 +173,16 @@
 - Postura dissuasória aumenta risco, mas pode reduzir hostilidade de rivais.
 - Sistema integrado ao HQ mobile, guerra terrestre, guerra aérea, naval, IA, cyberwar, economia e três idiomas.
 - Save key mantida para preservar campanhas anteriores.
+
+
+## Fase 24 — Logística Global e Suprimentos
+
+- Novo painel Logística Global.
+- Rede de suprimentos, combustível, munição, transporte, segurança de rotas e gargalos.
+- Ações: expandir rede, estocar munição, reservar combustível, proteger rotas, ponte aérea e reparo emergencial.
+- Gargalos logísticos reduzem prontidão e podem atrapalhar frentes.
+- Ponte aérea reforça frentes terrestres com suprimento baixo.
+- Segurança de rotas também conversa com comboios navais.
+- Ações logísticas aparecem no mapa real com marcador.
+- Sistema integrado ao HQ mobile, guerra terrestre, aérea, naval, mísseis, IA, cyberwar, economia e três idiomas.
+- Save key mantida para preservar campanhas da Fase 17 em diante.

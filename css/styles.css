@@ -711,3 +711,42 @@ main{min-height:0}.screen{display:none;height:100%;min-height:0}.screen-active{d
   .missile-bar{padding:7px}
   .missile-last{padding:8px}
 }
+
+
+/* Fase 24 — Logística global, suprimentos e gargalos */
+.logistics-panel{display:grid;gap:12px}
+.logistics-target-row{display:grid;gap:6px}
+.logistics-target-row select{width:100%;border:1px solid rgba(106,255,173,.22);background:rgba(4,10,18,.58);color:var(--text);border-radius:14px;padding:10px}
+.logistics-dashboard{display:grid;gap:9px}
+.logistics-bar{border:1px solid rgba(255,255,255,.09);border-radius:15px;background:rgba(255,255,255,.045);padding:9px}
+.logistics-bar div{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:7px}
+.logistics-bar span{color:#d9f7e9;font-size:.72rem;font-weight:800}
+.logistics-bar strong{color:#6affad;font-size:.85rem}
+.logistics-bar i{display:block;height:8px;background:rgba(255,255,255,.08);border-radius:999px;overflow:hidden}
+.logistics-bar b{display:block;height:100%;background:linear-gradient(90deg,#6affad,#ffd166);border-radius:999px}
+.logistics-bar.danger{border-color:rgba(255,111,111,.32)}
+.logistics-bar.danger strong{color:#ff8b8b}
+.logistics-bar.danger b{background:linear-gradient(90deg,#ff8b8b,#ffd166)}
+.logistics-last{border:1px solid rgba(106,255,173,.22);border-radius:18px;background:linear-gradient(145deg,rgba(35,92,58,.24),rgba(7,12,20,.42));padding:11px}
+.logistics-last small{display:block;color:#6affad;font-size:.62rem;text-transform:uppercase;letter-spacing:.12em;font-weight:900}
+.logistics-last strong{display:block;margin-top:3px}
+.logistics-last span{display:block;color:#d9f7e9;font-size:.72rem;margin-top:4px}
+.logistics-actions{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.logistics-actions button{min-height:62px;text-align:left;border-radius:16px;background:rgba(7,12,20,.52);border:1px solid rgba(106,255,173,.18);padding:10px;color:var(--text)}
+.logistics-actions button b{display:block;font-size:.82rem}
+.logistics-actions button span{display:block;color:var(--muted);font-size:.64rem;margin-top:4px}
+.logistics-actions button:active{transform:scale(.98)}
+.logistics-history{display:grid;gap:7px}
+.logistics-history h3{font-size:.9rem;margin:2px 0}
+.logistics-history article{border:1px solid rgba(255,255,255,.08);border-radius:14px;background:rgba(255,255,255,.035);padding:9px}
+.logistics-history strong{display:block;font-size:.8rem}
+.logistics-history span,.logistics-history small{display:block;color:#cfe3f4;font-size:.64rem;margin-top:3px}
+.marker-logistics{display:grid;place-items:center;width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,#6affad,#ffd166);color:#061223;font-weight:1000;border:2px solid rgba(255,255,255,.55);box-shadow:0 0 22px rgba(106,255,173,.50)}
+@media (max-height:560px){
+  .logistics-actions{grid-template-columns:repeat(3,1fr);gap:6px}
+  .logistics-actions button{min-height:48px;padding:7px;border-radius:12px}
+  .logistics-actions button b{font-size:.64rem}
+  .logistics-actions button span{font-size:.54rem}
+  .logistics-bar{padding:7px}
+  .logistics-last{padding:8px}
+}
