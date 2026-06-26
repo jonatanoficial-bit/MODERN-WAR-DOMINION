@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
   <meta name="theme-color" content="#050914">
   <meta name="description" content="Modern War Dominion — jogo mobile de dominação militar global com mapa real, bases regionais, produção de unidades e escalada de guerra mundial.">
-  <title>Modern War Dominion — Fase 28</title>
+  <title>Modern War Dominion — Fase 29</title>
   <link rel="manifest" href="manifest.json">
   <link rel="icon" href="assets/img/icon.svg" type="image/svg+xml">
   <link rel="preconnect" href="https://unpkg.com">
@@ -42,7 +42,7 @@
         </select>
         <button class="mini-btn" id="fullscreenBtn" data-i18n="top.fullscreen">Tela cheia</button>
         <button class="mini-btn" id="installBtn" hidden data-i18n="top.install">Instalar</button>
-        <div class="build-chip" data-i18n="phase.label">Fase 28 · v2.8.0</div>
+        <div class="build-chip" data-i18n="phase.label">Fase 29 · v2.9.0</div>
       </div>
     </header>
 
@@ -50,7 +50,7 @@
       <section class="screen screen-active" id="screenHome">
         <div class="home-layout">
           <article class="hero-card glass-panel">
-            <p class="eyebrow" data-i18n="home.eyebrow">Fase 28 — Alianças e Coalizões Globais</p>
+            <p class="eyebrow" data-i18n="home.eyebrow">Fase 29 — Sala de Guerra e Camadas do Mapa</p>
             <h1 data-i18n="home.title">Agora a dissuasão estratégica muda o equilíbrio da guerra.</h1>
             <p data-i18n="home.text">A campanha ganha estoque de mísseis, escudo antimíssil, alerta antecipado, ataque convencional de precisão e postura de dissuasão nuclear simulada.</p>
             <div class="hero-actions">
@@ -112,6 +112,7 @@
             <div class="country-summary" id="countrySummary"></div>
             <div class="tabline" role="tablist">
               <button class="side-tab is-active" data-panel="panelGuide" data-i18n="tab.guide">Guia</button>
+              <button class="side-tab" data-panel="panelMapOps" data-i18n="tab.map">Mapa</button>
               <button class="side-tab" data-panel="panelBuild" data-i18n="tab.regions">Regiões</button>
               <button class="side-tab" data-panel="panelForces" data-i18n="tab.production">Produção</button>
               <button class="side-tab" data-panel="panelMovement" data-i18n="tab.movement">Movimento</button>
@@ -137,6 +138,12 @@
               <h2 data-i18n="guide.title">Quartel-General e Tutorial</h2>
               <p class="muted" data-i18n="guide.text">Siga as missões de campanha. Cada missão explica o próximo passo e dá recompensa para acelerar o começo sem confusão.</p>
               <div id="commanderGuide" class="commander-guide"></div>
+            </div>
+
+            <div class="side-panel" id="panelMapOps">
+              <h2 data-i18n="mapops.title">Sala de Guerra do Mapa</h2>
+              <p class="muted" data-i18n="mapops.text">Controle camadas, presets e foco do mapa para enxergar a guerra sem poluição visual.</p>
+              <div id="mapOpsPanel" class="map-ops-panel"></div>
             </div>
 
             <div class="side-panel" id="panelBuild">
@@ -284,6 +291,7 @@
 
           <nav class="mobile-action-dock" id="mobileActionDock" aria-label="Ações rápidas de comando">
             <button class="dock-btn is-active" data-panel="panelGuide">🏳️<span data-i18n="dock.command">Comando</span></button>
+            <button class="dock-btn" data-panel="panelMapOps">🗺️<span data-i18n="dock.map">Mapa</span></button>
             <button class="dock-btn" data-panel="panelBuild">🏗️<span data-i18n="dock.bases">Bases</span></button>
             <button class="dock-btn" data-panel="panelForces">🪖<span data-i18n="dock.produce">Produzir</span></button>
             <button class="dock-btn" data-panel="panelMovement">🚛<span data-i18n="dock.movement">Mover</span></button>
@@ -306,8 +314,8 @@
 
       <section class="screen" id="screenRoadmap">
         <div class="roadmap glass-panel">
-          <p class="eyebrow" data-i18n="roadmap.eyebrow">Fase 28 — alianças e coalizões</p>
-          <h1 data-i18n="roadmap.title">A campanha agora tem aliados, apoio militar/econômico, defesa coletiva e rotas aliadas no mapa.</h1>
+          <p class="eyebrow" data-i18n="roadmap.eyebrow">Fase 29 — sala de guerra do mapa</p>
+          <h1 data-i18n="roadmap.title">A campanha agora tem controle de camadas, presets visuais e foco rápido para comandar o mapa.</h1>
           <div class="roadmap-grid">
             <article><strong>Fase 9</strong><span>Manutenção, desgaste, baixas, reposição de lotes e custo real de guerra longa.</span></article>
             <article><strong>Fase 10</strong><span>Terceira Guerra Mundial: blocos, ultimatos, sanções, invasões e crise nuclear.</span></article>

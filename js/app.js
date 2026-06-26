@@ -1,5 +1,5 @@
-const VERSION = "2.8.0";
-const PHASE = "Fase 28 — alianças e coalizões globais";
+const VERSION = "2.9.0";
+const PHASE = "Fase 29 — sala de guerra e camadas do mapa";
 const SAVE_KEY = "MWD_SAVE_F17";
 
 const $ = (sel, root = document) => root.querySelector(sel);
@@ -3119,6 +3119,170 @@ function renderCoalitionPanel() {
   $$("#coalitionPanel [data-coalition-action]").forEach(btn => btn.addEventListener("click", () => coalitionAction(btn.dataset.coalitionAction)));
 }
 
+
+function makeMapSettings() {
+  return {
+    countries: true,
+    regions: true,
+    bases: true,
+    threats: true,
+    fronts: true,
+    airOps: true,
+    navalOps: true,
+    missiles: true,
+    logistics: true,
+    tactical: true,
+    battleEffects: true
+  };
+}
+
+function ensureMapSettings() {
+  if (!state.game) return makeMapSettings();
+  if (!state.game.mapSettings) state.game.mapSettings = makeMapSettings();
+  const defaults = makeMapSettings();
+  Object.keys(defaults).forEach(key => {
+    if (typeof state.game.mapSettings[key] !== "boolean") state.game.mapSettings[key] = defaults[key];
+  });
+  return state.game.mapSettings;
+}
+
+function mapLayerMeta() {
+  return [
+    ["countries", t("mapops.country", "Países"), "🏳️"],
+    ["regions", t("mapops.regions", "Regiões"), "◎"],
+    ["bases", t("mapops.bases", "Bases"), "🏗️"],
+    ["threats", t("mapops.threats", "Crises"), "⚠️"],
+    ["fronts", t("mapops.fronts", "Frentes"), "⚔️"],
+    ["airOps", t("mapops.air", "Aérea"), "✈️"],
+    ["navalOps", t("mapops.naval", "Naval"), "⚓"],
+    ["missiles", t("mapops.missiles", "Mísseis"), "🚀"],
+    ["logistics", t("mapops.logisticLayer", "Logística"), "🚚"],
+    ["tactical", t("mapops.tactical", "Tropas/rotas"), "🪖"],
+    ["battleEffects", t("mapops.battleEffects", "Batalha/ameaças"), "🔥"]
+  ];
+}
+
+function applyMapLayerVisibility() {
+  if (!state.map || !state.layers || !state.game) return;
+  const settings = ensureMapSettings();
+  Object.entries(state.layers).forEach(([key, layer]) => {
+    if (!layer) return;
+    const shouldShow = settings[key] !== false;
+    const isShown = state.map.hasLayer(layer);
+    if (shouldShow && !isShown) layer.addTo(state.map);
+    if (!shouldShow && isShown) state.map.removeLayer(layer);
+  });
+}
+
+function setMapPreset(preset) {
+  const s = ensureMapSettings();
+  Object.keys(s).forEach(k => s[k] = false);
+  if (preset === "clean") {
+    ["countries","regions","bases"].forEach(k => s[k] = true);
+  } else if (preset === "battle") {
+    ["countries","regions","bases","fronts","airOps","navalOps","missiles","tactical","battleEffects"].forEach(k => s[k] = true);
+  } else if (preset === "logistics") {
+    ["countries","regions","bases","navalOps","logistics","tactical"].forEach(k => s[k] = true);
+  } else {
+    Object.keys(s).forEach(k => s[k] = true);
+  }
+  saveGame();
+  renderGame();
+  activatePanel("panelMapOps");
+}
+
+function toggleMapLayer(key) {
+  const s = ensureMapSettings();
+  s[key] = !s[key];
+  saveGame();
+  applyMapLayerVisibility();
+  renderMapOpsPanel();
+}
+
+function mapFitCoords(coords, zoom = 4) {
+  if (!state.map || !coords.length) return;
+  state.mapUserMoved = true;
+  if (coords.length === 1) state.map.setView(coords[0], zoom, { animate: true });
+  else state.map.fitBounds(coords, { padding: [30, 30], maxZoom: 5, animate: true });
+  setTimeout(() => state.map?.invalidateSize(), 60);
+}
+
+function focusMap(kind) {
+  const player = getPlayerCountry();
+  const coords = [];
+  if (kind === "player") {
+    coords.push(player.coords, ...state.game.regions.map(r => r.coords), ...state.game.bases.map(b => b.coords));
+  }
+  if (kind === "threats") {
+    ensureEnemyOffensives()?.active?.forEach(op => { if (op.fromCoords) coords.push(op.fromCoords); if (op.toCoords) coords.push(op.toCoords); });
+    state.game.threats?.forEach(th => coords.push(th.coords));
+    topAiThreats(4).forEach(ai => { const c = getCountry(ai.id); if (c) coords.push(c.coords); });
+  }
+  if (kind === "allies") {
+    ensureCoalition()?.allies?.forEach(id => { const c = getCountry(id); if (c) coords.push(c.coords); });
+    ensureCoalition()?.support?.forEach(s => { if (s.fromCoords) coords.push(s.fromCoords); if (s.toCoords) coords.push(s.toCoords); });
+    if (!coords.length) coords.push(player.coords);
+  }
+  if (kind === "fronts") {
+    ensureGroundWar()?.fronts?.forEach(f => { if (f.coords) coords.push(f.coords); const c = getCountry(f.targetId); if (c) coords.push(c.coords); });
+    if (!coords.length) coords.push(player.coords);
+  }
+  mapFitCoords(coords.length ? coords : [player.coords], kind === "player" ? 4 : 3);
+}
+
+function mapOpsIntelText() {
+  const eo = ensureEnemyOffensives();
+  const co = ensureCoalition();
+  const gw = ensureGroundWar();
+  const scenes = ensureBattleScenes();
+  const activeLayers = Object.values(ensureMapSettings()).filter(Boolean).length;
+  const parts = [];
+  if (eo?.active?.length) parts.push(`${eo.active.length} ${t("defense.active", "Ameaças ativas").toLowerCase()}`);
+  if (gw?.fronts?.length) parts.push(`${gw.fronts.length} ${t("mapops.fronts", "Frentes").toLowerCase()}`);
+  if (co?.support?.length) parts.push(`${co.support.length} ${t("coalition.support", "Apoios ativos").toLowerCase()}`);
+  if (scenes?.length) parts.push(`${scenes.length} ${t("battlefield.effects", "Efeitos visuais").toLowerCase()}`);
+  return parts.length ? parts.join(" · ") : `${activeLayers} ${t("mapops.activeLayers", "Camadas ativas").toLowerCase()}`;
+}
+
+function renderMapOpsPanel() {
+  const panel = $("#mapOpsPanel");
+  if (!panel || !state.game) return;
+  const settings = ensureMapSettings();
+  const layers = mapLayerMeta();
+  const activeCount = layers.filter(([key]) => settings[key]).length;
+  panel.innerHTML = `
+    <section class="mapops-status">
+      <div><small>${t("mapops.intel", "Leitura estratégica")}</small><strong>${mapOpsIntelText()}</strong><span>${activeCount}/${layers.length} ${t("mapops.activeLayers", "Camadas ativas")}</span></div>
+    </section>
+    <section class="mapops-presets">
+      <h3>${t("mapops.presets", "Presets")}</h3>
+      <div class="mapops-button-row">
+        <button data-map-preset="all">🌍 ${t("mapops.all", "Guerra total")}</button>
+        <button data-map-preset="clean">🧭 ${t("mapops.clean", "Mapa limpo")}</button>
+        <button data-map-preset="battle">🔥 ${t("mapops.battle", "Combate")}</button>
+        <button data-map-preset="logistics">🚚 ${t("mapops.logistics", "Logística")}</button>
+      </div>
+    </section>
+    <section class="mapops-focus">
+      <h3>${t("mapops.focus", "Foco rápido")}</h3>
+      <div class="mapops-button-row">
+        <button data-map-focus="player">🏳️ ${t("mapops.focusPlayer", "Meu país")}</button>
+        <button data-map-focus="threats">⚠️ ${t("mapops.focusThreats", "Ameaças")}</button>
+        <button data-map-focus="allies">🤝 ${t("mapops.focusAllies", "Aliados")}</button>
+        <button data-map-focus="fronts">⚔️ ${t("mapops.focusFronts", "Frentes")}</button>
+      </div>
+    </section>
+    <section class="mapops-layers">
+      <h3>${t("mapops.layers", "Camadas táticas")}</h3>
+      <div class="mapops-layer-grid">
+        ${layers.map(([key, label, icon]) => `<button class="${settings[key] ? "on" : "off"}" data-map-layer="${key}"><b>${icon}</b><span>${label}</span><i>${settings[key] ? "ON" : "OFF"}</i></button>`).join("")}
+      </div>
+    </section>`;
+  $$("#mapOpsPanel [data-map-preset]").forEach(btn => btn.addEventListener("click", () => setMapPreset(btn.dataset.mapPreset)));
+  $$("#mapOpsPanel [data-map-focus]").forEach(btn => btn.addEventListener("click", () => focusMap(btn.dataset.mapFocus)));
+  $$("#mapOpsPanel [data-map-layer]").forEach(btn => btn.addEventListener("click", () => toggleMapLayer(btn.dataset.mapLayer)));
+}
+
 function makeInitialGame(countryId) {
   const country = state.countries.find(c => c.id === countryId) || state.countries[0];
   const regions = makeRegions(country);
@@ -3155,6 +3319,7 @@ function makeInitialGame(countryId) {
     battleScenes: [],
     enemyOps: makeEnemyOffensiveSystem(),
     coalition: makeCoalitionSystem(),
+    mapSettings: makeMapSettings(),
     logisticsBudget: 100,
     monthlyLosses: 0,
     globalWar: makeGlobalWar(country),
@@ -3315,6 +3480,7 @@ function renderGame() {
   ensureMovementSystem();
   ensureEnemyOffensives();
   ensureCoalition();
+  ensureMapSettings();
   renderSummary();
   renderCommanderGuide();
   renderRegionSelect();
@@ -3334,6 +3500,7 @@ function renderGame() {
   renderMovementSystem();
   renderDefensePanel();
   renderCoalitionPanel();
+  renderMapOpsPanel();
   renderGlobalWar();
   renderAiWorld();
   renderTargetSelect();
@@ -3470,6 +3637,7 @@ function renderCommanderGuide() {
     ${renderBattleReportMini()}
 
     <div class="mobile-command-grid">
+      <button id="quickMapBtn"><b>🗺️ ${t("guide.map", "Mapa")}</b><span>${t("guide.mapSub", "filtrar camadas")}</span></button>
       <button id="quickBuildBtn"><b>🏗️ ${t("guide.build", "Construir")}</b><span>${t("guide.buildSub", "base recomendada")}</span></button>
       <button id="quickProduceBtn"><b>🪖 ${t("guide.produce", "Produzir")}</b><span>${t("guide.produceSub", "melhor unidade")}</span></button>
       <button id="quickLogisticsBtn"><b>🚚 ${t("guide.logistics", "Logística")}</b><span>${t("guide.logisticsSub", "suprir tropas")}</span></button>
@@ -4087,6 +4255,7 @@ function updateMapLayers() {
   renderCoalitionMapOverlays(player);
   renderBattlefieldMapOverlays(player);
   renderEnemyOffensivesMap(player);
+  applyMapLayerVisibility();
   if (!state.mapUserMoved && !state.mapAutoCentered) {
     state.map.setView(player.coords, Math.max(state.map.getZoom(), 3), { animate: false });
     state.mapAutoCentered = true;

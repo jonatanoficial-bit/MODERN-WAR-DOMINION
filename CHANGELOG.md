@@ -247,3 +247,15 @@
 - Defesa coletiva reforça a defesa nacional e pode reduzir ameaças inimigas ativas.
 - Sistema integrado ao HQ mobile, IA ofensiva, defesa nacional, mapa visual, economia e três idiomas.
 - Save key mantida para preservar campanhas anteriores.
+
+
+## Fase 29 — Sala de Guerra e Camadas do Mapa
+
+- Novo painel Mapa / Sala de Guerra.
+- Controle individual de camadas: países, regiões, bases, crises, frentes, aérea, naval, mísseis, logística, tropas/rotas e batalha/ameaças.
+- Presets rápidos: Guerra total, Mapa limpo, Combate e Logística.
+- Foco rápido em: Meu país, Ameaças, Aliados e Frentes.
+- Camadas podem ser ligadas/desligadas sem perder dados da campanha.
+- O mapa fica mais limpo, profissional e controlável no PC e no mobile.
+- Sistema integrado a IA ofensiva, coalizões, batalha cinematográfica, logística, frentes, bases e unidades.
+- Save key mantida para preservar campanhas anteriores.
