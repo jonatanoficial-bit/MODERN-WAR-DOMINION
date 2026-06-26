@@ -7,7 +7,7 @@
   "top.plan": "Plano",
   "top.fullscreen": "Tela cheia",
   "top.install": "Instalar",
-  "phase.label": "Fase 17 · v1.7.0",
+  "phase.label": "Fase 17.1 · v1.7.1",
   "rotate.title": "Vire o celular deitado",
   "rotate.text": "Modern War Dominion foi feito para jogar em tela deitada/fullscreen, com mapa real e painel militar.",
   "rotate.button": "Entrar em tela cheia",
@@ -164,5 +164,10 @@
   "battle.readiness": "Prontidão",
   "battle.history": "Histórico recente",
   "battle.open": "Ver batalha",
-  "dock.battle": "Batalha"
+  "dock.battle": "Batalha",
+  "nation.confirm": "Confirmar país",
+  "nation.selected": "Selecionar",
+  "nation.command": "Comandar",
+  "nation.selectedHint": "País selecionado",
+  "nation.tapCard": "Toque em um país e confirme no botão fixo"
 }

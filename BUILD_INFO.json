@@ -1,7 +1,7 @@
 {
   "project": "Modern War Dominion",
-  "version": "1.7.0",
-  "phase": "Fase 17 — Tela de batalha e relatórios visuais",
+  "version": "1.7.1",
+  "phase": "Fase 17.1 — Hotfix seleção de país e confirmação visível",
   "generated_at": "2026-06-24",
   "base": "Fase 5 assets integrados",
   "features": [
@@ -12,12 +12,11 @@
     "mapa real preservado"
   ],
   "notes": [
-    "Adicionado painel Batalha",
-    "Operações agora geram relatório visual",
-    "Relatório mostra força, defesa, perdas, dano e impacto",
-    "Histórico recente de até 10 batalhas",
-    "Mini card da última batalha no Quartel-General Mobile",
-    "Tradução PT-BR, EN-US e ES-ES para a tela de batalha"
+    "Corrigido botão de confirmação da escolha de país no PC e no mobile",
+    "Adicionado painel fixo inferior para confirmar país selecionado",
+    "Cards de países agora têm altura maior e não encavalam o botão",
+    "Clique no card seleciona; botão fixo confirma a campanha",
+    "Mantido save key da Fase 17 para não perder campanha existente"
   ],
   "countries_count": 249,
   "countries_available": 249,
@@ -27,5 +26,7 @@
     "es-ES"
   ],
   "tutorial_missions": 6,
-  "battle_reports": true
+  "battle_reports": true,
+  "hotfix": true,
+  "save_key": "MWD_SAVE_F17"
 }

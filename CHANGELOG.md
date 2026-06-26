@@ -94,3 +94,12 @@
 - O Quartel-General mostra mini card da última batalha.
 - Histórico recente de batalhas preservado no save.
 - Tela de batalha traduzida em PT-BR, EN-US e ES-ES.
+
+
+## Fase 17.1 — Hotfix seleção de país
+
+- Corrigido problema em que o botão de confirmar escolha de país ficava escondido/encavalado.
+- Adicionado painel fixo inferior de confirmação do país selecionado.
+- Cards de países receberam altura e espaçamento melhores para PC e mobile landscape.
+- Clique no card apenas seleciona; botão fixo confirma com segurança.
+- Mantida a save key da Fase 17 para preservar campanhas.

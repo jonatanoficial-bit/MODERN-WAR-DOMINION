@@ -7,7 +7,7 @@
   "top.plan": "Plan",
   "top.fullscreen": "Fullscreen",
   "top.install": "Install",
-  "phase.label": "Phase 17 · v1.7.0",
+  "phase.label": "Phase 17.1 · v1.7.1",
   "rotate.title": "Rotate your phone",
   "rotate.text": "Modern War Dominion is designed for landscape/fullscreen play with a real map and military command panel.",
   "rotate.button": "Enter fullscreen",
@@ -164,5 +164,10 @@
   "battle.readiness": "Readiness",
   "battle.history": "Recent history",
   "battle.open": "View battle",
-  "dock.battle": "Battle"
+  "dock.battle": "Battle",
+  "nation.confirm": "Confirm country",
+  "nation.selected": "Select",
+  "nation.command": "Command",
+  "nation.selectedHint": "Selected country",
+  "nation.tapCard": "Tap a country and confirm with the fixed button"
 }

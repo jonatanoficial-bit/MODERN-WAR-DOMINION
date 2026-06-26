@@ -1,5 +1,5 @@
-const VERSION = "1.7.0";
-const PHASE = "Fase 17 — tela de batalha e relatórios visuais";
+const VERSION = "1.7.1";
+const PHASE = "Fase 17.1 — hotfix seleção de país mobile";
 const SAVE_KEY = "MWD_SAVE_F17";
 
 const $ = (sel, root = document) => root.querySelector(sel);
@@ -186,21 +186,66 @@ function checkSave() {
 function renderNationGrid() {
   const term = ($("#nationSearch")?.value || "").toLowerCase().trim();
   const grid = $("#nationGrid");
+  if (!grid) return;
   grid.innerHTML = "";
+  const selectedId = state.selectedCountry?.id || "br";
   const list = state.countries.filter(c => [c.name, c.capital, c.region, c.doctrine, c.bloc, c.iso, c.flagCode, ...(c.flagAliases || [])].join(" ").toLowerCase().includes(term));
   list.forEach(country => {
     const card = document.createElement("article");
     card.className = "nation-card";
+    card.classList.toggle("is-selected", country.id === selectedId);
+    card.setAttribute("tabindex", "0");
+    card.setAttribute("role", "button");
+    card.setAttribute("aria-label", `${t("nation.selected", "Selecionar")} ${country.name}`);
     card.innerHTML = `
       <div class="nation-top">${flagHtml(country, "flag-img-lg")}<div><h3>${country.name}</h3><small>${country.capital} · ${country.region}</small></div></div>
-      <small>${country.doctrine}</small>
+      <small class="nation-doctrine">${country.doctrine}</small>
       <div class="stat-pills"><span>Militar ${country.military}</span><span>PIB ${country.gdpGame}</span><span>Defesa ${country.defenseBudget}</span><span>Navios ${country.warships}</span><span>Aeronaves ${country.airframes}</span><span>${country.nuclear ? "Nuclear" : "Convencional"}</span></div>
-      <button class="select-country">Comandar ${country.name}</button>`;
-    card.querySelector("button").addEventListener("click", () => startGame(country.id));
+      <button class="select-country" type="button">${t("nation.command", "Comandar")} ${country.name}</button>`;
+    card.addEventListener("click", () => selectCountryForStart(country.id));
+    card.addEventListener("keydown", event => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        selectCountryForStart(country.id);
+      }
+    });
+    card.querySelector("button").addEventListener("click", event => {
+      event.stopPropagation();
+      startGame(country.id);
+    });
     grid.appendChild(card);
   });
+  renderNationConfirmTray(list);
 }
 
+function selectCountryForStart(countryId) {
+  const country = state.countries.find(c => c.id === countryId);
+  if (!country) return;
+  state.selectedCountry = country;
+  renderNationGrid();
+}
+
+function renderNationConfirmTray(list = state.countries) {
+  let tray = $("#nationConfirmTray");
+  if (!tray) {
+    tray = document.createElement("div");
+    tray.id = "nationConfirmTray";
+    tray.className = "nation-confirm-tray";
+    $("#screenNation")?.appendChild(tray);
+  }
+  const selected = state.selectedCountry || list[0] || state.countries[0];
+  if (!selected) {
+    tray.innerHTML = "";
+    return;
+  }
+  tray.innerHTML = `
+    <div class="confirm-country">
+      ${flagHtml(selected, "confirm-flag-img")}
+      <div><small>${t("nation.selectedHint", "País selecionado")}</small><strong>${selected.name}</strong><span>${selected.capital} · ${selected.region}</span></div>
+    </div>
+    <button id="confirmNationBtn" type="button">${t("nation.confirm", "Confirmar país")}</button>`;
+  $("#confirmNationBtn")?.addEventListener("click", () => startGame(selected.id));
+}
 
 function makeTutorialState() {
   return {
