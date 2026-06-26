@@ -1,5 +1,5 @@
-const VERSION = "2.6.0";
-const PHASE = "Fase 26 — batalha cinematográfica no mapa";
+const VERSION = "2.7.0";
+const PHASE = "Fase 27 — IA ofensiva e defesa nacional";
 const SAVE_KEY = "MWD_SAVE_F17";
 
 const $ = (sel, root = document) => root.querySelector(sel);
@@ -2575,6 +2575,282 @@ function renderMovementSystem() {
   $("#movementCancelBtn")?.addEventListener("click", cancelMovements);
 }
 
+
+function makeEnemyOffensiveSystem() {
+  return {
+    defenseReadiness: 48,
+    active: [],
+    history: [],
+    alertLevel: 1
+  };
+}
+
+function ensureEnemyOffensives() {
+  if (!state.game) return null;
+  if (!state.game.enemyOps) state.game.enemyOps = makeEnemyOffensiveSystem();
+  const eo = state.game.enemyOps;
+  if (!Array.isArray(eo.active)) eo.active = [];
+  if (!Array.isArray(eo.history)) eo.history = [];
+  eo.defenseReadiness = clamp(eo.defenseReadiness ?? 48, 0, 160);
+  eo.alertLevel = clamp(eo.alertLevel ?? 1, 1, 5);
+  return eo;
+}
+
+function enemyKindLabel(kind) {
+  const labels = {
+    air: t("defense.kind.air", "Ataque aéreo"),
+    ground: t("defense.kind.ground", "Sondagem terrestre"),
+    naval: t("defense.kind.naval", "Incursão naval"),
+    missile: t("defense.kind.missile", "Alerta de míssil"),
+    cyber: t("defense.kind.cyber", "Intrusão cyber")
+  };
+  return labels[kind] || kind;
+}
+
+function enemyKindIcon(kind) {
+  return { air: "✈️", ground: "🪖", naval: "🚢", missile: "🚀", cyber: "🛰️" }[kind] || "⚠️";
+}
+
+function enemyTargetRegion(kind) {
+  const regions = state.game.regions || [];
+  if (kind === "naval") return regions.find(r => r.id === "coast") || regions[0];
+  if (kind === "ground") return regions.find(r => r.id === "border") || regions[0];
+  if (kind === "cyber") return regions.find(r => r.id === "industrial") || regions[0];
+  return regions[Math.floor(Math.random() * regions.length)] || getSelectedRegion();
+}
+
+function recordEnemyDefenseHistory(entry) {
+  const eo = ensureEnemyOffensives();
+  eo.history.unshift({ id: cryptoId(), at: `${monthNames[state.game.month % 12]}/${state.game.year}`, ...entry });
+  eo.history = eo.history.slice(0, 12);
+}
+
+function recordEnemyBattleScene(op, success, text) {
+  const attacker = getCountry(op.attackerId);
+  const region = getRegion(op.regionId);
+  if (!attacker || !region) return;
+  const player = getPlayerCountry();
+  const scenes = ensureBattleScenes();
+  const scene = {
+    id: cryptoId(),
+    kind: op.kind,
+    icon: enemyKindIcon(op.kind),
+    label: enemyKindLabel(op.kind),
+    details: text || "",
+    success: !!success,
+    targetId: player.id,
+    targetName: region.name,
+    targetFlag: player.flag,
+    fromCoords: attacker.coords,
+    coords: jitter(region.coords, .5),
+    intensity: clamp(op.strength, 12, 100),
+    smoke: clamp(op.strength + randomInt(6, 22), 18, 100),
+    fire: clamp(op.strength + (success ? 18 : 6), 10, 100),
+    month: state.game.month,
+    year: state.game.year,
+    at: `${monthNames[state.game.month % 12]}/${state.game.year}`,
+    enemy: true,
+    attackerName: attacker.name,
+    attackerFlag: attacker.flag
+  };
+  scenes.unshift(scene);
+  state.game.battleScenes = scenes.slice(0, 14);
+}
+
+function maybeSpawnEnemyOffensive() {
+  const g = state.game;
+  const eo = ensureEnemyOffensives();
+  if (!g.aiWorld?.length || eo.active.length >= 3) return;
+  const threats = topAiThreats(4).filter(ai => ai.hostility > 55 || g.worldTension > 58);
+  if (!threats.length) return;
+  const pressure = g.worldTension + (threats[0].hostility || 0) + (g.globalWar?.warScore || 0);
+  const chance = clamp(Math.round(pressure / 4) - eo.active.length * 18, 8, 62);
+  if (Math.random() * 100 > chance) return;
+  const attackerAi = threats[Math.floor(Math.random() * Math.min(threats.length, 3))];
+  const attacker = getCountry(attackerAi.id);
+  if (!attacker) return;
+  const kinds = ["air", "ground", "naval", "cyber", "missile"];
+  const kind = kinds[Math.floor(Math.random() * kinds.length)];
+  const region = enemyTargetRegion(kind);
+  const strength = clamp(Math.round((attackerAi.power || attacker.military || 60) / 2 + attackerAi.hostility / 2 + Math.random() * 25), 22, 110);
+  const op = {
+    id: cryptoId(),
+    kind,
+    attackerId: attacker.id,
+    attackerName: attacker.name,
+    attackerFlag: attacker.flag,
+    regionId: region.id,
+    regionName: region.name,
+    fromCoords: attacker.coords,
+    toCoords: region.coords,
+    strength,
+    remaining: randomInt(1, 2),
+    total: 2,
+    progress: 0
+  };
+  eo.active.push(op);
+  g.events.push(eventText("danger", `${attacker.name}: ${enemyKindLabel(kind)} detectado contra ${region.name}.`));
+  recordEnemyDefenseHistory({ kind: "detected", label: `${enemyKindIcon(kind)} ${enemyKindLabel(kind)}`, text: `${attacker.name} → ${region.name}`, success: false, strength });
+  recordEnemyBattleScene(op, false, t("defense.detected", "ameaça detectada"));
+}
+
+function resolveEnemyOffensive(op) {
+  const g = state.game;
+  const eo = ensureEnemyOffensives();
+  const region = getRegion(op.regionId);
+  const attacker = getCountry(op.attackerId);
+  const regional = regionalDefense(region.id) + regionalAirCover(region.id) + regionalRadarCover(region.id);
+  const domainDefense = op.kind === "air" ? (ensureAirWar()?.airDefense || 0) + g.airPower / 2
+    : op.kind === "naval" ? (ensureNavalWar()?.seaControl || 0) + g.navalPower / 2
+    : op.kind === "missile" ? (ensureMissileWar()?.shield || 0) + (ensureMissileWar()?.earlyWarning || 0) / 2
+    : op.kind === "cyber" ? (ensureCyberOps()?.security || 0) + (ensureCyberOps()?.counterIntel || 0)
+    : g.landPower / 2 + g.logistics / 3;
+  const defenseScore = g.defense / 2 + regional / 2 + domainDefense / 2 + eo.defenseReadiness + Math.random() * 38;
+  const attackScore = op.strength + Math.random() * 45;
+  const intercepted = defenseScore >= attackScore;
+  if (intercepted) {
+    eo.defenseReadiness = clamp(eo.defenseReadiness + randomInt(2, 6), 0, 160);
+    g.readiness = clamp(g.readiness + 1, 0, 100);
+    const text = `${op.attackerName}: ${enemyKindLabel(op.kind)} ${t("defense.result.intercepted", "ameaça interceptada")} em ${region.name}.`;
+    g.events.push(eventText("sistema", text));
+    recordEnemyDefenseHistory({ kind: op.kind, label: `${enemyKindIcon(op.kind)} ${enemyKindLabel(op.kind)}`, text, success: true, strength: op.strength });
+    recordEnemyBattleScene(op, false, text);
+    return;
+  }
+
+  const damage = clamp(Math.round((attackScore - defenseScore) / 3) + randomInt(4, 16), 4, 35);
+  const base = regionBases(region.id).sort((a,b)=>a.condition-b.condition)[0];
+  if (base) base.condition = clamp(base.condition - damage, 0, 100);
+  if (op.kind === "cyber") {
+    g.intel = clamp(g.intel - randomInt(1, 5), 0, 160);
+    g.cyber = clamp(g.cyber - randomInt(1, 4), 0, 160);
+  } else if (op.kind === "missile") {
+    g.energy = Math.max(0, g.energy - randomInt(8, 22));
+    g.industry = Math.max(0, g.industry - randomInt(8, 20));
+  } else {
+    damageRegionalUnits(region.id, clamp(damage / 2, 3, 16), op.attackerName);
+    g.readiness = clamp(g.readiness - randomInt(2, 6), 0, 100);
+  }
+  g.stability = clamp(g.stability - randomInt(1, 4), 0, 100);
+  eo.defenseReadiness = clamp(eo.defenseReadiness - randomInt(2, 7), 0, 160);
+  const text = `${op.attackerName}: ${enemyKindLabel(op.kind)} ${t("defense.result.hit", "ataque atingiu o alvo")} em ${region.name}. Dano ${damage}.`;
+  g.events.push(eventText("danger", text));
+  recordEnemyDefenseHistory({ kind: op.kind, label: `${enemyKindIcon(op.kind)} ${enemyKindLabel(op.kind)}`, text, success: false, strength: op.strength });
+  recordEnemyBattleScene(op, true, text);
+}
+
+function progressEnemyOffensives() {
+  const eo = ensureEnemyOffensives();
+  if (!eo) return;
+  maybeSpawnEnemyOffensive();
+  const resolved = [];
+  eo.active.forEach(op => {
+    op.remaining -= 1;
+    op.progress = clamp(100 - Math.round((op.remaining / Math.max(1, op.total)) * 100), 0, 100);
+    if (op.remaining <= 0) resolved.push(op);
+  });
+  eo.active = eo.active.filter(op => op.remaining > 0);
+  resolved.forEach(resolveEnemyOffensive);
+  eo.alertLevel = clamp(1 + Math.round(eo.active.length + state.game.worldTension / 34), 1, 5);
+}
+
+function defenseAction(kind) {
+  const g = state.game;
+  const eo = ensureEnemyOffensives();
+  const active = eo.active[0];
+  const costs = {
+    reinforce: { finance: 46, industry: 24, energy: 12 },
+    intercept: { finance: 52, industry: 12, energy: 26 },
+    alert: { finance: 28, industry: 8, energy: 10 }
+  };
+  const cost = costs[kind];
+  if (g.finance < cost.finance || g.industry < cost.industry || g.energy < cost.energy) {
+    g.events.push(eventText("warn", currentLang === "en-US" ? "Insufficient resources for defense action." : currentLang === "es-ES" ? "Recursos insuficientes para acción defensiva." : "Recursos insuficientes para ação defensiva."));
+    saveGame(); renderGame(); return;
+  }
+  g.finance -= cost.finance; g.industry -= cost.industry; g.energy -= cost.energy;
+  if (kind === "reinforce") {
+    eo.defenseReadiness = clamp(eo.defenseReadiness + randomInt(8, 16), 0, 160);
+    if (active) active.strength = clamp(active.strength - randomInt(4, 10), 1, 120);
+    g.defense = clamp(g.defense + 1, 0, 220);
+    g.events.push(eventText("sistema", currentLang === "en-US" ? "Regional defenses reinforced." : currentLang === "es-ES" ? "Defensas regionales reforzadas." : "Defesas regionais reforçadas."));
+  }
+  if (kind === "intercept") {
+    if (active) {
+      active.strength = clamp(active.strength - randomInt(12, 24) - Math.round(eo.defenseReadiness / 20), 1, 120);
+      active.remaining = Math.max(0, active.remaining - 1);
+      g.events.push(eventText("sistema", `${active.attackerName}: interceptação reduziu a ameaça para força ${active.strength}.`));
+      if (active.remaining <= 0 || active.strength < 18) {
+        eo.active = eo.active.filter(x => x.id !== active.id);
+        recordEnemyDefenseHistory({ kind: active.kind, label: `${enemyKindIcon(active.kind)} ${enemyKindLabel(active.kind)}`, text: `${active.attackerName}: ameaça neutralizada antes do impacto.`, success: true, strength: active.strength });
+        recordEnemyBattleScene(active, false, "ameaça neutralizada");
+      }
+    } else {
+      eo.defenseReadiness = clamp(eo.defenseReadiness + 5, 0, 160);
+    }
+  }
+  if (kind === "alert") {
+    eo.alertLevel = clamp(eo.alertLevel + 1, 1, 5);
+    eo.defenseReadiness = clamp(eo.defenseReadiness + randomInt(4, 9), 0, 160);
+    g.readiness = clamp(g.readiness + 2, 0, 100);
+    g.events.push(eventText("warn", currentLang === "en-US" ? "National alert raised." : currentLang === "es-ES" ? "Alerta nacional elevada." : "Alerta nacional elevada."));
+  }
+  saveGame();
+  renderGame();
+  activatePanel("panelDefense");
+}
+
+function renderEnemyOffensivesMap(player) {
+  const eo = ensureEnemyOffensives();
+  if (!state.map || !state.layers.battleEffects || !window.L || !eo) return;
+  eo.active.forEach((op, index) => {
+    const attacker = getCountry(op.attackerId);
+    const region = getRegion(op.regionId);
+    if (!attacker || !region) return;
+    L.polyline([attacker.coords, region.coords], {
+      color: "#ff355c",
+      weight: 4,
+      opacity: .72,
+      dashArray: "7 9",
+      className: "enemy-attack-route"
+    }).addTo(state.layers.battleEffects).bindPopup(`<strong>${op.attackerFlag} ${op.attackerName}</strong><br>${enemyKindLabel(op.kind)} → ${region.name}`);
+    const ratio = .34 + ((Date.now() / 6500 + index * .17) % .45);
+    const point = interpolateCoords(attacker.coords, region.coords, ratio);
+    const icon = L.divIcon({ className: "", html: `<div class="marker-enemy-offensive">${enemyKindIcon(op.kind)}</div>`, iconSize: [38, 38], iconAnchor: [19, 19] });
+    L.marker(point, { icon }).addTo(state.layers.battleEffects).bindPopup(`${op.attackerName}: ${enemyKindLabel(op.kind)} · ${t("defense.strength","Força")} ${op.strength}`);
+    const targetIcon = L.divIcon({ className: "", html: `<div class="marker-defense-target">🛡️</div>`, iconSize: [34, 34], iconAnchor: [17, 17] });
+    L.marker(region.coords, { icon: targetIcon }).addTo(state.layers.battleEffects).bindPopup(`${t("defense.targetRegion","Região alvo")}: ${region.name}`);
+  });
+}
+
+function renderDefensePanel() {
+  const panel = $("#defensePanel");
+  if (!panel || !state.game) return;
+  const eo = ensureEnemyOffensives();
+  panel.innerHTML = `
+    <div class="defense-readiness">
+      <div><small>${t("defense.readiness","Prontidão defensiva")}</small><strong>${eo.defenseReadiness}</strong><span>Alerta ${eo.alertLevel}</span></div>
+      <i><b style="width:${clamp(eo.defenseReadiness,0,100)}%"></b></i>
+    </div>
+    <div class="defense-actions">
+      <button data-defense-action="reinforce">🛡️ ${t("defense.reinforce","Reforçar região")}</button>
+      <button data-defense-action="intercept">🎯 ${t("defense.intercept","Interceptar ameaça")}</button>
+      <button data-defense-action="alert">🚨 ${t("defense.alert","Alerta nacional")}</button>
+    </div>
+    <section class="defense-active">
+      <h3>${t("defense.active","Ameaças ativas")}</h3>
+      ${eo.active.length ? eo.active.map(op => `<article class="enemy-op-card">
+        <b>${enemyKindIcon(op.kind)}</b>
+        <div><strong>${op.attackerFlag || ""} ${op.attackerName}</strong><span>${enemyKindLabel(op.kind)} · ${op.regionName}</span><small>${t("defense.strength","Força")}: ${op.strength} · ${t("defense.eta","Impacto em")} ${op.remaining}m</small><i><em style="width:${op.progress || 0}%"></em></i></div>
+      </article>`).join("") : `<p class="muted">${t("defense.noActive","Nenhuma ofensiva inimiga ativa.")}</p>`}
+    </section>
+    <section class="defense-history">
+      <h3>${t("defense.history","Histórico defensivo")}</h3>
+      ${eo.history.length ? eo.history.slice(0,7).map(item => `<article class="${item.success ? "success" : "failure"}"><strong>${item.label}</strong><span>${item.at} · ${item.text}</span><small>${t("defense.strength","Força")}: ${item.strength ?? "—"}</small></article>`).join("") : `<p class="muted">${t("defense.noHistory","Nenhuma ação defensiva registrada.")}</p>`}
+    </section>`;
+  $$("#defensePanel [data-defense-action]").forEach(btn => btn.addEventListener("click", () => defenseAction(btn.dataset.defenseAction)));
+}
+
 function makeInitialGame(countryId) {
   const country = state.countries.find(c => c.id === countryId) || state.countries[0];
   const regions = makeRegions(country);
@@ -2609,6 +2885,7 @@ function makeInitialGame(countryId) {
     units: [],
     battleReports: [],
     battleScenes: [],
+    enemyOps: makeEnemyOffensiveSystem(),
     logisticsBudget: 100,
     monthlyLosses: 0,
     globalWar: makeGlobalWar(country),
@@ -2767,6 +3044,7 @@ function renderGame() {
   ensureMissileWar();
   ensureLogisticsSystem();
   ensureMovementSystem();
+  ensureEnemyOffensives();
   renderSummary();
   renderCommanderGuide();
   renderRegionSelect();
@@ -2784,6 +3062,7 @@ function renderGame() {
   renderNavalWar();
   renderMissileWar();
   renderMovementSystem();
+  renderDefensePanel();
   renderGlobalWar();
   renderAiWorld();
   renderTargetSelect();
@@ -2851,6 +3130,8 @@ function commanderRecommendation() {
   if (g.month > 1 && (logisticsSystem.bottleneck > 58 || logisticsSystem.fuelReserve < 24 || logisticsSystem.ammoStock < 24)) return { title: t("rec.logistics", "Reforçar logística"), text: t("rec.logisticsText", "Gargalos ou suprimentos baixos podem travar produção e frentes."), action: "logistics", panel: "panelLogistics" };
   const cyberOps = ensureCyberOps();
   const mainThreat = topAiThreats(1)[0];
+  const enemyOps = ensureEnemyOffensives();
+  if (enemyOps?.active?.length) return { title: t("rec.defense", "Responder ameaça"), text: t("rec.defenseText", "Há ofensiva inimiga ativa."), action: "defense", panel: "panelDefense" };
   if (mainThreat && mainThreat.hostility > 70 && cyberOps.spyNetwork < 45 && g.month > 1) return { title: t("rec.cyber", "Executar inteligência"), text: t("rec.cyberText", "Rivais hostis estão crescendo."), action: "cyber", panel: "panelCyber" };
   const air = ensureAirWar();
   if (g.units.length && g.month > 2 && air.airSupremacy < 55) return { title: t("rec.air", "Buscar superioridade aérea"), text: t("rec.airText", "Domine o céu antes de escalar ataques maiores."), action: "air", panel: "panelAir" };
@@ -2921,6 +3202,7 @@ function renderCommanderGuide() {
       <button id="quickLogisticsBtn"><b>🚚 ${t("guide.logistics", "Logística")}</b><span>${t("guide.logisticsSub", "suprir tropas")}</span></button>
       <button id="quickRepairBtn"><b>🛠️ ${t("guide.repair", "Reparar")}</b><span>${t("guide.repairSub", "base crítica")}</span></button>
       <button id="quickOpsBtn"><b>⚔️ ${t("guide.attack", "Atacar")}</b><span>${t("guide.attackSub", "abrir operações")}</span></button>
+      <button id="quickDefenseBtn"><b>🛡️ ${t("guide.defense", "Defesa")}</b><span>${t("guide.defenseSub", "bloquear ataques")}</span></button>
       <button id="quickAirBtn"><b>✈️ ${t("guide.air", "Aérea")}</b><span>${t("guide.airSub", "dominar o céu")}</span></button>
       <button id="quickNavalBtn"><b>⚓ ${t("guide.naval", "Naval")}</b><span>${t("guide.navalSub", "controlar mares")}</span></button>
       <button id="quickMissileBtn"><b>🚀 ${t("guide.missile", "Mísseis")}</b><span>${t("guide.missileSub", "defesa estratégica")}</span></button>
@@ -2937,6 +3219,7 @@ function renderCommanderGuide() {
   $("#quickLogisticsBtn")?.addEventListener("click", () => activatePanel("panelLogistics"));
   $("#quickRepairBtn")?.addEventListener("click", quickRepairPriority);
   $("#quickOpsBtn")?.addEventListener("click", () => activatePanel("panelOps"));
+  $("#quickDefenseBtn")?.addEventListener("click", () => activatePanel("panelDefense"));
   $("#quickAirBtn")?.addEventListener("click", () => activatePanel("panelAir"));
   $("#quickNavalBtn")?.addEventListener("click", () => activatePanel("panelNaval"));
   $("#quickMissileBtn")?.addEventListener("click", () => activatePanel("panelMissile"));
@@ -3527,6 +3810,7 @@ function updateMapLayers() {
   });
   renderTacticalMapOverlays(player);
   renderBattlefieldMapOverlays(player);
+  renderEnemyOffensivesMap(player);
   if (!state.mapUserMoved && !state.mapAutoCentered) {
     state.map.setView(player.coords, Math.max(state.map.getZoom(), 3), { animate: false });
     state.mapAutoCentered = true;

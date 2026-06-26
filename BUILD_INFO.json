@@ -1,7 +1,7 @@
 {
   "project": "Modern War Dominion",
-  "version": "2.6.0",
-  "phase": "Fase 26 — Batalha Cinemática no Mapa",
+  "version": "2.7.0",
+  "phase": "Fase 27 — IA Ofensiva e Defesa Nacional",
   "generated_at": "2026-06-24",
   "base": "Fase 5 assets integrados",
   "features": [
@@ -12,12 +12,13 @@
     "mapa real preservado"
   ],
   "notes": [
-    "Relatório de batalha ganhou cena cinematográfica visual",
-    "Ataques geram zonas de combate no mapa real",
-    "Explosões, fumaça, rotas de ataque e marcadores de impacto aparecem no mapa",
-    "Operações terrestres, aéreas, navais e mísseis registram cenas de batalha",
-    "Histórico visual das últimas cenas de combate",
-    "Mantido mapa arrastável com mouse/toque e teatro dinâmico da Fase 25"
+    "Novo painel Defesa Nacional",
+    "Rivais hostis agora geram ofensivas contra o jogador",
+    "Ataques inimigos podem ser aéreos, terrestres, navais, mísseis ou cyber",
+    "Ameaças ativas aparecem no mapa real com rotas vermelhas e marcadores",
+    "Jogador pode reforçar região, interceptar ameaça e elevar alerta nacional",
+    "Ofensivas resolvidas podem danificar bases, unidades, energia, indústria, cyber e estabilidade",
+    "Sistema integrado às cenas cinematográficas de batalha e ao HQ mobile"
   ],
   "countries_count": 249,
   "countries_available": 249,
@@ -85,6 +86,11 @@
     "explosões no mapa",
     "fumaça no mapa",
     "rotas de ataque visuais",
-    "relatório de batalha cinematográfico"
+    "relatório de batalha cinematográfico",
+    "IA ofensiva",
+    "defesa nacional",
+    "ofensivas inimigas",
+    "ameaças no mapa",
+    "contra-ataques visuais"
   ]
 }

@@ -222,3 +222,15 @@
 - O mapa mantém arraste com mouse/toque e ganha leitura de guerra mais clara.
 - Sistema integrado ao teatro dinâmico, frentes, logística, ar, naval, mísseis, IA, economia e três idiomas.
 - Save key mantida para preservar campanhas anteriores.
+
+
+## Fase 27 — IA Ofensiva e Defesa Nacional
+
+- Novo painel Defesa Nacional.
+- Rivais hostis agora geram ofensivas contra o jogador.
+- Ataques inimigos podem ser: aéreo, terrestre, naval, míssil ou cyber.
+- Ameaças ativas aparecem no mapa com rota vermelha e marcador em movimento.
+- Defesa pode reforçar região, interceptar ameaça e elevar alerta nacional.
+- Ofensivas resolvidas podem danificar bases, unidades, energia, indústria, cyber e estabilidade.
+- O sistema usa as cenas cinematográficas da Fase 26 para mostrar impacto/defesa no mapa.
+- Save key mantida para preservar campanhas anteriores.

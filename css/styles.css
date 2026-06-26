@@ -879,3 +879,42 @@ main{min-height:0}.screen{display:none;height:100%;min-height:0}.screen-active{d
   .battlefield-impact{height:74px}
   .battlefield-bars{grid-template-columns:1fr}
 }
+
+
+/* Fase 27 — IA ofensiva e defesa nacional */
+.defense-panel{display:grid;gap:12px}
+.defense-readiness{border:1px solid rgba(106,255,173,.20);border-radius:18px;background:linear-gradient(145deg,rgba(17,88,59,.18),rgba(7,12,20,.48));padding:12px;display:grid;gap:9px}
+.defense-readiness div{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.defense-readiness small{display:block;color:#6affad;text-transform:uppercase;letter-spacing:.12em;font-size:.62rem;font-weight:900}
+.defense-readiness strong{font-size:1.15rem;color:#6affad}
+.defense-readiness span{font-size:.68rem;color:#d7e6f4;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.10);padding:5px 8px;border-radius:999px}
+.defense-readiness i{display:block;height:8px;border-radius:999px;background:rgba(255,255,255,.08);overflow:hidden}
+.defense-readiness b{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,#6affad,#5ff3ff)}
+.defense-actions{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.defense-actions button{min-height:56px;border-radius:16px;background:rgba(7,12,20,.58);border:1px solid rgba(106,255,173,.18);color:var(--text);font-weight:900;padding:10px}
+.defense-actions button:active{transform:scale(.98)}
+.defense-active,.defense-history{display:grid;gap:8px}
+.defense-active h3,.defense-history h3{font-size:.9rem;margin:2px 0}
+.enemy-op-card{display:grid;grid-template-columns:42px 1fr;gap:10px;border:1px solid rgba(255,53,92,.24);border-radius:16px;background:linear-gradient(145deg,rgba(96,18,32,.20),rgba(7,12,20,.48));padding:10px;align-items:center}
+.enemy-op-card>b{display:grid;place-items:center;width:40px;height:40px;border-radius:50%;background:rgba(255,53,92,.18);border:1px solid rgba(255,255,255,.18);box-shadow:0 0 18px rgba(255,53,92,.30)}
+.enemy-op-card strong{display:block;font-size:.82rem}
+.enemy-op-card span,.enemy-op-card small{display:block;color:#d7e6f4;font-size:.66rem;margin-top:2px}
+.enemy-op-card i{display:block;height:7px;margin-top:6px;border-radius:999px;background:rgba(255,255,255,.08);overflow:hidden}
+.enemy-op-card em{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,#ff355c,#ffd166)}
+.defense-history article{border:1px solid rgba(255,255,255,.08);border-radius:14px;background:rgba(255,255,255,.035);padding:9px}
+.defense-history article.success{border-color:rgba(106,255,173,.24)}
+.defense-history article.failure{border-color:rgba(255,53,92,.24)}
+.defense-history strong{display:block;font-size:.78rem}
+.defense-history span,.defense-history small{display:block;color:#cfe3f4;font-size:.64rem;margin-top:3px}
+.marker-enemy-offensive{display:grid;place-items:center;width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,#470716,#ff355c);border:2px solid rgba(255,255,255,.68);box-shadow:0 0 28px rgba(255,53,92,.70),0 12px 26px rgba(0,0,0,.45);font-size:1.16rem;animation:enemyOffensivePulse .9s ease-in-out infinite alternate}
+.marker-defense-target{display:grid;place-items:center;width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#0f2b1b,#6affad);color:#03100b;border:2px solid rgba(255,255,255,.62);box-shadow:0 0 24px rgba(106,255,173,.55);font-size:1.05rem;animation:defenseTargetPulse 1.1s ease-in-out infinite}
+.leaflet-overlay-pane path.enemy-attack-route{animation:tacticalDash .9s linear infinite;filter:drop-shadow(0 0 9px rgba(255,53,92,.72))}
+.battlefield-cinematic .enemy-note{color:#ff9aae}
+@keyframes enemyOffensivePulse{0%{transform:scale(.92) rotate(-4deg)}100%{transform:scale(1.08) rotate(5deg)}}
+@keyframes defenseTargetPulse{0%,100%{transform:scale(.96)}50%{transform:scale(1.12)}}
+@media(max-height:560px){
+  .defense-actions{grid-template-columns:repeat(3,1fr);gap:6px}
+  .defense-actions button{min-height:46px;font-size:.68rem;padding:7px;border-radius:12px}
+  .enemy-op-card{grid-template-columns:34px 1fr;padding:8px}
+  .enemy-op-card>b{width:32px;height:32px}
+}
