@@ -256,3 +256,16 @@ Abra `index.html` ou publique no GitHub Pages. No celular, use tela deitada/full
 - O mapa fica mais limpo, profissional e controlável no PC e no mobile.
 - Sistema integrado a IA ofensiva, coalizões, batalha cinematográfica, logística, frentes, bases e unidades.
 - Save key mantida para preservar campanhas anteriores.
+
+
+## Fase 30 — Clima, Terreno e Condições Operacionais
+
+- Novo painel Ambiente / Clima e Terreno.
+- Clima por região: céu limpo, chuva, tempestade, neblina, calor extremo, frio intenso e poeira/areia.
+- Nova camada Clima no mapa real e na Sala de Guerra.
+- Clima severo afeta logística, prontidão, aviação, suprimento e avanço de frentes.
+- Sistema de preparação operacional e fadiga climática.
+- Ações: atualizar previsão, preparar tropas, rotas alternativas e janela favorável.
+- A Sala de Guerra agora pode focar zonas climáticas.
+- Correção de integração mensal: movimento tático, IA ofensiva e coalizões também progridem ao avançar mês.
+- Save key mantida para preservar campanhas anteriores.

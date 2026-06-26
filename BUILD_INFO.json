@@ -1,7 +1,7 @@
 {
   "project": "Modern War Dominion",
-  "version": "2.9.0",
-  "phase": "Fase 29 — Sala de Guerra e Camadas do Mapa",
+  "version": "3.0.0",
+  "phase": "Fase 30 — Clima, Terreno e Condições Operacionais",
   "generated_at": "2026-06-24",
   "base": "Fase 5 assets integrados",
   "features": [
@@ -12,13 +12,13 @@
     "mapa real preservado"
   ],
   "notes": [
-    "Novo painel Mapa/Sala de Guerra",
-    "Controle individual de camadas do mapa",
-    "Presets: guerra total, mapa limpo, combate e logística",
-    "Foco rápido em meu país, ameaças, aliados e frentes",
-    "Camadas ocultas são removidas do Leaflet sem quebrar os dados da campanha",
-    "Melhora leitura visual do mapa no PC e mobile",
-    "Sistema integrado a bases, unidades, logística, aliados, ameaças e batalha cinematográfica"
+    "Novo painel Ambiente/Clima e Terreno",
+    "Clima por região: céu limpo, chuva, tempestade, neblina, calor, frio e poeira/areia",
+    "Nova camada Clima no mapa e na Sala de Guerra",
+    "Clima severo afeta logística, prontidão, aviação, suprimento e avanço de frentes",
+    "Ações: atualizar previsão, preparar tropas, rotas alternativas e janela favorável",
+    "Sistema de fadiga climática e preparação operacional",
+    "Correção de integração mensal: movimento, IA ofensiva e coalizões também progridem ao avançar mês"
   ],
   "countries_count": 249,
   "countries_available": 249,
@@ -104,6 +104,12 @@
     "presets visuais",
     "foco rápido no mapa",
     "filtros táticos",
-    "mapa limpo"
+    "mapa limpo",
+    "clima operacional",
+    "terreno operacional",
+    "condições ambientais",
+    "fadiga climática",
+    "previsão meteorológica",
+    "camada clima no mapa"
   ]
 }

@@ -1,6 +1,6 @@
 {
   "name": "modern-war-dominion",
-  "version": "2.9.0",
+  "version": "3.0.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -8,5 +8,5 @@
     "audit": "node tools/audit.mjs",
     "integrity": "node tools/integrity.mjs"
   },
-  "description": "Modern War Dominion Fase 29 — sala de guerra, camadas e presets do mapa"
+  "description": "Modern War Dominion Fase 30 — clima, terreno e condições operacionais"
 }

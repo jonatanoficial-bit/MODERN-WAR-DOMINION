@@ -1,5 +1,5 @@
-const VERSION = "2.9.0";
-const PHASE = "Fase 29 — sala de guerra e camadas do mapa";
+const VERSION = "3.0.0";
+const PHASE = "Fase 30 — clima terreno e condições operacionais";
 const SAVE_KEY = "MWD_SAVE_F17";
 
 const $ = (sel, root = document) => root.querySelector(sel);
@@ -14,7 +14,7 @@ const state = {
   map: null,
   mapUserMoved: false,
   mapAutoCentered: false,
-  layers: { countries: null, regions: null, bases: null, threats: null, fronts: null, airOps: null, navalOps: null, missiles: null, logistics: null, tactical: null, battleEffects: null },
+  layers: { countries: null, regions: null, bases: null, threats: null, fronts: null, airOps: null, navalOps: null, missiles: null, logistics: null, tactical: null, battleEffects: null, weather: null },
   arsenalFilter: "Todos"
 };
 
@@ -3120,6 +3120,251 @@ function renderCoalitionPanel() {
 }
 
 
+
+function weatherLabel(kind) {
+  return {
+    clear: t("environment.clear", "Céu limpo"),
+    rain: t("environment.rain", "Chuva"),
+    storm: t("environment.storm", "Tempestade"),
+    fog: t("environment.fog", "Neblina"),
+    heat: t("environment.heat", "Calor extremo"),
+    cold: t("environment.cold", "Frio intenso"),
+    sand: t("environment.sand", "Poeira/areia")
+  }[kind] || kind;
+}
+
+function weatherIcon(kind) {
+  return { clear: "☀️", rain: "🌧️", storm: "⛈️", fog: "🌫️", heat: "🔥", cold: "❄️", sand: "🌪️" }[kind] || "🌦️";
+}
+
+function weatherEffectText(kind) {
+  const effects = {
+    clear: currentLang === "en-US" ? "normal operations" : currentLang === "es-ES" ? "operaciones normales" : "operações normais",
+    rain: currentLang === "en-US" ? "slower land movement and supply" : currentLang === "es-ES" ? "movimiento terrestre y suministros más lentos" : "movimento terrestre e suprimento mais lentos",
+    storm: currentLang === "en-US" ? "air/naval risk and route delay" : currentLang === "es-ES" ? "riesgo aéreo/naval y retraso de rutas" : "risco aéreo/naval e atraso de rotas",
+    fog: currentLang === "en-US" ? "lower air accuracy and reconnaissance" : currentLang === "es-ES" ? "menor precisión aérea y reconocimiento" : "menor precisão aérea e reconhecimento",
+    heat: currentLang === "en-US" ? "higher fatigue and fuel pressure" : currentLang === "es-ES" ? "más fatiga y presión de combustible" : "mais fadiga e pressão de combustível",
+    cold: currentLang === "en-US" ? "equipment wear and slower recovery" : currentLang === "es-ES" ? "desgaste de equipos y recuperación lenta" : "desgaste de equipamentos e recuperação lenta",
+    sand: currentLang === "en-US" ? "radar/air penalties and maintenance pressure" : currentLang === "es-ES" ? "penaliza radar/aviación y mantenimiento" : "penaliza radar/aviação e manutenção"
+  };
+  return effects[kind] || effects.clear;
+}
+
+function terrainOperationalModifier(region) {
+  const terrain = (region?.terrain || "").toLowerCase();
+  let mod = 0;
+  if (terrain.includes("litoral") || terrain.includes("porto")) mod += 4;
+  if (terrain.includes("fábrica") || terrain.includes("logística")) mod += 3;
+  if (terrain.includes("fronteira")) mod -= 2;
+  if (terrain.includes("corredor")) mod += 1;
+  return mod + (region?.logistics || 0) - Math.max(0, 5 - (region?.defenseBonus || 0));
+}
+
+function generateRegionWeather(region, month = 0) {
+  const season = month % 12;
+  const kindPool = ["clear","rain","fog","heat","cold"];
+  if (region?.kind === "Naval") kindPool.push("storm","storm");
+  if (region?.kind === "Fronteira") kindPool.push("sand","cold");
+  if ([5,6,7].includes(season)) kindPool.push("cold","fog");
+  if ([11,0,1].includes(season)) kindPool.push("heat","storm");
+  const kind = kindPool[randomInt(0, kindPool.length - 1)];
+  const baseSeverity = kind === "clear" ? randomInt(0, 12) : kind === "storm" ? randomInt(42, 82) : randomInt(18, 64);
+  return {
+    regionId: region.id,
+    kind,
+    severity: clamp(baseSeverity - terrainOperationalModifier(region), 0, 100),
+    forecast: randomInt(1, 3),
+    updated: `${monthNames[state.game?.month % 12 || 0]}/${state.game?.year || 2027}`
+  };
+}
+
+function makeEnvironmentSystem(regions = [], country = null) {
+  return {
+    preparedness: 28,
+    fatigue: 10,
+    forecastQuality: 30 + Math.round((country?.intel || 40) / 6),
+    lastAction: null,
+    history: [],
+    weather: regions.map((r, idx) => {
+      const w = generateRegionWeather(r, idx);
+      if (idx === 0) { w.kind = "clear"; w.severity = 6; }
+      return w;
+    })
+  };
+}
+
+function ensureEnvironmentSystem() {
+  if (!state.game) return null;
+  if (!state.game.environmentSystem) state.game.environmentSystem = makeEnvironmentSystem(state.game.regions, getPlayerCountry());
+  const es = state.game.environmentSystem;
+  if (!Array.isArray(es.weather)) es.weather = [];
+  if (!Array.isArray(es.history)) es.history = [];
+  state.game.regions.forEach(r => {
+    if (!es.weather.find(w => w.regionId === r.id)) es.weather.push(generateRegionWeather(r, state.game.month));
+  });
+  es.preparedness = clamp(es.preparedness ?? 28, 0, 160);
+  es.fatigue = clamp(es.fatigue ?? 10, 0, 100);
+  es.forecastQuality = clamp(es.forecastQuality ?? 30, 0, 160);
+  return es;
+}
+
+function regionWeather(regionId) {
+  const es = ensureEnvironmentSystem();
+  return es?.weather?.find(w => w.regionId === regionId) || generateRegionWeather(getRegion(regionId), state.game.month);
+}
+
+function severeWeatherScore() {
+  const es = ensureEnvironmentSystem();
+  if (!es?.weather?.length) return 0;
+  return Math.round(es.weather.reduce((sum, w) => sum + (w.severity || 0), 0) / es.weather.length);
+}
+
+function recordEnvironmentHistory(kind, text, regionId = null) {
+  const es = ensureEnvironmentSystem();
+  es.history.unshift({
+    id: cryptoId(),
+    kind,
+    text,
+    regionName: regionId ? getRegion(regionId)?.name : "",
+    at: `${monthNames[state.game.month % 12]}/${state.game.year}`
+  });
+  es.history = es.history.slice(0, 12);
+}
+
+function progressEnvironmentSystem() {
+  const g = state.game;
+  const es = ensureEnvironmentSystem();
+  es.weather = state.game.regions.map(r => {
+    const prev = es.weather.find(w => w.regionId === r.id);
+    const keep = prev && Math.random() < .42;
+    const next = keep ? { ...prev, severity: clamp(prev.severity + randomInt(-12, 14), 0, 100), forecast: Math.max(1, (prev.forecast || 2) - 1), updated: `${monthNames[g.month % 12]}/${g.year}` } : generateRegionWeather(r, g.month);
+    return next;
+  });
+  const severity = severeWeatherScore();
+  const unprepared = Math.max(0, severity - es.preparedness);
+  es.fatigue = clamp(es.fatigue + Math.round(unprepared / 18) - Math.round(es.preparedness / 80), 0, 100);
+  if (unprepared > 20) {
+    g.logistics = clamp(g.logistics - Math.round(unprepared / 35), 0, 220);
+    g.readiness = clamp(g.readiness - Math.round(unprepared / 28), 0, 100);
+  }
+  ensureGroundWar()?.fronts?.filter(f => f.status !== "withdrawn").forEach(f => {
+    const w = regionWeather("border");
+    if (w.severity > 50) {
+      f.supply = clamp(f.supply - Math.round((w.severity - es.preparedness) / 24), 0, 100);
+      f.progress = clamp(f.progress - Math.max(0, Math.round((w.severity - es.preparedness) / 40)), 0, 100);
+    }
+  });
+  if (severity > 58 && Math.random() < .35) {
+    const worst = [...es.weather].sort((a,b)=>b.severity-a.severity)[0];
+    g.events.push(eventText("warn", `${getRegion(worst.regionId).name}: ${weatherLabel(worst.kind)} severo afetou operações.`));
+  }
+}
+
+function environmentAction(kind) {
+  const g = state.game;
+  const es = ensureEnvironmentSystem();
+  const costs = {
+    refresh: { finance: 18, industry: 3, energy: 6 },
+    prepare: { finance: 48, industry: 22, energy: 12 },
+    routes: { finance: 44, industry: 16, energy: 18 },
+    window: { finance: 34, industry: 6, energy: 10 }
+  };
+  const cost = costs[kind] || costs.refresh;
+  if (g.finance < cost.finance || g.industry < cost.industry || g.energy < cost.energy) {
+    g.events.push(eventText("warn", currentLang === "en-US" ? "Insufficient resources for environmental action." : currentLang === "es-ES" ? "Recursos insuficientes para acción ambiental." : "Recursos insuficientes para ação ambiental."));
+    saveGame(); renderGame(); return;
+  }
+  g.finance -= cost.finance; g.industry -= cost.industry; g.energy -= cost.energy;
+  let text = "";
+  if (kind === "refresh") {
+    es.forecastQuality = clamp(es.forecastQuality + randomInt(8, 16), 0, 160);
+    text = currentLang === "en-US" ? "Forecast network updated." : currentLang === "es-ES" ? "Red de pronóstico actualizada." : "Rede de previsão atualizada.";
+  }
+  if (kind === "prepare") {
+    es.preparedness = clamp(es.preparedness + randomInt(10, 20), 0, 160);
+    es.fatigue = clamp(es.fatigue - randomInt(4, 10), 0, 100);
+    g.readiness = clamp(g.readiness + 2, 0, 100);
+    text = currentLang === "en-US" ? "Troops equipped for severe weather." : currentLang === "es-ES" ? "Tropas equipadas para clima severo." : "Tropas equipadas para clima severo.";
+  }
+  if (kind === "routes") {
+    es.preparedness = clamp(es.preparedness + randomInt(6, 12), 0, 160);
+    g.logistics = clamp(g.logistics + randomInt(2, 5), 0, 220);
+    const ls = ensureLogisticsSystem();
+    if (ls) ls.bottleneck = clamp(ls.bottleneck - randomInt(3, 8), 0, 100);
+    text = currentLang === "en-US" ? "Alternative routes reduced weather bottlenecks." : currentLang === "es-ES" ? "Rutas alternativas redujeron cuellos climáticos." : "Rotas alternativas reduziram gargalos climáticos.";
+  }
+  if (kind === "window") {
+    const selected = regionWeather(state.game.selectedRegionId);
+    selected.severity = clamp(selected.severity - randomInt(12, 24), 0, 100);
+    es.forecastQuality = clamp(es.forecastQuality + 5, 0, 160);
+    text = `${getSelectedRegion().name}: ${currentLang === "en-US" ? "favorable operational window identified." : currentLang === "es-ES" ? "ventana operativa favorable identificada." : "janela operacional favorável identificada."}`;
+  }
+  es.lastAction = kind;
+  recordEnvironmentHistory(kind, text, state.game.selectedRegionId);
+  g.events.push(eventText("sistema", text));
+  saveGame();
+  renderGame();
+  activatePanel("panelEnvironment");
+}
+
+function renderEnvironmentMapOverlays(player) {
+  const es = ensureEnvironmentSystem();
+  if (!state.map || !state.layers.weather || !window.L || !es) return;
+  es.weather.forEach(w => {
+    const region = getRegion(w.regionId);
+    if (!region) return;
+    const icon = L.divIcon({
+      className: "",
+      html: `<div class="marker-weather ${w.kind}"><b>${weatherIcon(w.kind)}</b><i>${w.severity}</i></div>`,
+      iconSize: [40, 40],
+      iconAnchor: [20, 20]
+    });
+    L.marker(jitter(region.coords, .22), { icon }).addTo(state.layers.weather)
+      .bindPopup(`<strong>${weatherIcon(w.kind)} ${weatherLabel(w.kind)}</strong><br>${region.name}<br>${t("environment.severity","Severidade")}: ${w.severity}<br>${weatherEffectText(w.kind)}`);
+    if (w.severity > 45) {
+      L.circle(region.coords, {
+        radius: 45000 + w.severity * 1300,
+        color: w.kind === "storm" ? "#8fd3ff" : w.kind === "heat" ? "#ff784f" : w.kind === "cold" ? "#b8e8ff" : "#ffd166",
+        fillColor: w.kind === "storm" ? "#5f9dff" : w.kind === "heat" ? "#ff784f" : w.kind === "cold" ? "#b8e8ff" : "#ffd166",
+        fillOpacity: .06,
+        opacity: .38,
+        weight: 2,
+        className: "weather-zone-ring"
+      }).addTo(state.layers.weather).bindPopup(`${t("environment.mapLayer","Clima/terreno")} · ${region.name}`);
+    }
+  });
+}
+
+function renderEnvironmentPanel() {
+  const panel = $("#environmentPanel");
+  if (!panel || !state.game) return;
+  const es = ensureEnvironmentSystem();
+  const worst = [...es.weather].sort((a,b)=>b.severity-a.severity)[0];
+  panel.innerHTML = `
+    <div class="environment-status">
+      <div><small>${t("environment.forecast","Previsão")}</small><strong>${es.forecastQuality}</strong><span>${weatherIcon(worst?.kind)} ${worst ? weatherLabel(worst.kind) : "—"}</span></div>
+      <div><small>${t("environment.preparedness","Preparação")}</small><strong>${es.preparedness}</strong><span>${t("environment.fatigue","Fadiga climática")}: ${es.fatigue}</span></div>
+    </div>
+    <div class="environment-actions">
+      <button data-environment-action="refresh">🛰️ ${t("environment.refresh","Atualizar previsão")}</button>
+      <button data-environment-action="prepare">🧥 ${t("environment.prepare","Preparar tropas")}</button>
+      <button data-environment-action="routes">🚚 ${t("environment.routes","Rotas alternativas")}</button>
+      <button data-environment-action="window">⏱️ ${t("environment.window","Janela favorável")}</button>
+    </div>
+    <section class="environment-regions">
+      <h3>${t("environment.regions","Zonas operacionais")}</h3>
+      ${state.game.regions.map(r => {
+        const w = regionWeather(r.id);
+        return `<article class="${w.kind}"><b>${weatherIcon(w.kind)}</b><div><strong>${r.name}</strong><span>${t("environment.condition","Condição")}: ${weatherLabel(w.kind)} · ${t("environment.severity","Severidade")}: ${w.severity}</span><small>${t("environment.terrain","Terreno")}: ${r.terrain} · ${t("environment.effect","Efeito")}: ${weatherEffectText(w.kind)}</small><i><em style="width:${clamp(w.severity,0,100)}%"></em></i></div></article>`;
+      }).join("")}
+    </section>
+    <section class="environment-history">
+      <h3>${t("environment.history","Histórico ambiental")}</h3>
+      ${es.history.length ? es.history.slice(0,7).map(item => `<article><strong>${item.regionName || t("environment.title","Clima e Terreno")}</strong><span>${item.at} · ${item.text}</span></article>`).join("") : `<p class="muted">${t("environment.noHistory","Nenhuma ação ambiental registrada.")}</p>`}
+    </section>`;
+  $$("#environmentPanel [data-environment-action]").forEach(btn => btn.addEventListener("click", () => environmentAction(btn.dataset.environmentAction)));
+}
+
 function makeMapSettings() {
   return {
     countries: true,
@@ -3132,7 +3377,8 @@ function makeMapSettings() {
     missiles: true,
     logistics: true,
     tactical: true,
-    battleEffects: true
+    battleEffects: true,
+    weather: true
   };
 }
 
@@ -3158,7 +3404,8 @@ function mapLayerMeta() {
     ["missiles", t("mapops.missiles", "Mísseis"), "🚀"],
     ["logistics", t("mapops.logisticLayer", "Logística"), "🚚"],
     ["tactical", t("mapops.tactical", "Tropas/rotas"), "🪖"],
-    ["battleEffects", t("mapops.battleEffects", "Batalha/ameaças"), "🔥"]
+    ["battleEffects", t("mapops.battleEffects", "Batalha/ameaças"), "🔥"],
+    ["weather", t("mapops.weather", "Clima"), "🌦️"]
   ];
 }
 
@@ -3178,11 +3425,11 @@ function setMapPreset(preset) {
   const s = ensureMapSettings();
   Object.keys(s).forEach(k => s[k] = false);
   if (preset === "clean") {
-    ["countries","regions","bases"].forEach(k => s[k] = true);
+    ["countries","regions","bases","weather"].forEach(k => s[k] = true);
   } else if (preset === "battle") {
-    ["countries","regions","bases","fronts","airOps","navalOps","missiles","tactical","battleEffects"].forEach(k => s[k] = true);
+    ["countries","regions","bases","fronts","airOps","navalOps","missiles","tactical","battleEffects","weather"].forEach(k => s[k] = true);
   } else if (preset === "logistics") {
-    ["countries","regions","bases","navalOps","logistics","tactical"].forEach(k => s[k] = true);
+    ["countries","regions","bases","navalOps","logistics","tactical","weather"].forEach(k => s[k] = true);
   } else {
     Object.keys(s).forEach(k => s[k] = true);
   }
@@ -3227,6 +3474,10 @@ function focusMap(kind) {
     ensureGroundWar()?.fronts?.forEach(f => { if (f.coords) coords.push(f.coords); const c = getCountry(f.targetId); if (c) coords.push(c.coords); });
     if (!coords.length) coords.push(player.coords);
   }
+  if (kind === "weather") {
+    ensureEnvironmentSystem()?.weather?.forEach(w => { const r = getRegion(w.regionId); if (r) coords.push(r.coords); });
+    if (!coords.length) coords.push(player.coords);
+  }
   mapFitCoords(coords.length ? coords : [player.coords], kind === "player" ? 4 : 3);
 }
 
@@ -3241,6 +3492,8 @@ function mapOpsIntelText() {
   if (gw?.fronts?.length) parts.push(`${gw.fronts.length} ${t("mapops.fronts", "Frentes").toLowerCase()}`);
   if (co?.support?.length) parts.push(`${co.support.length} ${t("coalition.support", "Apoios ativos").toLowerCase()}`);
   if (scenes?.length) parts.push(`${scenes.length} ${t("battlefield.effects", "Efeitos visuais").toLowerCase()}`);
+  const severity = severeWeatherScore();
+  if (severity > 35) parts.push(`${t("mapops.weather", "Clima").toLowerCase()} ${severity}`);
   return parts.length ? parts.join(" · ") : `${activeLayers} ${t("mapops.activeLayers", "Camadas ativas").toLowerCase()}`;
 }
 
@@ -3270,6 +3523,7 @@ function renderMapOpsPanel() {
         <button data-map-focus="threats">⚠️ ${t("mapops.focusThreats", "Ameaças")}</button>
         <button data-map-focus="allies">🤝 ${t("mapops.focusAllies", "Aliados")}</button>
         <button data-map-focus="fronts">⚔️ ${t("mapops.focusFronts", "Frentes")}</button>
+        <button data-map-focus="weather">🌦️ ${t("mapops.weather", "Clima")}</button>
       </div>
     </section>
     <section class="mapops-layers">
@@ -3480,6 +3734,7 @@ function renderGame() {
   ensureMovementSystem();
   ensureEnemyOffensives();
   ensureCoalition();
+  ensureEnvironmentSystem();
   ensureMapSettings();
   renderSummary();
   renderCommanderGuide();
@@ -3500,6 +3755,7 @@ function renderGame() {
   renderMovementSystem();
   renderDefensePanel();
   renderCoalitionPanel();
+  renderEnvironmentPanel();
   renderMapOpsPanel();
   renderGlobalWar();
   renderAiWorld();
@@ -3566,6 +3822,8 @@ function commanderRecommendation() {
   if ((g.finance < 120 || g.industry < 100 || econ.inflation > 35 || econ.civilianMorale < 35) && g.month > 0) return { title: t("rec.economy", "Ajustar economia de guerra"), text: t("rec.economyText", "Recursos baixos ou inflação alta."), action: "economy", panel: "panelEconomy" };
   const logisticsSystem = ensureLogisticsSystem();
   if (g.month > 1 && (logisticsSystem.bottleneck > 58 || logisticsSystem.fuelReserve < 24 || logisticsSystem.ammoStock < 24)) return { title: t("rec.logistics", "Reforçar logística"), text: t("rec.logisticsText", "Gargalos ou suprimentos baixos podem travar produção e frentes."), action: "logistics", panel: "panelLogistics" };
+  const environment = ensureEnvironmentSystem();
+  if (g.month > 1 && (severeWeatherScore() > 48 || environment.fatigue > 45)) return { title: t("rec.environment", "Preparar ambiente"), text: t("rec.environmentText", "Condições climáticas severas podem travar operações."), action: "environment", panel: "panelEnvironment" };
   const cyberOps = ensureCyberOps();
   const mainThreat = topAiThreats(1)[0];
   const enemyOps = ensureEnemyOffensives();
@@ -3641,6 +3899,7 @@ function renderCommanderGuide() {
       <button id="quickBuildBtn"><b>🏗️ ${t("guide.build", "Construir")}</b><span>${t("guide.buildSub", "base recomendada")}</span></button>
       <button id="quickProduceBtn"><b>🪖 ${t("guide.produce", "Produzir")}</b><span>${t("guide.produceSub", "melhor unidade")}</span></button>
       <button id="quickLogisticsBtn"><b>🚚 ${t("guide.logistics", "Logística")}</b><span>${t("guide.logisticsSub", "suprir tropas")}</span></button>
+      <button id="quickEnvironmentBtn"><b>🌦️ ${t("guide.environment", "Ambiente")}</b><span>${t("guide.environmentSub", "clima e terreno")}</span></button>
       <button id="quickRepairBtn"><b>🛠️ ${t("guide.repair", "Reparar")}</b><span>${t("guide.repairSub", "base crítica")}</span></button>
       <button id="quickOpsBtn"><b>⚔️ ${t("guide.attack", "Atacar")}</b><span>${t("guide.attackSub", "abrir operações")}</span></button>
       <button id="quickDefenseBtn"><b>🛡️ ${t("guide.defense", "Defesa")}</b><span>${t("guide.defenseSub", "bloquear ataques")}</span></button>
@@ -3659,6 +3918,7 @@ function renderCommanderGuide() {
   $("#quickBuildBtn")?.addEventListener("click", quickBuildRecommended);
   $("#quickProduceBtn")?.addEventListener("click", quickProduceRecommended);
   $("#quickLogisticsBtn")?.addEventListener("click", () => activatePanel("panelLogistics"));
+  $("#quickEnvironmentBtn")?.addEventListener("click", () => activatePanel("panelEnvironment"));
   $("#quickRepairBtn")?.addEventListener("click", quickRepairPriority);
   $("#quickOpsBtn")?.addEventListener("click", () => activatePanel("panelOps"));
   $("#quickDefenseBtn")?.addEventListener("click", () => activatePanel("panelDefense"));
@@ -4183,6 +4443,7 @@ function initMap() {
   state.layers.logistics = L.layerGroup().addTo(state.map);
   state.layers.tactical = L.layerGroup().addTo(state.map);
   state.layers.battleEffects = L.layerGroup().addTo(state.map);
+  state.layers.weather = L.layerGroup().addTo(state.map);
   state.map.dragging.enable();
   state.map.scrollWheelZoom.enable();
   state.map.doubleClickZoom.enable();
@@ -4255,6 +4516,7 @@ function updateMapLayers() {
   renderCoalitionMapOverlays(player);
   renderBattlefieldMapOverlays(player);
   renderEnemyOffensivesMap(player);
+  renderEnvironmentMapOverlays(player);
   applyMapLayerVisibility();
   if (!state.mapUserMoved && !state.mapAutoCentered) {
     state.map.setView(player.coords, Math.max(state.map.getZoom(), 3), { animate: false });
@@ -4425,6 +4687,7 @@ function advanceMonth() {
   applyMonthlyWear(upkeep);
   g.readiness = clamp(g.readiness + Math.round(g.logistics / 24) - Math.round(g.worldTension / 36) - (forceCondition() < 45 ? 3 : 0), 0, 100);
   g.worldTension = clamp(g.worldTension + randomInt(-3, 5), 0, 100);
+  progressEnvironmentSystem();
   progressConstruction();
   progressProduction();
   progressCyberOps();
@@ -4433,6 +4696,9 @@ function advanceMonth() {
   progressAirWar();
   progressNavalWar();
   progressMissileWar();
+  progressMovementSystem();
+  progressEnemyOffensives();
+  progressCoalitionSupport();
   monthlyWorldEvent();
   progressAiWorld();
   decayRelations();

@@ -988,3 +988,51 @@ main{min-height:0}.screen{display:none;height:100%;min-height:0}.screen-active{d
   .mapops-layer-grid button span{font-size:.58rem}
   .mapops-layer-grid button i{font-size:.5rem}
 }
+
+
+/* Fase 30 — Clima, terreno e condições operacionais */
+.environment-panel{display:grid;gap:12px}
+.environment-status{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.environment-status>div{border:1px solid rgba(143,211,255,.22);border-radius:18px;background:linear-gradient(145deg,rgba(20,70,108,.20),rgba(7,12,20,.48));padding:12px}
+.environment-status small{display:block;color:#8fd3ff;text-transform:uppercase;letter-spacing:.12em;font-size:.62rem;font-weight:900}
+.environment-status strong{display:block;font-size:1.15rem;color:#8fd3ff;margin-top:3px}
+.environment-status span{display:block;color:#d7e6f4;font-size:.68rem;margin-top:3px}
+.environment-actions{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.environment-actions button{min-height:56px;text-align:left;border-radius:16px;background:rgba(7,12,20,.58);border:1px solid rgba(143,211,255,.18);padding:10px;color:var(--text);font-weight:900}
+.environment-actions button:active{transform:scale(.98)}
+.environment-regions,.environment-history{display:grid;gap:8px}
+.environment-regions h3,.environment-history h3{font-size:.9rem;margin:2px 0}
+.environment-regions article,.environment-history article{border:1px solid rgba(255,255,255,.08);border-radius:15px;background:rgba(255,255,255,.035);padding:9px;display:grid;gap:8px;align-items:center}
+.environment-regions article{grid-template-columns:42px 1fr}
+.environment-regions article>b{display:grid;place-items:center;width:40px;height:40px;border-radius:50%;background:rgba(143,211,255,.12);border:1px solid rgba(143,211,255,.26);box-shadow:0 0 18px rgba(143,211,255,.18)}
+.environment-regions strong,.environment-history strong{display:block;font-size:.82rem}
+.environment-regions span,.environment-regions small,.environment-history span{display:block;color:#d7e6f4;font-size:.66rem;margin-top:2px}
+.environment-regions i{display:block;height:7px;margin-top:6px;border-radius:999px;background:rgba(255,255,255,.08);overflow:hidden}
+.environment-regions em{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,#8fd3ff,#ffd166,#ff784f)}
+.environment-regions article.storm{border-color:rgba(143,211,255,.30)}
+.environment-regions article.heat{border-color:rgba(255,120,79,.30)}
+.environment-regions article.cold{border-color:rgba(184,232,255,.30)}
+.environment-regions article.sand{border-color:rgba(255,209,102,.30)}
+.marker-weather{position:relative;display:grid;place-items:center;width:40px;height:40px;border-radius:50%;border:2px solid rgba(255,255,255,.66);background:linear-gradient(135deg,#17314a,#8fd3ff);box-shadow:0 0 24px rgba(143,211,255,.50),0 12px 26px rgba(0,0,0,.45);animation:weatherPulse 1.35s ease-in-out infinite alternate}
+.marker-weather b{font-size:1.08rem;line-height:1}
+.marker-weather i{position:absolute;right:-5px;bottom:-5px;min-width:19px;height:18px;display:grid;place-items:center;border-radius:999px;padding:0 4px;background:#07101d;color:white;border:1px solid rgba(255,255,255,.34);font-size:.52rem;font-style:normal;font-weight:1000}
+.marker-weather.clear{background:linear-gradient(135deg,#15415d,#ffd166)}
+.marker-weather.rain{background:linear-gradient(135deg,#17314a,#5f9dff)}
+.marker-weather.storm{background:linear-gradient(135deg,#101828,#8fd3ff);box-shadow:0 0 30px rgba(143,211,255,.70)}
+.marker-weather.fog{background:linear-gradient(135deg,#334255,#d4e0ec)}
+.marker-weather.heat{background:linear-gradient(135deg,#4b1108,#ff784f);box-shadow:0 0 30px rgba(255,120,79,.62)}
+.marker-weather.cold{background:linear-gradient(135deg,#102337,#b8e8ff)}
+.marker-weather.sand{background:linear-gradient(135deg,#493514,#ffd166)}
+.leaflet-overlay-pane path.weather-zone-ring{animation:weatherRing 2s ease-in-out infinite;filter:drop-shadow(0 0 10px rgba(143,211,255,.35))}
+@keyframes weatherPulse{0%{transform:scale(.96)}100%{transform:scale(1.08)}}
+@keyframes weatherRing{0%,100%{opacity:.25}50%{opacity:.55}}
+@media(max-height:560px){
+  .environment-status{grid-template-columns:1fr 1fr}
+  .environment-actions{grid-template-columns:repeat(4,1fr);gap:6px}
+  .environment-actions button{min-height:44px;font-size:.62rem;padding:7px;border-radius:12px}
+  .environment-regions article{grid-template-columns:34px 1fr;padding:8px}
+  .environment-regions article>b{width:32px;height:32px}
+}
+@media(max-width:980px){
+  .environment-status{grid-template-columns:1fr}
+}
