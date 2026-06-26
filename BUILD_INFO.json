@@ -1,7 +1,7 @@
 {
   "project": "Modern War Dominion",
-  "version": "2.1.0",
-  "phase": "Fase 21 — Guerra Aérea",
+  "version": "2.3.0",
+  "phase": "Fase 23 — Mísseis e Defesa Estratégica",
   "generated_at": "2026-06-24",
   "base": "Fase 5 assets integrados",
   "features": [
@@ -12,11 +12,11 @@
     "mapa real preservado"
   ],
   "notes": [
-    "Novo painel Aérea/Guerra Aérea",
-    "Superioridade aérea, pressão aérea inimiga, prontidão de drones e defesa aérea",
-    "Ações: patrulha aérea, bombardeio de precisão, ataque de drones, interceptação e supressão AA",
-    "Operações aéreas aparecem no mapa real com marcador",
-    "Supressão AA ajuda frentes terrestres contra o mesmo alvo",
+    "Novo painel Mísseis/Defesa Estratégica",
+    "Estoque de mísseis, escudo antimíssil, alerta antecipado, dissuasão e risco nuclear",
+    "Ações: fabricar mísseis, reforçar escudo, ataque convencional, elevar alerta e postura dissuasória",
+    "Operações de mísseis aparecem no mapa real com marcador",
+    "Escudo e alerta podem evitar escalada estratégica",
     "Sistema integrado ao HQ mobile e aos três idiomas"
   ],
   "countries_count": 249,
@@ -56,6 +56,17 @@
     "drones",
     "interceptação",
     "bombardeio de precisão",
-    "supressão AA"
+    "supressão AA",
+    "guerra naval",
+    "controle marítimo",
+    "bloqueio naval",
+    "submarinos",
+    "porta-aviões",
+    "comboios",
+    "mísseis estratégicos",
+    "escudo antimíssil",
+    "alerta antecipado",
+    "dissuasão",
+    "ataque convencional de precisão"
   ]
 }

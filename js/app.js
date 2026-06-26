@@ -1,5 +1,5 @@
-const VERSION = "2.1.0";
-const PHASE = "Fase 21 — guerra aérea";
+const VERSION = "2.3.0";
+const PHASE = "Fase 23 — mísseis e defesa estratégica";
 const SAVE_KEY = "MWD_SAVE_F17";
 
 const $ = (sel, root = document) => root.querySelector(sel);
@@ -12,7 +12,7 @@ const state = {
   selectedCountry: null,
   game: null,
   map: null,
-  layers: { countries: null, regions: null, bases: null, threats: null, fronts: null, airOps: null },
+  layers: { countries: null, regions: null, bases: null, threats: null, fronts: null, airOps: null, navalOps: null, missiles: null },
   arsenalFilter: "Todos"
 };
 
@@ -1408,6 +1408,516 @@ function renderAirWar() {
   $$("#airWarPanel [data-air-action]").forEach(btn => btn.addEventListener("click", () => airWarOperation(btn.dataset.airAction)));
 }
 
+
+function makeNavalWar() {
+  return {
+    selectedTargetId: null,
+    seaControl: 30,
+    blockadePressure: 12,
+    submarineThreat: 22,
+    carrierReach: 18,
+    convoySecurity: 35,
+    operations: 0,
+    history: []
+  };
+}
+
+function ensureNavalWar() {
+  if (!state.game) return null;
+  if (!state.game.navalWar) state.game.navalWar = makeNavalWar();
+  const nw = state.game.navalWar;
+  if (!Array.isArray(nw.history)) nw.history = [];
+  nw.seaControl = clamp(nw.seaControl ?? 30, 0, 160);
+  nw.blockadePressure = clamp(nw.blockadePressure ?? 12, 0, 160);
+  nw.submarineThreat = clamp(nw.submarineThreat ?? 22, 0, 160);
+  nw.carrierReach = clamp(nw.carrierReach ?? 18, 0, 160);
+  nw.convoySecurity = clamp(nw.convoySecurity ?? 35, 0, 160);
+  nw.operations = Math.max(0, Math.round(nw.operations || 0));
+  if (!nw.selectedTargetId || !getCountry(nw.selectedTargetId) || nw.selectedTargetId === state.game.countryId) {
+    const threat = topAiThreats(1)[0];
+    nw.selectedTargetId = threat?.id || state.countries.find(c => c.id !== state.game.countryId)?.id;
+  }
+  return nw;
+}
+
+function navalTargets() {
+  ensureAiWorld();
+  return topAiThreats(14).map(ai => ({ ...ai, country: getCountry(ai.id) })).filter(item => item.country);
+}
+
+function navalCost(kind) {
+  const costs = {
+    patrol: { finance: 38, industry: 10, energy: 24 },
+    blockade: { finance: 78, industry: 24, energy: 38 },
+    submarine: { finance: 66, industry: 18, energy: 28 },
+    carrier: { finance: 110, industry: 32, energy: 56 },
+    escort: { finance: 42, industry: 14, energy: 22 }
+  };
+  return costs[kind] || costs.patrol;
+}
+
+function canPayNaval(cost) {
+  const g = state.game;
+  return g.finance >= (cost.finance || 0) && g.industry >= (cost.industry || 0) && g.energy >= (cost.energy || 0);
+}
+
+function payNaval(cost) {
+  const g = state.game;
+  g.finance -= cost.finance || 0;
+  g.industry -= cost.industry || 0;
+  g.energy -= cost.energy || 0;
+}
+
+function navalOperationLabel(kind) {
+  const labels = {
+    patrol: t("naval.patrol", "Patrulha naval"),
+    blockade: t("naval.blockade", "Bloqueio naval"),
+    submarine: t("naval.submarine", "Ataque submarino"),
+    carrier: t("naval.carrier", "Ataque de porta-aviões"),
+    escort: t("naval.escort", "Escoltar comboios")
+  };
+  return labels[kind] || kind;
+}
+
+function recordNavalHistory(kind, success, target, effect, impact = 0) {
+  const nw = ensureNavalWar();
+  const report = {
+    id: cryptoId(),
+    kind,
+    label: navalOperationLabel(kind),
+    success,
+    targetId: target?.id || nw.selectedTargetId,
+    targetName: target?.name || "Alvo",
+    effect,
+    impact,
+    seaControl: nw.seaControl,
+    blockadePressure: nw.blockadePressure,
+    submarineThreat: nw.submarineThreat,
+    at: `${monthNames[state.game.month % 12]}/${state.game.year}`,
+    coords: target?.coords ? jitter([target.coords[0] + randomInt(-2, 2), target.coords[1] + randomInt(-4, 4)], .85) : null
+  };
+  nw.history.unshift(report);
+  nw.history = nw.history.slice(0, 12);
+}
+
+function navalOperation(kind) {
+  const g = state.game;
+  const nw = ensureNavalWar();
+  const targetId = $("#navalTargetSelect")?.value || nw.selectedTargetId;
+  const target = getCountry(targetId);
+  if (!target) return;
+  const ai = g.aiWorld?.find(a => a.id === targetId);
+  nw.selectedTargetId = targetId;
+  const cost = navalCost(kind);
+  if (!canPayNaval(cost)) {
+    g.events.push(eventText("warn", currentLang === "en-US" ? "Insufficient resources for naval operation." : currentLang === "es-ES" ? "Recursos insuficientes para operación naval." : "Recursos insuficientes para operação naval."));
+    saveGame(); renderGame(); return;
+  }
+  payNaval(cost);
+
+  if (kind === "patrol") {
+    const gain = randomInt(7, 15) + Math.round(g.navalPower / 28) + Math.round(g.logistics / 55);
+    nw.seaControl = clamp(nw.seaControl + gain, 0, 160);
+    nw.submarineThreat = clamp(nw.submarineThreat - randomInt(2, 7), 0, 160);
+    nw.operations += 1;
+    recordNavalHistory(kind, true, target, currentLang === "en-US" ? "Patrol improved sea control." : currentLang === "es-ES" ? "La patrulla mejoró el control marítimo." : "Patrulha melhorou controle marítimo.", gain);
+    g.events.push(eventText("sistema", currentLang === "en-US" ? "Naval patrol increased sea control." : currentLang === "es-ES" ? "Patrulla naval aumentó control marítimo." : "Patrulha naval aumentou controle marítimo."));
+    saveGame(); renderGame(); activatePanel("panelNaval"); return;
+  }
+
+  if (kind === "escort") {
+    const gain = randomInt(8, 17) + Math.round(g.logistics / 48);
+    nw.convoySecurity = clamp(nw.convoySecurity + gain, 0, 160);
+    nw.blockadePressure = clamp(nw.blockadePressure - randomInt(4, 10), 0, 160);
+    nw.submarineThreat = clamp(nw.submarineThreat - randomInt(3, 9), 0, 160);
+    g.finance += randomInt(8, 24);
+    nw.operations += 1;
+    recordNavalHistory(kind, true, target, currentLang === "en-US" ? "Convoys secured and trade flow protected." : currentLang === "es-ES" ? "Convoyes asegurados y comercio protegido." : "Comboios protegidos e fluxo comercial mantido.", gain);
+    g.events.push(eventText("sistema", currentLang === "en-US" ? "Convoy escort protected maritime trade." : currentLang === "es-ES" ? "Escolta protegió comercio marítimo." : "Escolta de comboios protegeu comércio marítimo."));
+    saveGame(); renderGame(); activatePanel("panelNaval"); return;
+  }
+
+  const defense = (target.warships || 10) * 1.9 + (target.airframes || 40) / 15 + (ai?.readiness || 45) / 2 + Math.random() * 45;
+  const attackBase = kind === "submarine"
+    ? g.navalPower * .65 + g.intel * .35 + nw.seaControl * .35 + Math.random() * 25
+    : kind === "carrier"
+      ? g.navalPower * .62 + g.airPower * .42 + nw.carrierReach * .7 + nw.seaControl * .25 + Math.random() * 42
+      : g.navalPower * .72 + nw.seaControl * .45 + g.logistics * .22 + Math.random() * 35;
+  const attack = attackBase;
+  const success = attack >= defense;
+  let impact = 0;
+  let effect = "";
+
+  if (success && ai) {
+    if (kind === "blockade") {
+      impact = randomInt(8, 18) + Math.round(nw.seaControl / 28);
+      ai.economy = clamp(ai.economy - impact, 1, 230);
+      ai.readiness = clamp(ai.readiness - randomInt(3, 8), 1, 100);
+      nw.blockadePressure = clamp(nw.blockadePressure + randomInt(8, 16), 0, 160);
+      g.worldTension = clamp(g.worldTension + 7, 0, 100);
+      effect = currentLang === "en-US" ? "Blockade damaged enemy economy." : currentLang === "es-ES" ? "Bloqueo dañó economía enemiga." : "Bloqueio danificou economia inimiga.";
+    }
+    if (kind === "submarine") {
+      impact = randomInt(7, 15) + Math.round(g.intel / 45);
+      ai.power = clamp(ai.power - impact, 1, 230);
+      ai.readiness = clamp(ai.readiness - randomInt(4, 10), 1, 100);
+      nw.submarineThreat = clamp(nw.submarineThreat + randomInt(2, 7), 0, 160);
+      g.worldTension = clamp(g.worldTension + 5, 0, 100);
+      effect = currentLang === "en-US" ? "Submarine strike disrupted enemy fleet." : currentLang === "es-ES" ? "Ataque submarino desorganizó flota enemiga." : "Ataque submarino desorganizou frota inimiga.";
+    }
+    if (kind === "carrier") {
+      impact = randomInt(10, 22) + Math.round(nw.carrierReach / 25);
+      ai.power = clamp(ai.power - impact, 1, 230);
+      ai.economy = clamp(ai.economy - randomInt(4, 10), 1, 230);
+      nw.carrierReach = clamp(nw.carrierReach + randomInt(5, 12), 0, 160);
+      const air = ensureAirWar();
+      if (air) air.airSupremacy = clamp(air.airSupremacy + randomInt(3, 9), 0, 160);
+      g.worldTension = clamp(g.worldTension + 8, 0, 100);
+      effect = currentLang === "en-US" ? "Carrier strike projected power inland." : currentLang === "es-ES" ? "Portaaviones proyectó fuerza tierra adentro." : "Porta-aviões projetou força para o interior.";
+    }
+    nw.seaControl = clamp(nw.seaControl + randomInt(2, 6), 0, 160);
+  } else {
+    impact = randomInt(1, 5);
+    effect = currentLang === "en-US" ? "Naval operation failed under enemy defense." : currentLang === "es-ES" ? "Operación naval falló bajo defensa enemiga." : "Operação naval falhou sob defesa inimiga.";
+    nw.seaControl = clamp(nw.seaControl - randomInt(2, 7), 0, 160);
+    nw.submarineThreat = clamp(nw.submarineThreat + randomInt(1, 6), 0, 160);
+    g.readiness = clamp(g.readiness - randomInt(1, 3), 0, 100);
+  }
+
+  nw.operations += 1;
+  applyOperationalWear(kind === "carrier" ? "airstrike" : "naval", success);
+  recordNavalHistory(kind, success, target, effect, impact);
+  g.events.push(eventText(success ? "sistema" : "warn", `${target.name}: ${effect}`));
+  saveGame();
+  renderGame();
+  activatePanel("panelNaval");
+}
+
+function progressNavalWar() {
+  const nw = ensureNavalWar();
+  if (!nw) return;
+  const g = state.game;
+  const strongest = topAiThreats(1)[0];
+  const enemyPush = Math.max(0, Math.round((g.worldTension - 44) / 30)) + (strongest?.power > powerIndex() ? 2 : 0);
+  nw.blockadePressure = clamp(nw.blockadePressure + enemyPush - Math.round(nw.seaControl / 85) - Math.round(nw.convoySecurity / 95), 0, 160);
+  nw.submarineThreat = clamp(nw.submarineThreat + enemyPush - Math.round(nw.seaControl / 95) - Math.round(nw.convoySecurity / 90), 0, 160);
+  nw.seaControl = clamp(nw.seaControl - (nw.blockadePressure > 70 ? 2 : 1) + Math.round(g.navalPower / 170), 0, 160);
+  if ((nw.blockadePressure > 78 || nw.submarineThreat > 82) && Math.random() < .25) {
+    const financeLoss = randomInt(12, 34);
+    const energyLoss = randomInt(6, 18);
+    g.finance = Math.max(0, g.finance - financeLoss);
+    g.energy = Math.max(0, g.energy - energyLoss);
+    g.events.push(eventText("warn", currentLang === "en-US" ? `Maritime pressure reduced trade: -${financeLoss} funds, -${energyLoss} energy.` : currentLang === "es-ES" ? `Presión marítima redujo comercio: -${financeLoss} fondos, -${energyLoss} energía.` : `Pressão marítima reduziu comércio: -${financeLoss} finanças, -${energyLoss} energia.`));
+  }
+}
+
+function navalBar(label, value) {
+  return `<div class="naval-bar"><div><span>${label}</span><strong>${value}</strong></div><i><b style="width:${clamp(value,0,100)}%"></b></i></div>`;
+}
+
+function renderNavalWar() {
+  const panel = $("#navalWarPanel");
+  if (!panel || !state.game) return;
+  const nw = ensureNavalWar();
+  const targets = navalTargets();
+  const last = nw.history[0];
+  panel.innerHTML = `
+    <div class="naval-target-row">
+      <label class="field-label">${t("naval.target", "Alvo naval")}</label>
+      <select id="navalTargetSelect">
+        ${targets.map(tg => `<option value="${tg.id}" ${tg.id === nw.selectedTargetId ? "selected" : ""}>${tg.country.flag || ""} ${tg.country.name} · ${tg.posture} · ${tg.hostility}</option>`).join("")}
+      </select>
+    </div>
+    <div class="naval-dashboard">
+      ${navalBar(t("naval.seaControl", "Controle marítimo"), nw.seaControl)}
+      ${navalBar(t("naval.blockadePressure", "Pressão de bloqueio"), nw.blockadePressure)}
+      ${navalBar(t("naval.submarineThreat", "Ameaça submarina"), nw.submarineThreat)}
+      ${navalBar(t("naval.carrierReach", "Alcance de porta-aviões"), nw.carrierReach)}
+      ${navalBar(t("naval.convoySecurity", "Segurança de comboios"), nw.convoySecurity)}
+    </div>
+    <div class="naval-last">
+      <small>${t("naval.history", "Histórico naval")}: ${nw.operations}</small>
+      <strong>${last ? `${last.label} · ${last.targetName}` : t("naval.noHistory", "Nenhuma operação naval realizada.")}</strong>
+      ${last ? `<span>${last.success ? t("naval.success","sucesso") : t("naval.fail","falha")} · ${last.effect}</span>` : ""}
+    </div>
+    <div class="naval-actions">
+      <button data-naval-action="patrol"><b>🚢 ${t("naval.patrol", "Patrulha naval")}</b><span>${t("naval.cost","Custo")}: 38/10/24</span></button>
+      <button data-naval-action="blockade"><b>⛔ ${t("naval.blockade", "Bloqueio naval")}</b><span>${t("naval.cost","Custo")}: 78/24/38</span></button>
+      <button data-naval-action="submarine"><b>⚓ ${t("naval.submarine", "Ataque submarino")}</b><span>${t("naval.cost","Custo")}: 66/18/28</span></button>
+      <button data-naval-action="carrier"><b>🛫 ${t("naval.carrier", "Ataque de porta-aviões")}</b><span>${t("naval.cost","Custo")}: 110/32/56</span></button>
+      <button data-naval-action="escort"><b>🛡️ ${t("naval.escort", "Escoltar comboios")}</b><span>${t("naval.cost","Custo")}: 42/14/22</span></button>
+    </div>
+    <section class="naval-history">
+      <h3>${t("naval.history", "Histórico naval")}</h3>
+      ${nw.history.length ? nw.history.slice(0,7).map(item => `<article class="${item.success ? "success" : "fail"}"><strong>${item.label}</strong><span>${item.targetName} · ${item.at} · ${item.success ? t("naval.success","sucesso") : t("naval.fail","falha")}</span><small>${item.effect}</small></article>`).join("") : `<p class="muted">${t("naval.noHistory", "Nenhuma operação naval realizada.")}</p>`}
+    </section>`;
+  $("#navalTargetSelect")?.addEventListener("change", event => {
+    nw.selectedTargetId = event.target.value;
+    saveGame();
+    renderNavalWar();
+  });
+  $$("#navalWarPanel [data-naval-action]").forEach(btn => btn.addEventListener("click", () => navalOperation(btn.dataset.navalAction)));
+}
+
+
+function makeMissileWar() {
+  return {
+    selectedTargetId: null,
+    stockpile: 18,
+    shield: 28,
+    earlyWarning: 30,
+    deterrence: 25,
+    launches: 0,
+    history: []
+  };
+}
+
+function ensureMissileWar() {
+  if (!state.game) return null;
+  if (!state.game.missileWar) state.game.missileWar = makeMissileWar();
+  const mw = state.game.missileWar;
+  if (!Array.isArray(mw.history)) mw.history = [];
+  mw.stockpile = clamp(mw.stockpile ?? 18, 0, 220);
+  mw.shield = clamp(mw.shield ?? 28, 0, 180);
+  mw.earlyWarning = clamp(mw.earlyWarning ?? 30, 0, 180);
+  mw.deterrence = clamp(mw.deterrence ?? 25, 0, 180);
+  mw.launches = Math.max(0, Math.round(mw.launches || 0));
+  if (!mw.selectedTargetId || !getCountry(mw.selectedTargetId) || mw.selectedTargetId === state.game.countryId) {
+    const threat = topAiThreats(1)[0];
+    mw.selectedTargetId = threat?.id || state.countries.find(c => c.id !== state.game.countryId)?.id;
+  }
+  return mw;
+}
+
+function missileTargets() {
+  ensureAiWorld();
+  return topAiThreats(14).map(ai => ({ ...ai, country: getCountry(ai.id) })).filter(item => item.country);
+}
+
+function missileCost(kind) {
+  const costs = {
+    build: { finance: 82, industry: 42, energy: 18 },
+    shield: { finance: 90, industry: 38, energy: 26 },
+    precision: { finance: 110, industry: 34, energy: 42 },
+    warning: { finance: 62, industry: 18, energy: 24 },
+    deterrence: { finance: 75, industry: 22, energy: 28 }
+  };
+  return costs[kind] || costs.build;
+}
+
+function canPayMissile(cost) {
+  const g = state.game;
+  return g.finance >= (cost.finance || 0) && g.industry >= (cost.industry || 0) && g.energy >= (cost.energy || 0);
+}
+
+function payMissile(cost) {
+  const g = state.game;
+  g.finance -= cost.finance || 0;
+  g.industry -= cost.industry || 0;
+  g.energy -= cost.energy || 0;
+}
+
+function missileOperationLabel(kind) {
+  const labels = {
+    build: t("missile.build", "Fabricar mísseis"),
+    shield: t("missile.shieldAction", "Reforçar escudo"),
+    precision: t("missile.precision", "Ataque convencional"),
+    warning: t("missile.warningAction", "Elevar alerta"),
+    deterrence: t("missile.deterrenceAction", "Postura dissuasória")
+  };
+  return labels[kind] || kind;
+}
+
+function recordMissileHistory(kind, success, target, effect, impact = 0) {
+  const mw = ensureMissileWar();
+  const report = {
+    id: cryptoId(),
+    kind,
+    label: missileOperationLabel(kind),
+    success,
+    targetId: target?.id || mw.selectedTargetId,
+    targetName: target?.name || "Alvo",
+    effect,
+    impact,
+    stockpile: mw.stockpile,
+    shield: mw.shield,
+    at: `${monthNames[state.game.month % 12]}/${state.game.year}`,
+    coords: target?.coords ? jitter(target.coords, .8) : null
+  };
+  mw.history.unshift(report);
+  mw.history = mw.history.slice(0, 12);
+}
+
+function missileOperation(kind) {
+  const g = state.game;
+  const mw = ensureMissileWar();
+  const targetId = $("#missileTargetSelect")?.value || mw.selectedTargetId;
+  const target = getCountry(targetId);
+  if (!target) return;
+  const ai = g.aiWorld?.find(a => a.id === targetId);
+  mw.selectedTargetId = targetId;
+  const cost = missileCost(kind);
+  if (!canPayMissile(cost)) {
+    g.events.push(eventText("warn", currentLang === "en-US" ? "Insufficient resources for strategic operation." : currentLang === "es-ES" ? "Recursos insuficientes para operación estratégica." : "Recursos insuficientes para operação estratégica."));
+    saveGame(); renderGame(); return;
+  }
+
+  if (kind !== "precision" || mw.stockpile > 0) payMissile(cost);
+
+  if (kind === "build") {
+    const gain = randomInt(8, 16) + Math.round(g.industry / 80) + Math.round(g.missilePower / 12);
+    mw.stockpile = clamp(mw.stockpile + gain, 0, 220);
+    g.missilePower = clamp(g.missilePower + randomInt(1, 3), 0, 200);
+    recordMissileHistory(kind, true, target, currentLang === "en-US" ? "Missile stockpile expanded." : currentLang === "es-ES" ? "Inventario de misiles ampliado." : "Estoque de mísseis ampliado.", gain);
+    g.events.push(eventText("sistema", currentLang === "en-US" ? "Strategic missile stockpile expanded." : currentLang === "es-ES" ? "Inventario estratégico de misiles ampliado." : "Estoque estratégico de mísseis ampliado."));
+    saveGame(); renderGame(); activatePanel("panelMissile"); return;
+  }
+
+  if (kind === "shield") {
+    const gain = randomInt(7, 15) + Math.round(g.cyber / 55) + Math.round(g.defense / 65);
+    mw.shield = clamp(mw.shield + gain, 0, 180);
+    g.defense = clamp(g.defense + randomInt(1, 3), 0, 200);
+    recordMissileHistory(kind, true, target, currentLang === "en-US" ? "Missile defense shield reinforced." : currentLang === "es-ES" ? "Escudo antimisil reforzado." : "Escudo antimíssil reforçado.", gain);
+    g.events.push(eventText("sistema", currentLang === "en-US" ? "Missile defense shield was reinforced." : currentLang === "es-ES" ? "Escudo antimisil fue reforzado." : "Escudo antimíssil foi reforçado."));
+    saveGame(); renderGame(); activatePanel("panelMissile"); return;
+  }
+
+  if (kind === "warning") {
+    const gain = randomInt(8, 17) + Math.round(g.intel / 50) + Math.round(g.radar || 0);
+    mw.earlyWarning = clamp(mw.earlyWarning + gain, 0, 180);
+    g.intel = clamp(g.intel + randomInt(1, 3), 0, 180);
+    recordMissileHistory(kind, true, target, currentLang === "en-US" ? "Early warning network elevated." : currentLang === "es-ES" ? "Red de alerta temprana elevada." : "Rede de alerta antecipado elevada.", gain);
+    g.events.push(eventText("sistema", currentLang === "en-US" ? "Early warning systems increased strategic readiness." : currentLang === "es-ES" ? "Sistemas de alerta aumentaron preparación estratégica." : "Sistemas de alerta aumentaram prontidão estratégica."));
+    saveGame(); renderGame(); activatePanel("panelMissile"); return;
+  }
+
+  if (kind === "deterrence") {
+    const gain = randomInt(7, 14) + Math.round(mw.stockpile / 25) + Math.round(mw.shield / 35);
+    mw.deterrence = clamp(mw.deterrence + gain, 0, 180);
+    g.escalation = clamp(g.escalation + 2, 0, 100);
+    if (g.globalWar) {
+      g.globalWar.nuclearRisk = clamp((g.globalWar.nuclearRisk || 0) + 2, 0, 100);
+      updateGlobalPhase();
+    }
+    const threat = topAiThreats(1)[0];
+    if (threat) threat.hostility = clamp(threat.hostility - randomInt(2, 7), 0, 100);
+    recordMissileHistory(kind, true, target, currentLang === "en-US" ? "Deterrence posture increased strategic pressure." : currentLang === "es-ES" ? "Postura disuasoria aumentó presión estratégica." : "Postura dissuasória elevou pressão estratégica.", gain);
+    g.events.push(eventText("warn", currentLang === "en-US" ? "Deterrence posture increased strategic tension but discouraged rivals." : currentLang === "es-ES" ? "Postura disuasoria elevó tensión estratégica, pero desalentó rivales." : "Postura dissuasória elevou tensão estratégica, mas desmotivou rivais."));
+    saveGame(); renderGame(); activatePanel("panelMissile"); return;
+  }
+
+  if (kind === "precision") {
+    if (mw.stockpile <= 0) {
+      g.events.push(eventText("warn", currentLang === "en-US" ? "No missile stockpile available." : currentLang === "es-ES" ? "No hay inventario de misiles disponible." : "Não há estoque de mísseis disponível."));
+      renderMissileWar();
+      return;
+    }
+    mw.stockpile = clamp(mw.stockpile - 1, 0, 220);
+    const defense = (target.missiles || 25) * 1.4 + (target.cyber || 45) / 2 + (ai?.readiness || 55) / 2 + Math.random() * 45;
+    const attack = g.missilePower * 1.6 + mw.stockpile / 3 + mw.earlyWarning / 3 + g.intel / 2 + Math.random() * 60;
+    const success = attack >= defense;
+    let impact = 0;
+    let effect = "";
+    if (success && ai) {
+      impact = randomInt(10, 24) + Math.round(g.missilePower / 18);
+      ai.power = clamp(ai.power - impact, 1, 230);
+      ai.economy = clamp(ai.economy - randomInt(5, 14), 1, 230);
+      ai.readiness = clamp(ai.readiness - randomInt(6, 16), 1, 100);
+      ai.lastMove = "sofreu ataque estratégico";
+      g.worldTension = clamp(g.worldTension + 9, 0, 100);
+      g.escalation = clamp(g.escalation + 5, 0, 100);
+      if (g.globalWar) {
+        g.globalWar.warScore = clamp((g.globalWar.warScore || 0) + 3, 0, 100);
+        g.globalWar.nuclearRisk = clamp((g.globalWar.nuclearRisk || 0) + (target.nuclear ? 5 : 2), 0, 100);
+        updateGlobalPhase();
+      }
+      effect = currentLang === "en-US" ? "Conventional missile strike damaged strategic infrastructure." : currentLang === "es-ES" ? "Ataque convencional dañó infraestructura estratégica." : "Ataque convencional danificou infraestrutura estratégica.";
+    } else {
+      impact = randomInt(1, 5);
+      g.worldTension = clamp(g.worldTension + 4, 0, 100);
+      g.readiness = clamp(g.readiness - 1, 0, 100);
+      effect = currentLang === "en-US" ? "Missile strike was intercepted or failed." : currentLang === "es-ES" ? "Ataque de misiles fue interceptado o falló." : "Ataque de mísseis foi interceptado ou falhou.";
+    }
+    mw.launches += 1;
+    applyOperationalWear("airstrike", success);
+    recordMissileHistory(kind, success, target, effect, impact);
+    g.events.push(eventText(success ? "danger" : "warn", `${target.name}: ${effect}`));
+    saveGame();
+    renderGame();
+    activatePanel("panelMissile");
+  }
+}
+
+function progressMissileWar() {
+  const mw = ensureMissileWar();
+  if (!mw) return;
+  const g = state.game;
+  const risk = (g.globalWar?.nuclearRisk || 0) + g.worldTension / 3 + g.escalation / 2;
+  mw.deterrence = clamp(mw.deterrence - 1 + Math.round(mw.stockpile / 90), 0, 180);
+  mw.earlyWarning = clamp(mw.earlyWarning - 1 + Math.round(g.intel / 130), 0, 180);
+  if (risk > 70 && mw.shield < 45 && Math.random() < .18) {
+    const base = g.bases.find(b => b.condition > 15);
+    if (base) {
+      const damage = randomInt(8, 22);
+      base.condition = clamp(base.condition - damage, 0, 100);
+      g.events.push(eventText("danger", currentLang === "en-US" ? `Strategic missile incident damaged ${base.name}.` : currentLang === "es-ES" ? `Incidente estratégico de misiles dañó ${base.name}.` : `Incidente estratégico de mísseis danificou ${base.name}.`));
+    }
+  }
+  if (risk > 82 && mw.earlyWarning > 55 && mw.shield > 55 && Math.random() < .15) {
+    g.worldTension = clamp(g.worldTension - 2, 0, 100);
+    g.events.push(eventText("sistema", currentLang === "en-US" ? "Early warning and missile shield prevented strategic escalation." : currentLang === "es-ES" ? "Alerta y escudo antimisil evitaron escalada estratégica." : "Alerta antecipado e escudo antimíssil evitaram escalada estratégica."));
+  }
+}
+
+function missileBar(label, value) {
+  return `<div class="missile-bar"><div><span>${label}</span><strong>${value}</strong></div><i><b style="width:${clamp(value,0,100)}%"></b></i></div>`;
+}
+
+function renderMissileWar() {
+  const panel = $("#missileWarPanel");
+  if (!panel || !state.game) return;
+  const mw = ensureMissileWar();
+  const targets = missileTargets();
+  const last = mw.history[0];
+  const nuclearRisk = state.game.globalWar?.nuclearRisk || 0;
+  panel.innerHTML = `
+    <div class="missile-target-row">
+      <label class="field-label">${t("missile.target", "Alvo estratégico")}</label>
+      <select id="missileTargetSelect">
+        ${targets.map(tg => `<option value="${tg.id}" ${tg.id === mw.selectedTargetId ? "selected" : ""}>${tg.country.flag || ""} ${tg.country.name} · ${tg.posture} · ${tg.hostility}</option>`).join("")}
+      </select>
+    </div>
+    <div class="missile-dashboard">
+      ${missileBar(t("missile.stockpile", "Estoque de mísseis"), mw.stockpile)}
+      ${missileBar(t("missile.shield", "Escudo antimíssil"), mw.shield)}
+      ${missileBar(t("missile.warning", "Alerta antecipado"), mw.earlyWarning)}
+      ${missileBar(t("missile.deterrence", "Dissuasão"), mw.deterrence)}
+      ${missileBar(t("missile.risk", "Risco nuclear"), nuclearRisk)}
+    </div>
+    <div class="missile-last">
+      <small>${t("missile.history", "Histórico estratégico")}: ${mw.launches}</small>
+      <strong>${last ? `${last.label} · ${last.targetName}` : t("missile.noHistory", "Nenhuma operação estratégica realizada.")}</strong>
+      ${last ? `<span>${last.success ? t("missile.success","sucesso") : t("missile.fail","falha")} · ${last.effect}</span>` : ""}
+    </div>
+    <div class="missile-actions">
+      <button data-missile-action="build"><b>🏭 ${t("missile.build", "Fabricar mísseis")}</b><span>${t("missile.cost","Custo")}: 82/42/18</span></button>
+      <button data-missile-action="shield"><b>🛡️ ${t("missile.shieldAction", "Reforçar escudo")}</b><span>${t("missile.cost","Custo")}: 90/38/26</span></button>
+      <button data-missile-action="precision"><b>🎯 ${t("missile.precision", "Ataque convencional")}</b><span>${t("missile.cost","Custo")}: 110/34/42</span></button>
+      <button data-missile-action="warning"><b>📡 ${t("missile.warningAction", "Elevar alerta")}</b><span>${t("missile.cost","Custo")}: 62/18/24</span></button>
+      <button data-missile-action="deterrence"><b>☢️ ${t("missile.deterrenceAction", "Postura dissuasória")}</b><span>${t("missile.cost","Custo")}: 75/22/28</span></button>
+    </div>
+    <section class="missile-history">
+      <h3>${t("missile.history", "Histórico estratégico")}</h3>
+      ${mw.history.length ? mw.history.slice(0,7).map(item => `<article class="${item.success ? "success" : "fail"}"><strong>${item.label}</strong><span>${item.targetName} · ${item.at} · ${item.success ? t("missile.success","sucesso") : t("missile.fail","falha")}</span><small>${item.effect}</small></article>`).join("") : `<p class="muted">${t("missile.noHistory", "Nenhuma operação estratégica realizada.")}</p>`}
+    </section>`;
+  $("#missileTargetSelect")?.addEventListener("change", event => {
+    mw.selectedTargetId = event.target.value;
+    saveGame();
+    renderMissileWar();
+  });
+  $$("#missileWarPanel [data-missile-action]").forEach(btn => btn.addEventListener("click", () => missileOperation(btn.dataset.missileAction)));
+}
+
 function makeInitialGame(countryId) {
   const country = state.countries.find(c => c.id === countryId) || state.countries[0];
   const regions = makeRegions(country);
@@ -1593,6 +2103,8 @@ function renderGame() {
   ensureCyberOps();
   ensureGroundWar();
   ensureAirWar();
+  ensureNavalWar();
+  ensureMissileWar();
   renderSummary();
   renderCommanderGuide();
   renderRegionSelect();
@@ -1606,6 +2118,8 @@ function renderGame() {
   renderCyberOps();
   renderGroundWar();
   renderAirWar();
+  renderNavalWar();
+  renderMissileWar();
   renderGlobalWar();
   renderAiWorld();
   renderTargetSelect();
@@ -1674,6 +2188,10 @@ function commanderRecommendation() {
   if (mainThreat && mainThreat.hostility > 70 && cyberOps.spyNetwork < 45 && g.month > 1) return { title: t("rec.cyber", "Executar inteligência"), text: t("rec.cyberText", "Rivais hostis estão crescendo."), action: "cyber", panel: "panelCyber" };
   const air = ensureAirWar();
   if (g.units.length && g.month > 2 && air.airSupremacy < 55) return { title: t("rec.air", "Buscar superioridade aérea"), text: t("rec.airText", "Domine o céu antes de escalar ataques maiores."), action: "air", panel: "panelAir" };
+  const naval = ensureNavalWar();
+  if (g.month > 2 && (naval.seaControl < 45 || naval.blockadePressure > 60 || naval.submarineThreat > 60)) return { title: t("rec.naval", "Controlar rotas navais"), text: t("rec.navalText", "O controle marítimo está baixo."), action: "naval", panel: "panelNaval" };
+  const missile = ensureMissileWar();
+  if (g.month > 2 && (g.worldTension > 62 || (g.globalWar?.nuclearRisk || 0) > 45) && (missile.shield < 55 || missile.stockpile < 12 || missile.earlyWarning < 55)) return { title: t("rec.missile", "Reforçar defesa estratégica"), text: t("rec.missileText", "A tensão está alta."), action: "missile", panel: "panelMissile" };
   const ground = ensureGroundWar();
   if (g.units.length && ground.fronts.filter(f => f.status !== "withdrawn").length === 0 && g.month > 2) return { title: t("rec.ground", "Abrir frente terrestre"), text: t("rec.groundText", "Você já tem tropas."), action: "ground", panel: "panelGround" };
   if ((g.globalWar?.nuclearRisk || 0) > 55) return { title: t("rec.world", "Reduzir crise mundial"), text: t("rec.worldText", "O risco nuclear está alto."), action: "world", panel: "panelGlobal" };
@@ -1694,7 +2212,7 @@ function renderCommanderGuide() {
   const queue = g.construction.length + g.production.length;
   const cond = forceCondition();
   const flag = flagHtml(c, "hq-flag-img");
-  const mainActionLabel = rec.action === "repair" ? t("guide.repair", "Reparar") : rec.action === "produce" ? t("guide.produce", "Produzir") : rec.action === "month" ? t("nextMonth", "Avançar mês") : rec.action === "economy" ? t("guide.economy", "Economia") : rec.action === "cyber" ? t("guide.cyber", "Cyber") : rec.action === "air" ? t("guide.air", "Aérea") : rec.action === "ground" ? t("guide.ground", "Frente") : rec.action === "world" ? t("guide.world", "Mundo") : rec.action === "ai" ? t("guide.ai", "IA") : rec.action === "ops" ? t("guide.attack", "Atacar") : t("guide.build", "Construir");
+  const mainActionLabel = rec.action === "repair" ? t("guide.repair", "Reparar") : rec.action === "produce" ? t("guide.produce", "Produzir") : rec.action === "month" ? t("nextMonth", "Avançar mês") : rec.action === "economy" ? t("guide.economy", "Economia") : rec.action === "cyber" ? t("guide.cyber", "Cyber") : rec.action === "air" ? t("guide.air", "Aérea") : rec.action === "naval" ? t("guide.naval", "Naval") : rec.action === "missile" ? t("guide.missile", "Mísseis") : rec.action === "ground" ? t("guide.ground", "Frente") : rec.action === "world" ? t("guide.world", "Mundo") : rec.action === "ai" ? t("guide.ai", "IA") : rec.action === "ops" ? t("guide.attack", "Atacar") : t("guide.build", "Construir");
   box.innerHTML = `
     <article class="mobile-hq-card">
       <div class="hq-flag-block">${flag}</div>
@@ -1737,6 +2255,8 @@ function renderCommanderGuide() {
       <button id="quickRepairBtn"><b>🛠️ ${t("guide.repair", "Reparar")}</b><span>${t("guide.repairSub", "base crítica")}</span></button>
       <button id="quickOpsBtn"><b>⚔️ ${t("guide.attack", "Atacar")}</b><span>${t("guide.attackSub", "abrir operações")}</span></button>
       <button id="quickAirBtn"><b>✈️ ${t("guide.air", "Aérea")}</b><span>${t("guide.airSub", "dominar o céu")}</span></button>
+      <button id="quickNavalBtn"><b>⚓ ${t("guide.naval", "Naval")}</b><span>${t("guide.navalSub", "controlar mares")}</span></button>
+      <button id="quickMissileBtn"><b>🚀 ${t("guide.missile", "Mísseis")}</b><span>${t("guide.missileSub", "defesa estratégica")}</span></button>
       <button id="quickGroundBtn"><b>🗺️ ${t("guide.ground", "Frente")}</b><span>${t("guide.groundSub", "ocupar território")}</span></button>
       <button id="quickCyberBtn"><b>🕵️ ${t("guide.cyber", "Cyber")}</b><span>${t("guide.cyberSub", "espionar rivais")}</span></button>
       <button id="quickEconomyBtn"><b>🏭 ${t("guide.economy", "Economia")}</b><span>${t("guide.economySub", "mobilização e inflação")}</span></button>
@@ -1749,6 +2269,8 @@ function renderCommanderGuide() {
   $("#quickRepairBtn")?.addEventListener("click", quickRepairPriority);
   $("#quickOpsBtn")?.addEventListener("click", () => activatePanel("panelOps"));
   $("#quickAirBtn")?.addEventListener("click", () => activatePanel("panelAir"));
+  $("#quickNavalBtn")?.addEventListener("click", () => activatePanel("panelNaval"));
+  $("#quickMissileBtn")?.addEventListener("click", () => activatePanel("panelMissile"));
   $("#quickGroundBtn")?.addEventListener("click", () => activatePanel("panelGround"));
   $("#quickCyberBtn")?.addEventListener("click", () => activatePanel("panelCyber"));
   $("#quickEconomyBtn")?.addEventListener("click", () => activatePanel("panelEconomy"));
@@ -1766,6 +2288,8 @@ function runRecommendedAction(rec) {
   if (rec.action === "economy") return activatePanel("panelEconomy");
   if (rec.action === "cyber") return activatePanel("panelCyber");
   if (rec.action === "air") return activatePanel("panelAir");
+  if (rec.action === "naval") return activatePanel("panelNaval");
+  if (rec.action === "missile") return activatePanel("panelMissile");
   if (rec.action === "ground") return activatePanel("panelGround");
   if (rec.action === "world") return activatePanel("panelGlobal");
   if (rec.action === "ai") return activatePanel("panelAiWorld");
@@ -2128,6 +2652,8 @@ function initMap() {
   state.layers.threats = L.layerGroup().addTo(state.map);
   state.layers.fronts = L.layerGroup().addTo(state.map);
   state.layers.airOps = L.layerGroup().addTo(state.map);
+  state.layers.navalOps = L.layerGroup().addTo(state.map);
+  state.layers.missiles = L.layerGroup().addTo(state.map);
   state.map.on("tileerror", () => {
     if (!document.querySelector(".leaflet-tile-loaded")) $("#mapFallback").hidden = false;
   });
@@ -2173,6 +2699,16 @@ function updateMapLayers() {
     const target = getCountry(item.targetId);
     const icon = L.divIcon({ className: "", html: `<div class="marker-air">✈</div>`, iconSize: [30, 30], iconAnchor: [15, 15] });
     L.marker(item.coords, { icon }).addTo(state.layers.airOps).bindPopup(`<strong>${target?.flag || ""} ${item.targetName}</strong><br>${item.label}<br>${item.success ? t("air.success","sucesso") : t("air.fail","falha")}`);
+  });
+  ensureNavalWar()?.history?.slice(0,5).filter(item => item.coords).forEach(item => {
+    const target = getCountry(item.targetId);
+    const icon = L.divIcon({ className: "", html: `<div class="marker-naval">⚓</div>`, iconSize: [30, 30], iconAnchor: [15, 15] });
+    L.marker(item.coords, { icon }).addTo(state.layers.navalOps).bindPopup(`<strong>${target?.flag || ""} ${item.targetName}</strong><br>${item.label}<br>${item.success ? t("naval.success","sucesso") : t("naval.fail","falha")}`);
+  });
+  ensureMissileWar()?.history?.slice(0,5).filter(item => item.coords).forEach(item => {
+    const target = getCountry(item.targetId);
+    const icon = L.divIcon({ className: "", html: `<div class="marker-missile">🚀</div>`, iconSize: [30, 30], iconAnchor: [15, 15] });
+    L.marker(item.coords, { icon }).addTo(state.layers.missiles).bindPopup(`<strong>${target?.flag || ""} ${item.targetName}</strong><br>${item.label}<br>${item.success ? t("missile.success","sucesso") : t("missile.fail","falha")}`);
   });
   state.map.setView(player.coords, Math.max(state.map.getZoom(), 3));
 }
@@ -2343,6 +2879,8 @@ function advanceMonth() {
   progressCyberOps();
   progressGroundWar();
   progressAirWar();
+  progressNavalWar();
+  progressMissileWar();
   monthlyWorldEvent();
   progressAiWorld();
   decayRelations();

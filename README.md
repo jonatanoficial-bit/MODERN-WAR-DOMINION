@@ -144,3 +144,29 @@ Abra `index.html` ou publique no GitHub Pages. No celular, use tela deitada/full
 - Supressão AA reduz resistência e melhora suprimento de frentes terrestres contra o mesmo alvo.
 - Sistema integrado ao HQ mobile, guerra terrestre, IA, cyberwar, economia e três idiomas.
 - Save key mantida para preservar campanhas da Fase 17/18/19/20.
+
+
+## Fase 22 — Guerra Naval
+
+- Novo painel Naval/Guerra Naval.
+- Controle marítimo, pressão de bloqueio, ameaça submarina, alcance de porta-aviões e segurança de comboios.
+- Ações: patrulha naval, bloqueio naval, ataque submarino, ataque de porta-aviões e escolta de comboios.
+- Operações navais aparecem no mapa real com marcador.
+- Bloqueio reduz economia/prontidão de rivais.
+- Escolta de comboios protege comércio e reduz pressão marítima.
+- Ataque de porta-aviões também ajuda superioridade aérea.
+- Sistema integrado ao HQ mobile, guerra terrestre, guerra aérea, IA, cyberwar, economia e três idiomas.
+- Save key mantida para preservar campanhas da Fase 17/18/19/20/21.
+
+
+## Fase 23 — Mísseis e Defesa Estratégica
+
+- Novo painel Mísseis/Defesa Estratégica.
+- Estoque de mísseis, escudo antimíssil, alerta antecipado, dissuasão e risco nuclear.
+- Ações: fabricar mísseis, reforçar escudo, ataque convencional de precisão, elevar alerta e postura dissuasória.
+- Operações de mísseis aparecem no mapa real com marcador.
+- Ataque convencional pode reduzir poder, economia e prontidão do rival.
+- Escudo e alerta podem evitar incidentes estratégicos.
+- Postura dissuasória aumenta risco, mas pode reduzir hostilidade de rivais.
+- Sistema integrado ao HQ mobile, guerra terrestre, guerra aérea, naval, IA, cyberwar, economia e três idiomas.
+- Save key mantida para preservar campanhas anteriores.

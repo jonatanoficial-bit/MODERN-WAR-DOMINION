@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
   <meta name="theme-color" content="#050914">
   <meta name="description" content="Modern War Dominion — jogo mobile de dominação militar global com mapa real, bases regionais, produção de unidades e escalada de guerra mundial.">
-  <title>Modern War Dominion — Fase 21</title>
+  <title>Modern War Dominion — Fase 23</title>
   <link rel="manifest" href="manifest.json">
   <link rel="icon" href="assets/img/icon.svg" type="image/svg+xml">
   <link rel="preconnect" href="https://unpkg.com">
@@ -42,7 +42,7 @@
         </select>
         <button class="mini-btn" id="fullscreenBtn" data-i18n="top.fullscreen">Tela cheia</button>
         <button class="mini-btn" id="installBtn" hidden data-i18n="top.install">Instalar</button>
-        <div class="build-chip" data-i18n="phase.label">Fase 21 · v2.1.0</div>
+        <div class="build-chip" data-i18n="phase.label">Fase 23 · v2.3.0</div>
       </div>
     </header>
 
@@ -50,15 +50,15 @@
       <section class="screen screen-active" id="screenHome">
         <div class="home-layout">
           <article class="hero-card glass-panel">
-            <p class="eyebrow" data-i18n="home.eyebrow">Fase 21 — Guerra Aérea</p>
-            <h1 data-i18n="home.title">Agora o céu decide o ritmo da guerra.</h1>
-            <p data-i18n="home.text">A campanha ganha superioridade aérea, patrulhas, interceptação, bombardeios de precisão, drones, supressão de defesa aérea e pressão aérea inimiga.</p>
+            <p class="eyebrow" data-i18n="home.eyebrow">Fase 23 — Mísseis e Defesa Estratégica</p>
+            <h1 data-i18n="home.title">Agora a dissuasão estratégica muda o equilíbrio da guerra.</h1>
+            <p data-i18n="home.text">A campanha ganha estoque de mísseis, escudo antimíssil, alerta antecipado, ataque convencional de precisão e postura de dissuasão nuclear simulada.</p>
             <div class="hero-actions">
               <button class="primary-btn" id="newGameBtn" data-i18n="home.new">Nova campanha militar</button>
               <button class="ghost-btn" id="continueBtn" disabled data-i18n="home.continue">Continuar campanha</button>
             </div>
             <div class="status-strip">
-              <span data-i18n="home.tag1">Controle dos céus</span><span data-i18n="home.tag2">Mobilização</span><span data-i18n="home.tag3">Inflação</span><span data-i18n="home.tag4">Moral civil</span><span data-i18n="home.tag5">Indústria</span><span data-i18n="home.tag6">Mobile</span>
+              <span data-i18n="home.tag1">Dissuasão estratégica</span><span data-i18n="home.tag2">Mobilização</span><span data-i18n="home.tag3">Inflação</span><span data-i18n="home.tag4">Moral civil</span><span data-i18n="home.tag5">Indústria</span><span data-i18n="home.tag6">Mobile</span>
             </div>
           </article>
           <aside class="glass-panel doctrine-panel">
@@ -122,6 +122,8 @@
               <button class="side-tab" data-panel="panelAiWorld" data-i18n="tab.ai">IA</button>
               <button class="side-tab" data-panel="panelOps" data-i18n="tab.attack">Atacar</button>
               <button class="side-tab" data-panel="panelAir" data-i18n="tab.air">Aérea</button>
+              <button class="side-tab" data-panel="panelNaval" data-i18n="tab.naval">Naval</button>
+              <button class="side-tab" data-panel="panelMissile" data-i18n="tab.missile">Mísseis</button>
               <button class="side-tab" data-panel="panelGround" data-i18n="tab.ground">Frente</button>
               <button class="side-tab" data-panel="panelBattle" data-i18n="tab.battle">Batalha</button>
               <button class="side-tab" data-panel="panelIntel" data-i18n="tab.alert">Alerta</button>
@@ -218,6 +220,18 @@
               <div id="airWarPanel" class="air-war-panel"></div>
             </div>
 
+            <div class="side-panel" id="panelNaval">
+              <h2 data-i18n="naval.title">Guerra Naval</h2>
+              <p class="muted" data-i18n="naval.text">Controle mares, bloqueie rivais, use submarinos, escolte comboios e projete força com porta-aviões.</p>
+              <div id="navalWarPanel" class="naval-war-panel"></div>
+            </div>
+
+            <div class="side-panel" id="panelMissile">
+              <h2 data-i18n="missile.title">Mísseis e Defesa Estratégica</h2>
+              <p class="muted" data-i18n="missile.text">Gerencie estoque de mísseis, escudo antimíssil, alerta antecipado e dissuasão estratégica.</p>
+              <div id="missileWarPanel" class="missile-war-panel"></div>
+            </div>
+
             <div class="side-panel" id="panelGround">
               <h2 data-i18n="ground.title">Guerra Terrestre</h2>
               <p class="muted" data-i18n="ground.text">Abra frentes de invasão, reforce avanços, ocupe território e controle resistência local.</p>
@@ -246,6 +260,8 @@
             <button class="dock-btn" data-panel="panelForces">🪖<span data-i18n="dock.produce">Produzir</span></button>
             <button class="dock-btn" data-panel="panelOps">⚔️<span data-i18n="dock.attack">Atacar</span></button>
             <button class="dock-btn" data-panel="panelAir">✈️<span data-i18n="dock.air">Aérea</span></button>
+            <button class="dock-btn" data-panel="panelNaval">⚓<span data-i18n="dock.naval">Naval</span></button>
+            <button class="dock-btn" data-panel="panelMissile">🚀<span data-i18n="dock.missile">Mísseis</span></button>
             <button class="dock-btn" data-panel="panelGround">🗺️<span data-i18n="dock.ground">Frente</span></button>
             <button class="dock-btn" data-panel="panelBattle">📊<span data-i18n="dock.battle">Batalha</span></button>
             <button class="dock-btn" data-panel="panelCyber">🛰️<span data-i18n="dock.cyber">Cyber</span></button>
@@ -258,8 +274,8 @@
 
       <section class="screen" id="screenRoadmap">
         <div class="roadmap glass-panel">
-          <p class="eyebrow" data-i18n="roadmap.eyebrow">Fase 21 — guerra aérea</p>
-          <h1 data-i18n="roadmap.title">A campanha agora tem superioridade aérea, drones, interceptação e bombardeio.</h1>
+          <p class="eyebrow" data-i18n="roadmap.eyebrow">Fase 23 — mísseis e defesa estratégica</p>
+          <h1 data-i18n="roadmap.title">A campanha agora tem mísseis, escudo antimíssil, alerta antecipado e dissuasão.</h1>
           <div class="roadmap-grid">
             <article><strong>Fase 9</strong><span>Manutenção, desgaste, baixas, reposição de lotes e custo real de guerra longa.</span></article>
             <article><strong>Fase 10</strong><span>Terceira Guerra Mundial: blocos, ultimatos, sanções, invasões e crise nuclear.</span></article>
@@ -278,4 +294,4 @@
 </body>
 </html>
 
-<!-- Fase 21: guerra aérea, superioridade, interceptação, drones e bombardeio. -->
+<!-- Fase 23: mísseis, defesa antimíssil, alerta antecipado e dissuasão estratégica. -->

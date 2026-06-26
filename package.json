@@ -1,6 +1,6 @@
 {
   "name": "modern-war-dominion",
-  "version": "2.1.0",
+  "version": "2.3.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -8,5 +8,5 @@
     "audit": "node tools/audit.mjs",
     "integrity": "node tools/integrity.mjs"
   },
-  "description": "Modern War Dominion Fase 21 — guerra aérea, superioridade, drones e bombardeio"
+  "description": "Modern War Dominion Fase 23 — mísseis, defesa antimíssil e dissuasão estratégica"
 }
