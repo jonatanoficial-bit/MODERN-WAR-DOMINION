@@ -1,5 +1,5 @@
-const VERSION = "1.8.0";
-const PHASE = "Fase 18 — economia de guerra";
+const VERSION = "1.9.0";
+const PHASE = "Fase 19 — espionagem e cyberwar";
 const SAVE_KEY = "MWD_SAVE_F17";
 
 const $ = (sel, root = document) => root.querySelector(sel);
@@ -650,6 +650,243 @@ function economyBar(label, value, kind) {
   return `<div class="economy-bar ${kind}"><span>${label}</span><b>${value}%</b><i style="width:${pct}%"></i></div>`;
 }
 
+
+function makeCyberOps() {
+  return {
+    spyNetwork: 20,
+    security: 35,
+    cyberOffense: 28,
+    counterIntel: 25,
+    exposure: 8,
+    selectedTargetId: null,
+    lastOperation: null,
+    history: []
+  };
+}
+
+function ensureCyberOps() {
+  if (!state.game) return null;
+  if (!state.game.cyberOps) state.game.cyberOps = makeCyberOps();
+  const ops = state.game.cyberOps;
+  if (!Array.isArray(ops.history)) ops.history = [];
+  ops.spyNetwork = clamp(ops.spyNetwork ?? 20, 0, 160);
+  ops.security = clamp(ops.security ?? 35, 0, 160);
+  ops.cyberOffense = clamp(ops.cyberOffense ?? 28, 0, 160);
+  ops.counterIntel = clamp(ops.counterIntel ?? 25, 0, 160);
+  ops.exposure = clamp(ops.exposure ?? 8, 0, 100);
+  if (!ops.selectedTargetId || !getCountry(ops.selectedTargetId) || ops.selectedTargetId === state.game.countryId) {
+    const threat = topAiThreats(1)[0];
+    ops.selectedTargetId = threat?.id || state.countries.find(c => c.id !== state.game.countryId)?.id;
+  }
+  return ops;
+}
+
+function cyberTargets() {
+  ensureAiWorld();
+  return topAiThreats(12).map(ai => {
+    const c = getCountry(ai.id);
+    return { ...ai, country: c };
+  }).filter(t => t.country);
+}
+
+function cyberCost(kind) {
+  const costs = {
+    network: { finance: 55, industry: 10, energy: 8 },
+    counter: { finance: 42, industry: 12, energy: 6 },
+    attack: { finance: 70, industry: 18, energy: 26 },
+    steal: { finance: 62, industry: 10, energy: 18 },
+    psyops: { finance: 48, industry: 6, energy: 10 },
+    defend: { finance: 35, industry: 8, energy: 12 }
+  };
+  return costs[kind] || costs.network;
+}
+
+function canPayCyber(cost) {
+  const g = state.game;
+  return g.finance >= (cost.finance || 0) && g.industry >= (cost.industry || 0) && g.energy >= (cost.energy || 0);
+}
+
+function payCyber(cost) {
+  const g = state.game;
+  g.finance -= cost.finance || 0;
+  g.industry -= cost.industry || 0;
+  g.energy -= cost.energy || 0;
+}
+
+function cyberOperation(kind) {
+  const g = state.game;
+  const ops = ensureCyberOps();
+  const targetId = $("#cyberTargetSelect")?.value || ops.selectedTargetId;
+  const target = getCountry(targetId);
+  const ai = g.aiWorld?.find(a => a.id === targetId);
+  const cost = cyberCost(kind);
+  if (!canPayCyber(cost)) {
+    g.events.push(eventText("warn", currentLang === "en-US" ? "Insufficient resources for intelligence operation." : currentLang === "es-ES" ? "Recursos insuficientes para la operación de inteligencia." : "Recursos insuficientes para operação de inteligência."));
+    saveGame();
+    renderGame();
+    return;
+  }
+
+  ops.selectedTargetId = targetId;
+  payCyber(cost);
+
+  if (kind === "network") {
+    ops.spyNetwork = clamp(ops.spyNetwork + randomInt(8, 14), 0, 160);
+    ops.exposure = clamp(ops.exposure + 2, 0, 100);
+    recordCyberHistory(kind, true, target, currentLang === "en-US" ? "Spy network expanded." : currentLang === "es-ES" ? "Red de espías expandida." : "Rede de espiões expandida.");
+    g.events.push(eventText("sistema", currentLang === "en-US" ? "Intelligence network expanded inside rival territory." : currentLang === "es-ES" ? "Red de inteligencia expandida en territorio rival." : "Rede de inteligência expandida em território rival."));
+    saveGame(); renderGame(); activatePanel("panelCyber"); return;
+  }
+
+  if (kind === "counter") {
+    ops.counterIntel = clamp(ops.counterIntel + randomInt(8, 15), 0, 160);
+    ops.security = clamp(ops.security + randomInt(5, 10), 0, 160);
+    ops.exposure = clamp(ops.exposure - randomInt(4, 9), 0, 100);
+    recordCyberHistory(kind, true, target, currentLang === "en-US" ? "Counterintelligence reinforced." : currentLang === "es-ES" ? "Contrainteligencia reforzada." : "Contrainteligência reforçada.");
+    g.events.push(eventText("sistema", currentLang === "en-US" ? "Counterintelligence reduced exposure risk." : currentLang === "es-ES" ? "La contrainteligencia redujo el riesgo de exposición." : "Contrainteligência reduziu risco de exposição."));
+    saveGame(); renderGame(); activatePanel("panelCyber"); return;
+  }
+
+  if (kind === "defend") {
+    ops.security = clamp(ops.security + randomInt(8, 16), 0, 160);
+    g.cyber = clamp(g.cyber + 2, 0, 160);
+    recordCyberHistory(kind, true, target, currentLang === "en-US" ? "Cyber defense hardened." : currentLang === "es-ES" ? "Defensa cyber reforzada." : "Defesa cyber reforçada.");
+    g.events.push(eventText("sistema", currentLang === "en-US" ? "National digital infrastructure hardened." : currentLang === "es-ES" ? "Infraestructura digital nacional reforzada." : "Infraestrutura digital nacional reforçada."));
+    saveGame(); renderGame(); activatePanel("panelCyber"); return;
+  }
+
+  const defense = (target?.cyber || 40) + (target?.intel || 40) / 2 + (ai?.readiness || 45) / 3 + Math.random() * 45;
+  const attack = g.cyber + g.intel / 2 + ops.spyNetwork * .65 + ops.cyberOffense * .75 + Math.random() * 55;
+  const success = attack >= defense;
+  const detected = Math.random() * 100 < clamp(ops.exposure + (success ? 8 : 22) - ops.counterIntel / 4 - ops.security / 5, 4, 88);
+  let effect = "";
+
+  if (success && ai) {
+    if (kind === "attack") {
+      ai.economy = clamp(ai.economy - randomInt(5, 13), 1, 230);
+      ai.readiness = clamp(ai.readiness - randomInt(4, 10), 1, 100);
+      ai.lastMove = "sofreu sabotagem cyber";
+      effect = currentLang === "en-US" ? "Infrastructure sabotaged" : currentLang === "es-ES" ? "Infraestructura saboteada" : "Infraestrutura sabotada";
+    }
+    if (kind === "steal") {
+      g.cyber = clamp(g.cyber + randomInt(2, 5), 0, 160);
+      g.intel = clamp(g.intel + randomInt(2, 5), 0, 160);
+      g.industry += randomInt(15, 34);
+      effect = currentLang === "en-US" ? "Technology stolen" : currentLang === "es-ES" ? "Tecnología robada" : "Tecnologia roubada";
+    }
+    if (kind === "psyops") {
+      ai.hostility = clamp(ai.hostility - randomInt(5, 12), 0, 100);
+      ai.mobilization = clamp(ai.mobilization - randomInt(4, 9), 0, 100);
+      g.worldTension = clamp(g.worldTension - randomInt(1, 4), 0, 100);
+      effect = currentLang === "en-US" ? "Rival morale disrupted" : currentLang === "es-ES" ? "Moral rival desorganizada" : "Moral rival desorganizada";
+    }
+    ops.cyberOffense = clamp(ops.cyberOffense + randomInt(1, 3), 0, 160);
+  } else {
+    effect = currentLang === "en-US" ? "Operation failed" : currentLang === "es-ES" ? "Operación falló" : "Operação falhou";
+    g.stability = clamp(g.stability - (detected ? 2 : 0), 0, 100);
+  }
+
+  if (detected) {
+    g.worldTension = clamp(g.worldTension + randomInt(3, 8), 0, 100);
+    ops.exposure = clamp(ops.exposure + randomInt(6, 14), 0, 100);
+  } else {
+    ops.exposure = clamp(ops.exposure + randomInt(1, 5), 0, 100);
+  }
+
+  recordCyberHistory(kind, success, target, effect, detected);
+  g.events.push(eventText(success ? "sistema" : "warn", `${target?.name || "Alvo"}: ${effect}${detected ? " — operação detectada." : "."}`));
+  saveGame();
+  renderGame();
+  activatePanel("panelCyber");
+}
+
+function recordCyberHistory(kind, success, target, effect, detected = false) {
+  const ops = ensureCyberOps();
+  const labels = {
+    network: t("cyber.buildNetwork", "Expandir rede"),
+    counter: t("cyber.counterIntel", "Reforçar contrainteligência"),
+    attack: t("cyber.cyberAttack", "Sabotar infraestrutura"),
+    steal: t("cyber.stealTech", "Roubar tecnologia"),
+    psyops: t("cyber.psyops", "Operação psicológica"),
+    defend: t("cyber.defend", "Defesa cyber")
+  };
+  const report = {
+    id: cryptoId(),
+    kind,
+    label: labels[kind] || kind,
+    success,
+    detected,
+    targetId: target?.id || ops.selectedTargetId,
+    targetName: target?.name || "Alvo",
+    effect,
+    at: `${monthNames[state.game.month % 12]}/${state.game.year}`
+  };
+  ops.lastOperation = report;
+  ops.history.unshift(report);
+  ops.history = ops.history.slice(0, 10);
+}
+
+function progressCyberOps() {
+  const ops = ensureCyberOps();
+  if (!ops) return;
+  const pressure = state.game.worldTension > 65 ? 2 : 1;
+  ops.exposure = clamp(ops.exposure - Math.max(1, Math.round((ops.counterIntel + ops.security) / 80)) + pressure, 0, 100);
+  if (ops.exposure > 70 && Math.random() < .24) {
+    state.game.worldTension = clamp(state.game.worldTension + 4, 0, 100);
+    state.game.events.push(eventText("warn", currentLang === "en-US" ? "Foreign agencies are close to exposing a covert network." : currentLang === "es-ES" ? "Agencias extranjeras están cerca de exponer una red encubierta." : "Agências estrangeiras estão perto de expor uma rede encoberta."));
+  }
+}
+
+function cyberBar(label, value) {
+  return `<div class="cyber-bar"><div><span>${label}</span><strong>${value}</strong></div><i><b style="width:${clamp(value,0,100)}%"></b></i></div>`;
+}
+
+function renderCyberOps() {
+  const panel = $("#cyberOpsPanel");
+  if (!panel || !state.game) return;
+  const ops = ensureCyberOps();
+  const targets = cyberTargets();
+  const selected = targets.find(t => t.id === ops.selectedTargetId) || targets[0];
+  const last = ops.lastOperation;
+  panel.innerHTML = `
+    <div class="cyber-target-row">
+      <label class="field-label">${t("cyber.target", "Alvo de inteligência")}</label>
+      <select id="cyberTargetSelect">
+        ${targets.map(tg => `<option value="${tg.id}" ${tg.id === ops.selectedTargetId ? "selected" : ""}>${tg.country.flag || ""} ${tg.country.name} · ${tg.posture} · ${tg.hostility}</option>`).join("")}
+      </select>
+    </div>
+    <div class="cyber-dashboard">
+      ${cyberBar(t("cyber.network", "Rede de espiões"), ops.spyNetwork)}
+      ${cyberBar(t("cyber.security", "Segurança digital"), ops.security)}
+      ${cyberBar(t("cyber.offense", "Ataque cyber"), ops.cyberOffense)}
+      ${cyberBar(t("cyber.counter", "Contrainteligência"), ops.counterIntel)}
+      ${cyberBar(t("cyber.exposure", "Risco de exposição"), ops.exposure)}
+    </div>
+    <div class="cyber-last">
+      <small>${t("cyber.last", "Última operação")}</small>
+      <strong>${last ? `${last.label} · ${last.targetName}` : t("cyber.noHistory", "Nenhuma operação secreta realizada.")}</strong>
+      ${last ? `<span>${last.success ? t("cyber.success", "sucesso") : t("cyber.fail", "falha")} · ${last.effect}${last.detected ? " · detectada" : ""}</span>` : ""}
+    </div>
+    <div class="cyber-actions">
+      <button data-cyber-action="network"><b>🕵️ ${t("cyber.buildNetwork", "Expandir rede")}</b><span>${t("cyber.cost","Custo")}: 55/10/8</span></button>
+      <button data-cyber-action="counter"><b>🛡️ ${t("cyber.counterIntel", "Reforçar contrainteligência")}</b><span>${t("cyber.cost","Custo")}: 42/12/6</span></button>
+      <button data-cyber-action="attack"><b>💻 ${t("cyber.cyberAttack", "Sabotar infraestrutura")}</b><span>${selected?.country?.name || ""}</span></button>
+      <button data-cyber-action="steal"><b>🧬 ${t("cyber.stealTech", "Roubar tecnologia")}</b><span>${selected?.country?.name || ""}</span></button>
+      <button data-cyber-action="psyops"><b>📡 ${t("cyber.psyops", "Operação psicológica")}</b><span>${selected?.country?.name || ""}</span></button>
+      <button data-cyber-action="defend"><b>🔐 ${t("cyber.defend", "Defesa cyber")}</b><span>${t("cyber.effect","Efeito")}: +segurança</span></button>
+    </div>
+    <div class="cyber-history">
+      <h3>${t("cyber.history", "Histórico secreto")}</h3>
+      ${ops.history.length ? ops.history.slice(0,6).map(item => `<article class="${item.success ? "success" : "fail"}"><strong>${item.label}</strong><span>${item.targetName} · ${item.at} · ${item.success ? t("cyber.success","sucesso") : t("cyber.fail","falha")}</span><small>${item.effect}${item.detected ? " · detectada" : ""}</small></article>`).join("") : `<p class="muted">${t("cyber.noHistory", "Nenhuma operação secreta realizada.")}</p>`}
+    </div>`;
+  $("#cyberTargetSelect")?.addEventListener("change", event => {
+    ops.selectedTargetId = event.target.value;
+    saveGame();
+    renderCyberOps();
+  });
+  $$("#cyberOpsPanel [data-cyber-action]").forEach(btn => btn.addEventListener("click", () => cyberOperation(btn.dataset.cyberAction)));
+}
+
 function makeInitialGame(countryId) {
   const country = state.countries.find(c => c.id === countryId) || state.countries[0];
   const regions = makeRegions(country);
@@ -832,6 +1069,7 @@ function renderGame() {
   ensureTutorial();
   evaluateTutorialMissions();
   ensureWarEconomy();
+  ensureCyberOps();
   renderSummary();
   renderCommanderGuide();
   renderRegionSelect();
@@ -842,6 +1080,7 @@ function renderGame() {
   renderArsenal();
   renderMaintenance();
   renderWarEconomy();
+  renderCyberOps();
   renderGlobalWar();
   renderAiWorld();
   renderTargetSelect();
@@ -905,6 +1144,9 @@ function commanderRecommendation() {
   if (hasProd) return { title: t("rec.month", "Avançar mês"), text: t("rec.monthText", "Existe produção/obra em andamento."), action: "month", panel: "panelGuide" };
   const econ = ensureWarEconomy();
   if ((g.finance < 120 || g.industry < 100 || econ.inflation > 35 || econ.civilianMorale < 35) && g.month > 0) return { title: t("rec.economy", "Ajustar economia de guerra"), text: t("rec.economyText", "Recursos baixos ou inflação alta."), action: "economy", panel: "panelEconomy" };
+  const cyberOps = ensureCyberOps();
+  const mainThreat = topAiThreats(1)[0];
+  if (mainThreat && mainThreat.hostility > 70 && cyberOps.spyNetwork < 45 && g.month > 1) return { title: t("rec.cyber", "Executar inteligência"), text: t("rec.cyberText", "Rivais hostis estão crescendo."), action: "cyber", panel: "panelCyber" };
   if ((g.globalWar?.nuclearRisk || 0) > 55) return { title: t("rec.world", "Reduzir crise mundial"), text: t("rec.worldText", "O risco nuclear está alto."), action: "world", panel: "panelGlobal" };
   const hostile = topAiThreats(1)[0];
   if (hostile && hostile.hostility > 75) return { title: currentLang === "en-US" ? "Monitor dangerous rival" : currentLang === "es-ES" ? "Monitorear rival peligroso" : "Monitorar rival perigoso", text: `${getCountry(hostile.id)?.name || "Rival"} ${currentLang === "en-US" ? "is in" : currentLang === "es-ES" ? "está en postura" : "está em postura"} ${hostile.posture}.`, action: "ai", panel: "panelAiWorld" };
@@ -923,7 +1165,7 @@ function renderCommanderGuide() {
   const queue = g.construction.length + g.production.length;
   const cond = forceCondition();
   const flag = flagHtml(c, "hq-flag-img");
-  const mainActionLabel = rec.action === "repair" ? t("guide.repair", "Reparar") : rec.action === "produce" ? t("guide.produce", "Produzir") : rec.action === "month" ? t("nextMonth", "Avançar mês") : rec.action === "economy" ? t("guide.economy", "Economia") : rec.action === "world" ? t("guide.world", "Mundo") : rec.action === "ai" ? t("guide.ai", "IA") : rec.action === "ops" ? t("guide.attack", "Atacar") : t("guide.build", "Construir");
+  const mainActionLabel = rec.action === "repair" ? t("guide.repair", "Reparar") : rec.action === "produce" ? t("guide.produce", "Produzir") : rec.action === "month" ? t("nextMonth", "Avançar mês") : rec.action === "economy" ? t("guide.economy", "Economia") : rec.action === "cyber" ? t("guide.cyber", "Cyber") : rec.action === "world" ? t("guide.world", "Mundo") : rec.action === "ai" ? t("guide.ai", "IA") : rec.action === "ops" ? t("guide.attack", "Atacar") : t("guide.build", "Construir");
   box.innerHTML = `
     <article class="mobile-hq-card">
       <div class="hq-flag-block">${flag}</div>
@@ -965,6 +1207,7 @@ function renderCommanderGuide() {
       <button id="quickProduceBtn"><b>🪖 ${t("guide.produce", "Produzir")}</b><span>${t("guide.produceSub", "melhor unidade")}</span></button>
       <button id="quickRepairBtn"><b>🛠️ ${t("guide.repair", "Reparar")}</b><span>${t("guide.repairSub", "base crítica")}</span></button>
       <button id="quickOpsBtn"><b>⚔️ ${t("guide.attack", "Atacar")}</b><span>${t("guide.attackSub", "abrir operações")}</span></button>
+      <button id="quickCyberBtn"><b>🕵️ ${t("guide.cyber", "Cyber")}</b><span>${t("guide.cyberSub", "espionar rivais")}</span></button>
       <button id="quickEconomyBtn"><b>🏭 ${t("guide.economy", "Economia")}</b><span>${t("guide.economySub", "mobilização e inflação")}</span></button>
       <button id="quickWorldBtn"><b>🌐 ${t("guide.world", "Mundo")}</b><span>${t("guide.worldSub", "DEFCON e crise")}</span></button>
       <button id="quickAiBtn"><b>🛰️ ${t("guide.ai", "IA")}</b><span>${t("guide.aiSub", "rivais ativos")}</span></button>
@@ -974,6 +1217,7 @@ function renderCommanderGuide() {
   $("#quickProduceBtn")?.addEventListener("click", quickProduceRecommended);
   $("#quickRepairBtn")?.addEventListener("click", quickRepairPriority);
   $("#quickOpsBtn")?.addEventListener("click", () => activatePanel("panelOps"));
+  $("#quickCyberBtn")?.addEventListener("click", () => activatePanel("panelCyber"));
   $("#quickEconomyBtn")?.addEventListener("click", () => activatePanel("panelEconomy"));
   $("#quickWorldBtn")?.addEventListener("click", () => activatePanel("panelGlobal"));
   $("#quickAiBtn")?.addEventListener("click", () => activatePanel("panelAiWorld"));
@@ -987,6 +1231,7 @@ function runRecommendedAction(rec) {
   if (rec.action === "produce") return quickProduceRecommended();
   if (rec.action === "month") return advanceMonth();
   if (rec.action === "economy") return activatePanel("panelEconomy");
+  if (rec.action === "cyber") return activatePanel("panelCyber");
   if (rec.action === "world") return activatePanel("panelGlobal");
   if (rec.action === "ai") return activatePanel("panelAiWorld");
   if (rec.action === "ops") return activatePanel("panelOps");
@@ -1543,6 +1788,7 @@ function advanceMonth() {
   g.worldTension = clamp(g.worldTension + randomInt(-3, 5), 0, 100);
   progressConstruction();
   progressProduction();
+  progressCyberOps();
   monthlyWorldEvent();
   progressAiWorld();
   decayRelations();

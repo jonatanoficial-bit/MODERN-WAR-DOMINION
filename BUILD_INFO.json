@@ -1,7 +1,7 @@
 {
   "project": "Modern War Dominion",
-  "version": "1.8.0",
-  "phase": "Fase 18 — Economia de Guerra",
+  "version": "1.9.0",
+  "phase": "Fase 19 — Espionagem e Cyberwar",
   "generated_at": "2026-06-24",
   "base": "Fase 5 assets integrados",
   "features": [
@@ -12,11 +12,11 @@
     "mapa real preservado"
   ],
   "notes": [
-    "Painel Economia adicionado ao comando e dock mobile",
-    "Mobilização afeta indústria, prontidão, inflação, moral civil e tensão mundial",
-    "Impacto econômico mensal integrado a recursos, estabilidade e prontidão",
-    "Compatível com saves da Fase 17 via ensureWarEconomy",
-    "Tradução PT-BR / EN-US / ES-ES incluída"
+    "Novo painel Cyber/Espionagem",
+    "Rede de espiões, segurança digital, ataque cyber, contrainteligência e risco de exposição",
+    "Operações secretas contra rivais: sabotagem de infraestrutura, roubo de tecnologia e operações psicológicas",
+    "Histórico das últimas operações secretas",
+    "Sistema integrado ao HQ mobile e aos três idiomas"
   ],
   "countries_count": 249,
   "countries_available": 249,
@@ -38,5 +38,12 @@
     "rationing",
     "military industry conversion",
     "energy pressure"
+  ],
+  "systems": [
+    "espionagem",
+    "cyberwar",
+    "contrainteligência",
+    "sabotagem",
+    "roubo de tecnologia"
   ]
 }

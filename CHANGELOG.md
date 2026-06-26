@@ -114,3 +114,13 @@
 - Políticas rápidas: mobilizar, desmobilizar, emitir títulos, converter indústria militar, racionamento e campanha pública.
 - Economia agora afeta recursos mensais, estabilidade, prontidão e tensão mundial.
 - Compatível com saves da Fase 17 por manter a mesma chave de save e criar economia automaticamente em campanhas existentes.
+
+
+## Fase 19 — Espionagem e Cyberwar
+
+- Novo painel Cyber/Espionagem.
+- Rede de espiões, contrainteligência, segurança digital, ataque cyber e risco de exposição.
+- Operações contra rivais: sabotagem de infraestrutura, roubo de tecnologia e operação psicológica.
+- Operações podem ser detectadas e elevar tensão mundial.
+- Sistema integrado ao HQ mobile, IA dos países e três idiomas.
+- Save key mantida para preservar campanhas da Fase 17/18.

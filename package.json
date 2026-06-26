@@ -1,6 +1,6 @@
 {
   "name": "modern-war-dominion",
-  "version": "1.8.0",
+  "version": "1.9.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -8,5 +8,5 @@
     "audit": "node tools/audit.mjs",
     "integrity": "node tools/integrity.mjs"
   },
-  "description": "Modern War Dominion Fase 18 — economia de guerra, mobilização, inflação e indústria militar"
+  "description": "Modern War Dominion Fase 19 — espionagem, cyberwar e operações secretas"
 }
