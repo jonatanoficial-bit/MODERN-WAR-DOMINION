@@ -1,7 +1,7 @@
 {
   "project": "Modern War Dominion",
-  "version": "2.0.0",
-  "phase": "Fase 20 — Guerra Terrestre e Ocupação",
+  "version": "2.1.0",
+  "phase": "Fase 21 — Guerra Aérea",
   "generated_at": "2026-06-24",
   "base": "Fase 5 assets integrados",
   "features": [
@@ -12,11 +12,11 @@
     "mapa real preservado"
   ],
   "notes": [
-    "Novo painel Frente/Guerra Terrestre",
-    "Frentes de invasão contra países rivais",
-    "Avanço territorial, suprimento, resistência local e baixas",
-    "Ações: iniciar invasão, reforçar frente, pacificar território e retirar frente",
-    "Frentes aparecem no mapa real com linha de operação",
+    "Novo painel Aérea/Guerra Aérea",
+    "Superioridade aérea, pressão aérea inimiga, prontidão de drones e defesa aérea",
+    "Ações: patrulha aérea, bombardeio de precisão, ataque de drones, interceptação e supressão AA",
+    "Operações aéreas aparecem no mapa real com marcador",
+    "Supressão AA ajuda frentes terrestres contra o mesmo alvo",
     "Sistema integrado ao HQ mobile e aos três idiomas"
   ],
   "countries_count": 249,
@@ -50,6 +50,12 @@
     "frentes de invasão",
     "ocupação",
     "resistência",
-    "suprimento"
+    "suprimento",
+    "guerra aérea",
+    "superioridade aérea",
+    "drones",
+    "interceptação",
+    "bombardeio de precisão",
+    "supressão AA"
   ]
 }

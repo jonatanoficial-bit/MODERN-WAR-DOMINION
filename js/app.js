@@ -1,5 +1,5 @@
-const VERSION = "2.0.0";
-const PHASE = "Fase 20 — guerra terrestre e ocupação";
+const VERSION = "2.1.0";
+const PHASE = "Fase 21 — guerra aérea";
 const SAVE_KEY = "MWD_SAVE_F17";
 
 const $ = (sel, root = document) => root.querySelector(sel);
@@ -12,7 +12,7 @@ const state = {
   selectedCountry: null,
   game: null,
   map: null,
-  layers: { countries: null, regions: null, bases: null, threats: null, fronts: null },
+  layers: { countries: null, regions: null, bases: null, threats: null, fronts: null, airOps: null },
   arsenalFilter: "Todos"
 };
 
@@ -1163,6 +1163,251 @@ function renderGroundWar() {
   $$("#groundWarPanel [data-ground-action]").forEach(btn => btn.addEventListener("click", () => groundOperation(btn.dataset.groundAction)));
 }
 
+
+function makeAirWar() {
+  return {
+    selectedTargetId: null,
+    airSupremacy: 28,
+    enemyAirPressure: 22,
+    droneReadiness: 30,
+    airDefense: 35,
+    sorties: 0,
+    history: []
+  };
+}
+
+function ensureAirWar() {
+  if (!state.game) return null;
+  if (!state.game.airWar) state.game.airWar = makeAirWar();
+  const aw = state.game.airWar;
+  if (!Array.isArray(aw.history)) aw.history = [];
+  aw.airSupremacy = clamp(aw.airSupremacy ?? 28, 0, 160);
+  aw.enemyAirPressure = clamp(aw.enemyAirPressure ?? 22, 0, 160);
+  aw.droneReadiness = clamp(aw.droneReadiness ?? 30, 0, 160);
+  aw.airDefense = clamp(aw.airDefense ?? 35, 0, 160);
+  aw.sorties = Math.max(0, Math.round(aw.sorties || 0));
+  if (!aw.selectedTargetId || !getCountry(aw.selectedTargetId) || aw.selectedTargetId === state.game.countryId) {
+    const threat = topAiThreats(1)[0];
+    aw.selectedTargetId = threat?.id || state.countries.find(c => c.id !== state.game.countryId)?.id;
+  }
+  return aw;
+}
+
+function airTargets() {
+  ensureAiWorld();
+  return topAiThreats(14).map(ai => ({ ...ai, country: getCountry(ai.id) })).filter(item => item.country);
+}
+
+function airCost(kind) {
+  const costs = {
+    patrol: { finance: 36, industry: 6, energy: 24 },
+    precision: { finance: 78, industry: 18, energy: 42 },
+    drone: { finance: 42, industry: 12, energy: 18 },
+    intercept: { finance: 30, industry: 8, energy: 20 },
+    sead: { finance: 68, industry: 16, energy: 34 }
+  };
+  return costs[kind] || costs.patrol;
+}
+
+function canPayAir(cost) {
+  const g = state.game;
+  return g.finance >= (cost.finance || 0) && g.industry >= (cost.industry || 0) && g.energy >= (cost.energy || 0);
+}
+
+function payAir(cost) {
+  const g = state.game;
+  g.finance -= cost.finance || 0;
+  g.industry -= cost.industry || 0;
+  g.energy -= cost.energy || 0;
+}
+
+function airOperationLabel(kind) {
+  const labels = {
+    patrol: t("air.patrol", "Patrulha aérea"),
+    precision: t("air.precision", "Bombardeio de precisão"),
+    drone: t("air.drone", "Ataque de drones"),
+    intercept: t("air.intercept", "Interceptar ameaça"),
+    sead: t("air.sead", "Suprimir defesa AA")
+  };
+  return labels[kind] || kind;
+}
+
+function recordAirHistory(kind, success, target, effect, damage = 0) {
+  const aw = ensureAirWar();
+  const report = {
+    id: cryptoId(),
+    kind,
+    label: airOperationLabel(kind),
+    success,
+    targetId: target?.id || aw.selectedTargetId,
+    targetName: target?.name || "Alvo",
+    effect,
+    damage,
+    supremacy: aw.airSupremacy,
+    pressure: aw.enemyAirPressure,
+    at: `${monthNames[state.game.month % 12]}/${state.game.year}`,
+    coords: target?.coords ? jitter(target.coords, .75) : null
+  };
+  aw.history.unshift(report);
+  aw.history = aw.history.slice(0, 12);
+}
+
+function airWarOperation(kind) {
+  const g = state.game;
+  const aw = ensureAirWar();
+  const targetId = $("#airTargetSelect")?.value || aw.selectedTargetId;
+  const target = getCountry(targetId);
+  if (!target) return;
+  const ai = g.aiWorld?.find(a => a.id === targetId);
+  aw.selectedTargetId = targetId;
+  const cost = airCost(kind);
+  if (!canPayAir(cost)) {
+    g.events.push(eventText("warn", currentLang === "en-US" ? "Insufficient resources for air operation." : currentLang === "es-ES" ? "Recursos insuficientes para operación aérea." : "Recursos insuficientes para operação aérea."));
+    saveGame(); renderGame(); return;
+  }
+  payAir(cost);
+
+  if (kind === "patrol") {
+    const gain = randomInt(7, 14) + Math.round(g.airPower / 35) + Math.round(regionalRadarCover(g.selectedRegionId) / 30);
+    aw.airSupremacy = clamp(aw.airSupremacy + gain, 0, 160);
+    aw.enemyAirPressure = clamp(aw.enemyAirPressure - randomInt(3, 8), 0, 160);
+    aw.sorties += 1;
+    g.readiness = clamp(g.readiness + 1, 0, 100);
+    recordAirHistory(kind, true, target, currentLang === "en-US" ? "Patrol improved air control." : currentLang === "es-ES" ? "La patrulla mejoró el control aéreo." : "Patrulha melhorou controle aéreo.", gain);
+    g.events.push(eventText("sistema", currentLang === "en-US" ? "Air patrol increased air superiority." : currentLang === "es-ES" ? "Patrulla aérea aumentó superioridad aérea." : "Patrulha aérea aumentou superioridade aérea."));
+    saveGame(); renderGame(); activatePanel("panelAir"); return;
+  }
+
+  if (kind === "intercept") {
+    const reduction = randomInt(8, 16) + Math.round(g.airPower / 45) + Math.round(aw.airDefense / 35);
+    aw.enemyAirPressure = clamp(aw.enemyAirPressure - reduction, 0, 160);
+    aw.airDefense = clamp(aw.airDefense + randomInt(3, 7), 0, 160);
+    aw.sorties += 1;
+    recordAirHistory(kind, true, target, currentLang === "en-US" ? "Enemy air threat intercepted." : currentLang === "es-ES" ? "Amenaza aérea enemiga interceptada." : "Ameaça aérea inimiga interceptada.", reduction);
+    g.events.push(eventText("sistema", currentLang === "en-US" ? "Interceptors reduced enemy air pressure." : currentLang === "es-ES" ? "Interceptores redujeron presión aérea enemiga." : "Interceptadores reduziram pressão aérea inimiga."));
+    saveGame(); renderGame(); activatePanel("panelAir"); return;
+  }
+
+  const defense = (target.airframes || 50) / 8 + (target.cyber || 40) / 3 + (ai?.readiness || 45) / 2 + aw.enemyAirPressure / 2 + Math.random() * 40;
+  const attackBase = kind === "drone" ? (g.cyber + g.intel + aw.droneReadiness) / 1.7 : g.airPower + g.missilePower / 2 + aw.airSupremacy / 2 + g.readiness / 3;
+  const attack = attackBase + Math.random() * 55;
+  const success = attack >= defense;
+  let damage = 0;
+  let effect = "";
+
+  if (success && ai) {
+    if (kind === "precision") {
+      damage = randomInt(8, 18) + Math.round(aw.airSupremacy / 22);
+      ai.power = clamp(ai.power - damage, 1, 230);
+      ai.economy = clamp(ai.economy - randomInt(3, 9), 1, 230);
+      ai.readiness = clamp(ai.readiness - randomInt(4, 10), 1, 100);
+      effect = currentLang === "en-US" ? "Precision strike damaged enemy infrastructure." : currentLang === "es-ES" ? "Bombardeo dañó infraestructura enemiga." : "Bombardeio danificou infraestrutura inimiga.";
+      g.worldTension = clamp(g.worldTension + 5, 0, 100);
+    }
+    if (kind === "drone") {
+      damage = randomInt(4, 11) + Math.round(g.intel / 40);
+      ai.readiness = clamp(ai.readiness - damage, 1, 100);
+      ai.hostility = clamp(ai.hostility + randomInt(1, 4), 0, 100);
+      aw.droneReadiness = clamp(aw.droneReadiness + randomInt(2, 6), 0, 160);
+      effect = currentLang === "en-US" ? "Drone strike disrupted enemy readiness." : currentLang === "es-ES" ? "Ataque de drones desorganizó preparación enemiga." : "Ataque de drones desorganizou prontidão inimiga.";
+      g.worldTension = clamp(g.worldTension + 3, 0, 100);
+    }
+    if (kind === "sead") {
+      damage = randomInt(5, 14) + Math.round(aw.airSupremacy / 25);
+      ai.readiness = clamp(ai.readiness - randomInt(3, 8), 1, 100);
+      aw.airSupremacy = clamp(aw.airSupremacy + randomInt(4, 9), 0, 160);
+      const ground = ensureGroundWar();
+      ground.fronts.filter(f => f.targetId === target.id).forEach(f => {
+        f.resistance = clamp(f.resistance - randomInt(4, 10), 0, 100);
+        f.supply = clamp(f.supply + randomInt(1, 5), 0, 100);
+      });
+      effect = currentLang === "en-US" ? "Air defenses suppressed." : currentLang === "es-ES" ? "Defensas aéreas suprimidas." : "Defesas aéreas suprimidas.";
+      g.worldTension = clamp(g.worldTension + 4, 0, 100);
+    }
+    aw.airSupremacy = clamp(aw.airSupremacy + randomInt(1, 5), 0, 160);
+    aw.enemyAirPressure = clamp(aw.enemyAirPressure - randomInt(1, 5), 0, 160);
+    g.intel = clamp(g.intel + 1, 0, 160);
+  } else {
+    damage = randomInt(1, 5);
+    effect = currentLang === "en-US" ? "Air operation failed under enemy defense." : currentLang === "es-ES" ? "Operación aérea falló bajo defensa enemiga." : "Operação aérea falhou sob defesa inimiga.";
+    aw.enemyAirPressure = clamp(aw.enemyAirPressure + randomInt(2, 7), 0, 160);
+    g.readiness = clamp(g.readiness - randomInt(1, 4), 0, 100);
+  }
+
+  aw.sorties += 1;
+  applyOperationalWear(kind === "drone" ? "recon" : "airstrike", success);
+  recordAirHistory(kind, success, target, effect, damage);
+  g.events.push(eventText(success ? "sistema" : "warn", `${target.name}: ${effect}`));
+  saveGame();
+  renderGame();
+  activatePanel("panelAir");
+}
+
+function progressAirWar() {
+  const aw = ensureAirWar();
+  if (!aw) return;
+  const g = state.game;
+  const strongest = topAiThreats(1)[0];
+  const pressureGain = Math.max(0, Math.round((g.worldTension - 42) / 28)) + (strongest?.hostility > 72 ? 2 : 0);
+  aw.enemyAirPressure = clamp(aw.enemyAirPressure + pressureGain - Math.round(aw.airDefense / 80) - Math.round(aw.airSupremacy / 95), 0, 160);
+  aw.airSupremacy = clamp(aw.airSupremacy - (aw.enemyAirPressure > 75 ? 2 : 1) + Math.round(g.airPower / 180), 0, 160);
+  if (aw.enemyAirPressure > 80 && Math.random() < .22) {
+    const base = g.bases.find(b => b.condition > 20);
+    if (base) {
+      const loss = randomInt(4, 12);
+      base.condition = clamp(base.condition - loss, 0, 100);
+      g.events.push(eventText("danger", currentLang === "en-US" ? `Enemy air pressure damaged ${base.name}.` : currentLang === "es-ES" ? `Presión aérea enemiga dañó ${base.name}.` : `Pressão aérea inimiga danificou ${base.name}.`));
+    }
+  }
+}
+
+function airBar(label, value) {
+  return `<div class="air-bar"><div><span>${label}</span><strong>${value}</strong></div><i><b style="width:${clamp(value,0,100)}%"></b></i></div>`;
+}
+
+function renderAirWar() {
+  const panel = $("#airWarPanel");
+  if (!panel || !state.game) return;
+  const aw = ensureAirWar();
+  const targets = airTargets();
+  const last = aw.history[0];
+  panel.innerHTML = `
+    <div class="air-target-row">
+      <label class="field-label">${t("air.target", "Alvo aéreo")}</label>
+      <select id="airTargetSelect">
+        ${targets.map(tg => `<option value="${tg.id}" ${tg.id === aw.selectedTargetId ? "selected" : ""}>${tg.country.flag || ""} ${tg.country.name} · ${tg.posture} · ${tg.hostility}</option>`).join("")}
+      </select>
+    </div>
+    <div class="air-dashboard">
+      ${airBar(t("air.supremacy", "Superioridade aérea"), aw.airSupremacy)}
+      ${airBar(t("air.enemyPressure", "Pressão aérea inimiga"), aw.enemyAirPressure)}
+      ${airBar(t("air.droneReadiness", "Prontidão de drones"), aw.droneReadiness)}
+      ${airBar(t("air.airDefense", "Defesa aérea"), aw.airDefense)}
+    </div>
+    <div class="air-last">
+      <small>${t("air.sorties", "Sortidas")}: ${aw.sorties}</small>
+      <strong>${last ? `${last.label} · ${last.targetName}` : t("air.noHistory", "Nenhuma operação aérea realizada.")}</strong>
+      ${last ? `<span>${last.success ? t("air.success","sucesso") : t("air.fail","falha")} · ${last.effect}</span>` : ""}
+    </div>
+    <div class="air-actions">
+      <button data-air-action="patrol"><b>🛩️ ${t("air.patrol", "Patrulha aérea")}</b><span>${t("air.cost","Custo")}: 36/6/24</span></button>
+      <button data-air-action="precision"><b>🎯 ${t("air.precision", "Bombardeio de precisão")}</b><span>${t("air.cost","Custo")}: 78/18/42</span></button>
+      <button data-air-action="drone"><b>🛸 ${t("air.drone", "Ataque de drones")}</b><span>${t("air.cost","Custo")}: 42/12/18</span></button>
+      <button data-air-action="intercept"><b>🛡️ ${t("air.intercept", "Interceptar ameaça")}</b><span>${t("air.cost","Custo")}: 30/8/20</span></button>
+      <button data-air-action="sead"><b>📡 ${t("air.sead", "Suprimir defesa AA")}</b><span>${t("air.cost","Custo")}: 68/16/34</span></button>
+    </div>
+    <section class="air-history">
+      <h3>${t("air.history", "Histórico aéreo")}</h3>
+      ${aw.history.length ? aw.history.slice(0,7).map(item => `<article class="${item.success ? "success" : "fail"}"><strong>${item.label}</strong><span>${item.targetName} · ${item.at} · ${item.success ? t("air.success","sucesso") : t("air.fail","falha")}</span><small>${item.effect}</small></article>`).join("") : `<p class="muted">${t("air.noHistory", "Nenhuma operação aérea realizada.")}</p>`}
+    </section>`;
+  $("#airTargetSelect")?.addEventListener("change", event => {
+    aw.selectedTargetId = event.target.value;
+    saveGame();
+    renderAirWar();
+  });
+  $$("#airWarPanel [data-air-action]").forEach(btn => btn.addEventListener("click", () => airWarOperation(btn.dataset.airAction)));
+}
+
 function makeInitialGame(countryId) {
   const country = state.countries.find(c => c.id === countryId) || state.countries[0];
   const regions = makeRegions(country);
@@ -1347,6 +1592,7 @@ function renderGame() {
   ensureWarEconomy();
   ensureCyberOps();
   ensureGroundWar();
+  ensureAirWar();
   renderSummary();
   renderCommanderGuide();
   renderRegionSelect();
@@ -1359,6 +1605,7 @@ function renderGame() {
   renderWarEconomy();
   renderCyberOps();
   renderGroundWar();
+  renderAirWar();
   renderGlobalWar();
   renderAiWorld();
   renderTargetSelect();
@@ -1425,6 +1672,8 @@ function commanderRecommendation() {
   const cyberOps = ensureCyberOps();
   const mainThreat = topAiThreats(1)[0];
   if (mainThreat && mainThreat.hostility > 70 && cyberOps.spyNetwork < 45 && g.month > 1) return { title: t("rec.cyber", "Executar inteligência"), text: t("rec.cyberText", "Rivais hostis estão crescendo."), action: "cyber", panel: "panelCyber" };
+  const air = ensureAirWar();
+  if (g.units.length && g.month > 2 && air.airSupremacy < 55) return { title: t("rec.air", "Buscar superioridade aérea"), text: t("rec.airText", "Domine o céu antes de escalar ataques maiores."), action: "air", panel: "panelAir" };
   const ground = ensureGroundWar();
   if (g.units.length && ground.fronts.filter(f => f.status !== "withdrawn").length === 0 && g.month > 2) return { title: t("rec.ground", "Abrir frente terrestre"), text: t("rec.groundText", "Você já tem tropas."), action: "ground", panel: "panelGround" };
   if ((g.globalWar?.nuclearRisk || 0) > 55) return { title: t("rec.world", "Reduzir crise mundial"), text: t("rec.worldText", "O risco nuclear está alto."), action: "world", panel: "panelGlobal" };
@@ -1445,7 +1694,7 @@ function renderCommanderGuide() {
   const queue = g.construction.length + g.production.length;
   const cond = forceCondition();
   const flag = flagHtml(c, "hq-flag-img");
-  const mainActionLabel = rec.action === "repair" ? t("guide.repair", "Reparar") : rec.action === "produce" ? t("guide.produce", "Produzir") : rec.action === "month" ? t("nextMonth", "Avançar mês") : rec.action === "economy" ? t("guide.economy", "Economia") : rec.action === "cyber" ? t("guide.cyber", "Cyber") : rec.action === "ground" ? t("guide.ground", "Frente") : rec.action === "world" ? t("guide.world", "Mundo") : rec.action === "ai" ? t("guide.ai", "IA") : rec.action === "ops" ? t("guide.attack", "Atacar") : t("guide.build", "Construir");
+  const mainActionLabel = rec.action === "repair" ? t("guide.repair", "Reparar") : rec.action === "produce" ? t("guide.produce", "Produzir") : rec.action === "month" ? t("nextMonth", "Avançar mês") : rec.action === "economy" ? t("guide.economy", "Economia") : rec.action === "cyber" ? t("guide.cyber", "Cyber") : rec.action === "air" ? t("guide.air", "Aérea") : rec.action === "ground" ? t("guide.ground", "Frente") : rec.action === "world" ? t("guide.world", "Mundo") : rec.action === "ai" ? t("guide.ai", "IA") : rec.action === "ops" ? t("guide.attack", "Atacar") : t("guide.build", "Construir");
   box.innerHTML = `
     <article class="mobile-hq-card">
       <div class="hq-flag-block">${flag}</div>
@@ -1487,6 +1736,7 @@ function renderCommanderGuide() {
       <button id="quickProduceBtn"><b>🪖 ${t("guide.produce", "Produzir")}</b><span>${t("guide.produceSub", "melhor unidade")}</span></button>
       <button id="quickRepairBtn"><b>🛠️ ${t("guide.repair", "Reparar")}</b><span>${t("guide.repairSub", "base crítica")}</span></button>
       <button id="quickOpsBtn"><b>⚔️ ${t("guide.attack", "Atacar")}</b><span>${t("guide.attackSub", "abrir operações")}</span></button>
+      <button id="quickAirBtn"><b>✈️ ${t("guide.air", "Aérea")}</b><span>${t("guide.airSub", "dominar o céu")}</span></button>
       <button id="quickGroundBtn"><b>🗺️ ${t("guide.ground", "Frente")}</b><span>${t("guide.groundSub", "ocupar território")}</span></button>
       <button id="quickCyberBtn"><b>🕵️ ${t("guide.cyber", "Cyber")}</b><span>${t("guide.cyberSub", "espionar rivais")}</span></button>
       <button id="quickEconomyBtn"><b>🏭 ${t("guide.economy", "Economia")}</b><span>${t("guide.economySub", "mobilização e inflação")}</span></button>
@@ -1498,6 +1748,7 @@ function renderCommanderGuide() {
   $("#quickProduceBtn")?.addEventListener("click", quickProduceRecommended);
   $("#quickRepairBtn")?.addEventListener("click", quickRepairPriority);
   $("#quickOpsBtn")?.addEventListener("click", () => activatePanel("panelOps"));
+  $("#quickAirBtn")?.addEventListener("click", () => activatePanel("panelAir"));
   $("#quickGroundBtn")?.addEventListener("click", () => activatePanel("panelGround"));
   $("#quickCyberBtn")?.addEventListener("click", () => activatePanel("panelCyber"));
   $("#quickEconomyBtn")?.addEventListener("click", () => activatePanel("panelEconomy"));
@@ -1514,6 +1765,7 @@ function runRecommendedAction(rec) {
   if (rec.action === "month") return advanceMonth();
   if (rec.action === "economy") return activatePanel("panelEconomy");
   if (rec.action === "cyber") return activatePanel("panelCyber");
+  if (rec.action === "air") return activatePanel("panelAir");
   if (rec.action === "ground") return activatePanel("panelGround");
   if (rec.action === "world") return activatePanel("panelGlobal");
   if (rec.action === "ai") return activatePanel("panelAiWorld");
@@ -1875,6 +2127,7 @@ function initMap() {
   state.layers.bases = L.layerGroup().addTo(state.map);
   state.layers.threats = L.layerGroup().addTo(state.map);
   state.layers.fronts = L.layerGroup().addTo(state.map);
+  state.layers.airOps = L.layerGroup().addTo(state.map);
   state.map.on("tileerror", () => {
     if (!document.querySelector(".leaflet-tile-loaded")) $("#mapFallback").hidden = false;
   });
@@ -1915,6 +2168,11 @@ function updateMapLayers() {
     const icon = L.divIcon({ className: "", html: `<div class="marker-front">⚔</div>`, iconSize: [30, 30], iconAnchor: [15, 15] });
     L.marker(front.coords || target?.coords || player.coords, { icon }).addTo(state.layers.fronts).bindPopup(`<strong>${target?.flag || ""} ${front.targetName}</strong><br>${groundStatusLabel(front.status)}<br>${t("ground.progress","Avanço")}: ${front.progress}% · ${t("ground.supply","Suprimento")}: ${front.supply}%`);
     if (target?.coords) L.polyline([player.coords, target.coords], { color: "#ffdf6b", weight: 2, opacity: .55, dashArray: "7 7" }).addTo(state.layers.fronts);
+  });
+  ensureAirWar()?.history?.slice(0,5).filter(item => item.coords).forEach(item => {
+    const target = getCountry(item.targetId);
+    const icon = L.divIcon({ className: "", html: `<div class="marker-air">✈</div>`, iconSize: [30, 30], iconAnchor: [15, 15] });
+    L.marker(item.coords, { icon }).addTo(state.layers.airOps).bindPopup(`<strong>${target?.flag || ""} ${item.targetName}</strong><br>${item.label}<br>${item.success ? t("air.success","sucesso") : t("air.fail","falha")}`);
   });
   state.map.setView(player.coords, Math.max(state.map.getZoom(), 3));
 }
@@ -2084,6 +2342,7 @@ function advanceMonth() {
   progressProduction();
   progressCyberOps();
   progressGroundWar();
+  progressAirWar();
   monthlyWorldEvent();
   progressAiWorld();
   decayRelations();

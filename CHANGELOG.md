@@ -135,3 +135,15 @@
 - Ocupação reduz poder/prontidão do rival, mas exige pacificação.
 - Sistema integrado ao HQ mobile, IA dos países, cyberwar, economia e três idiomas.
 - Save key mantida para preservar campanhas da Fase 17/18/19.
+
+
+## Fase 21 — Guerra Aérea
+
+- Novo painel Aérea/Guerra Aérea.
+- Superioridade aérea, pressão aérea inimiga, defesa aérea e prontidão de drones.
+- Ações: patrulha aérea, bombardeio de precisão, ataque de drones, interceptação e supressão AA.
+- Operações aéreas aparecem no mapa real com marcador.
+- Pressão aérea inimiga pode danificar bases se não for controlada.
+- Supressão AA reduz resistência e melhora suprimento de frentes terrestres contra o mesmo alvo.
+- Sistema integrado ao HQ mobile, guerra terrestre, IA, cyberwar, economia e três idiomas.
+- Save key mantida para preservar campanhas da Fase 17/18/19/20.
