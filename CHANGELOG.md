@@ -103,3 +103,14 @@
 - Cards de países receberam altura e espaçamento melhores para PC e mobile landscape.
 - Clique no card apenas seleciona; botão fixo confirma com segurança.
 - Mantida a save key da Fase 17 para preservar campanhas.
+
+
+## Fase 18 — Economia de Guerra
+
+- Novo painel Economia no comando.
+- Novo botão Economia no dock mobile.
+- Mobilização nacional: normal, parcial e total.
+- Inflação, moral civil, capacidade industrial, pressão energética e fluxo comercial.
+- Políticas rápidas: mobilizar, desmobilizar, emitir títulos, converter indústria militar, racionamento e campanha pública.
+- Economia agora afeta recursos mensais, estabilidade, prontidão e tensão mundial.
+- Compatível com saves da Fase 17 por manter a mesma chave de save e criar economia automaticamente em campanhas existentes.

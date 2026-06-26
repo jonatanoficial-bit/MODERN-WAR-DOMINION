@@ -445,3 +445,67 @@ main{min-height:0}.screen{display:none;height:100%;min-height:0}.screen-active{d
   }
   .nation-confirm-tray button{min-width:124px}
 }
+
+
+/* Fase 18 — Economia de Guerra */
+.mobile-action-dock{grid-template-columns:repeat(8,1fr)}
+.war-economy-panel{display:grid;gap:12px}
+.economy-hero{
+  display:grid;
+  grid-template-columns:1fr auto;
+  gap:12px;
+  align-items:center;
+  padding:14px;
+  border-radius:22px;
+  border:1px solid rgba(95,243,255,.24);
+  background:linear-gradient(135deg,rgba(95,243,255,.12),rgba(106,255,173,.08));
+  box-shadow:0 18px 42px rgba(0,0,0,.22)
+}
+.economy-hero small{display:block;color:var(--accent);font-size:.62rem;letter-spacing:.12em;text-transform:uppercase;font-weight:900}
+.economy-hero strong{display:block;font-size:1.45rem;line-height:1.0;margin:3px 0}
+.economy-hero span{display:block;color:#cfe3f4;font-size:.76rem}
+.economy-badge{border-radius:16px;padding:10px 12px;background:rgba(0,0,0,.28);border:1px solid rgba(255,255,255,.12);font-weight:900;color:#dfffee;text-align:center}
+.economy-kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.economy-kpis div,.economy-impact span{
+  border:1px solid rgba(255,255,255,.10);
+  background:rgba(7,12,20,.50);
+  border-radius:16px;
+  padding:10px;
+}
+.economy-kpis small{display:block;color:var(--muted);font-size:.62rem}
+.economy-kpis strong{font-size:1.05rem}
+.economy-bars{display:grid;gap:8px}
+.economy-bar{position:relative;min-height:38px;border-radius:15px;overflow:hidden;border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.05);padding:8px 10px;display:flex;align-items:center;justify-content:space-between}
+.economy-bar i{position:absolute;left:0;bottom:0;height:4px;background:var(--accent);opacity:.9}
+.economy-bar.warn i{background:#ffd166}
+.economy-bar.danger i{background:#ff6b6b}
+.economy-bar.good i{background:#6affad}
+.economy-bar span,.economy-bar b{position:relative;z-index:1}
+.economy-impact{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.economy-impact span{text-align:center;font-weight:900}
+.economy-actions{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.economy-actions button{
+  min-height:56px;
+  border-radius:18px;
+  text-align:left;
+  padding:12px;
+  border:1px solid rgba(122,190,246,.18);
+  background:rgba(7,12,20,.54);
+  color:var(--text);
+  font-weight:900;
+}
+.economy-actions button:active{transform:scale(.98)}
+.economy-tip{border:1px solid rgba(255,209,102,.24);background:rgba(255,209,102,.08);border-radius:16px;padding:10px;color:#ffe7a6;font-size:.72rem;line-height:1.35}
+@media (max-height:560px){
+  .mobile-action-dock{grid-template-columns:repeat(8,1fr)}
+  .economy-hero{grid-template-columns:1fr;padding:10px;border-radius:18px}
+  .economy-hero strong{font-size:1.1rem}
+  .economy-kpis{grid-template-columns:repeat(3,1fr);gap:6px}
+  .economy-kpis div{padding:7px;border-radius:13px}
+  .economy-kpis small{font-size:.55rem}
+  .economy-kpis strong{font-size:.82rem}
+  .economy-impact{grid-template-columns:repeat(4,1fr);gap:6px}
+  .economy-impact span{padding:7px;font-size:.7rem}
+  .economy-actions{grid-template-columns:repeat(3,1fr);gap:6px}
+  .economy-actions button{min-height:44px;padding:8px;font-size:.62rem;border-radius:13px}
+}

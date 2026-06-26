@@ -1,5 +1,5 @@
-const VERSION = "1.7.1";
-const PHASE = "Fase 17.1 — hotfix seleção de país mobile";
+const VERSION = "1.8.0";
+const PHASE = "Fase 18 — economia de guerra";
 const SAVE_KEY = "MWD_SAVE_F17";
 
 const $ = (sel, root = document) => root.querySelector(sel);
@@ -457,6 +457,199 @@ function bindTutorialMissionButtons() {
   $$(".tutorial-action").forEach(btn => btn.addEventListener("click", () => runTutorialAction(btn.dataset.tutorialAction)));
 }
 
+
+function makeWarEconomy(country) {
+  return {
+    mobilization: "normal",
+    warBonds: 0,
+    inflation: 6 + Math.max(0, Math.round((60 - country.stability) / 12)),
+    civilianMorale: clamp(country.publicSupport || 60, 25, 95),
+    industrialCapacity: clamp(country.industry || 60, 20, 120),
+    energyStress: clamp(30 + Math.round((70 - (country.oil || 50)) / 2), 0, 95),
+    tradeFlow: clamp(55 + Math.round((country.diplomacy || 50) / 3), 20, 100),
+    rationing: false,
+    propaganda: 0,
+    lastPolicy: currentLang === "en-US" ? "Peacetime economy" : currentLang === "es-ES" ? "Economía de paz" : "Economia de paz"
+  };
+}
+
+function ensureWarEconomy() {
+  if (!state.game) return null;
+  const c = getPlayerCountry();
+  if (!state.game.warEconomy) state.game.warEconomy = makeWarEconomy(c);
+  const e = state.game.warEconomy;
+  e.mobilization ||= "normal";
+  e.warBonds = Number(e.warBonds || 0);
+  e.inflation = clamp(e.inflation ?? 6, 0, 150);
+  e.civilianMorale = clamp(e.civilianMorale ?? c.publicSupport ?? 60, 0, 100);
+  e.industrialCapacity = clamp(e.industrialCapacity ?? c.industry ?? 60, 0, 150);
+  e.energyStress = clamp(e.energyStress ?? 30, 0, 100);
+  e.tradeFlow = clamp(e.tradeFlow ?? 65, 0, 120);
+  e.rationing = !!e.rationing;
+  e.propaganda = clamp(e.propaganda ?? 0, 0, 100);
+  return e;
+}
+
+function mobilizationLevel(value) {
+  return value === "total" ? 2 : value === "partial" ? 1 : 0;
+}
+
+function mobilizationLabel(value) {
+  if (value === "total") return t("economy.total", "Total");
+  if (value === "partial") return t("economy.partial", "Parcial");
+  return t("economy.normal", "Normal");
+}
+
+function economyMonthlyModifiers() {
+  const e = ensureWarEconomy();
+  const level = mobilizationLevel(e.mobilization);
+  return {
+    finance: Math.round((e.tradeFlow - 55) / 6 - e.inflation / 7 - e.warBonds * 2),
+    industry: Math.round(level * 18 + (e.industrialCapacity - 55) / 3 - e.energyStress / 8),
+    energy: Math.round((e.rationing ? 18 : 0) - e.energyStress / 5 - level * 7),
+    stability: Math.round((e.civilianMorale - 55) / 18 - e.inflation / 18 - level),
+    readiness: Math.round(level * 2 + (e.propaganda > 10 ? 1 : 0)),
+    tension: level
+  };
+}
+
+function progressWarEconomy(upkeep) {
+  const g = state.game;
+  const e = ensureWarEconomy();
+  const level = mobilizationLevel(e.mobilization);
+  e.inflation = clamp(e.inflation + level + Math.round((upkeep.finance || 0) / 80) + (e.warBonds > 0 ? 1 : 0) - (e.rationing ? 1 : 0), 0, 150);
+  e.energyStress = clamp(e.energyStress + level * 2 + Math.round((upkeep.energy || 0) / 25) - (e.rationing ? 3 : 0), 0, 100);
+  e.civilianMorale = clamp(e.civilianMorale - level - Math.round(e.inflation / 35) - (e.rationing ? 1 : 0) + (e.propaganda > 0 ? 2 : 0), 0, 100);
+  e.tradeFlow = clamp(e.tradeFlow - Math.round(g.worldTension / 45) - (g.globalWar?.sanctions?.length || 0), 0, 120);
+  e.industrialCapacity = clamp(e.industrialCapacity + level + (g.bases.length > 3 ? 1 : 0) - Math.round(e.energyStress / 55), 0, 150);
+  e.propaganda = clamp(e.propaganda - 6, 0, 100);
+  const mods = economyMonthlyModifiers();
+  g.stability = clamp(g.stability + mods.stability, 0, 100);
+  g.readiness = clamp(g.readiness + mods.readiness, 0, 120);
+  g.worldTension = clamp(g.worldTension + mods.tension, 0, 100);
+  return mods;
+}
+
+function warEconomyAction(kind) {
+  const g = state.game;
+  const e = ensureWarEconomy();
+  if (!g || !e) return;
+  if (kind === "mobilize") {
+    if (e.mobilization === "normal") e.mobilization = "partial";
+    else if (e.mobilization === "partial") e.mobilization = "total";
+    else { g.events.push(eventText("warn", currentLang === "en-US" ? "The country is already fully mobilized." : currentLang === "es-ES" ? "El país ya está totalmente movilizado." : "O país já está em mobilização total.")); renderGame(); return; }
+    g.finance = Math.max(0, g.finance - 35);
+    g.industry += 90;
+    g.readiness = clamp(g.readiness + 4, 0, 120);
+    g.worldTension = clamp(g.worldTension + 2, 0, 100);
+    e.inflation = clamp(e.inflation + 3, 0, 150);
+    e.civilianMorale = clamp(e.civilianMorale - 3, 0, 100);
+    e.lastPolicy = t("economy.mobilize", "Mobilizar país");
+  }
+  if (kind === "demobilize") {
+    if (e.mobilization === "total") e.mobilization = "partial";
+    else if (e.mobilization === "partial") e.mobilization = "normal";
+    else { g.events.push(eventText("warn", currentLang === "en-US" ? "Mobilization is already normal." : currentLang === "es-ES" ? "La movilización ya está normal." : "A mobilização já está normal.")); renderGame(); return; }
+    g.stability = clamp(g.stability + 5, 0, 100);
+    g.readiness = clamp(g.readiness - 4, 0, 120);
+    e.civilianMorale = clamp(e.civilianMorale + 5, 0, 100);
+    e.inflation = clamp(e.inflation - 2, 0, 150);
+    e.lastPolicy = t("economy.demobilize", "Reduzir mobilização");
+  }
+  if (kind === "bonds") {
+    g.finance += 210;
+    e.warBonds += 1;
+    e.inflation = clamp(e.inflation + 4, 0, 150);
+    e.civilianMorale = clamp(e.civilianMorale - 1, 0, 100);
+    e.lastPolicy = t("economy.bonds", "Emitir títulos");
+  }
+  if (kind === "shift") {
+    if (g.energy < 35) { g.events.push(eventText("warn", currentLang === "en-US" ? "Not enough energy for industrial conversion." : currentLang === "es-ES" ? "Energía insuficiente para conversión industrial." : "Energia insuficiente para conversão industrial.")); renderGame(); return; }
+    g.energy -= 35;
+    g.industry += 150;
+    e.industrialCapacity = clamp(e.industrialCapacity + 9, 0, 150);
+    e.energyStress = clamp(e.energyStress + 6, 0, 100);
+    e.inflation = clamp(e.inflation + 2, 0, 150);
+    e.lastPolicy = t("economy.shift", "Indústria militar");
+  }
+  if (kind === "ration") {
+    e.rationing = !e.rationing;
+    if (e.rationing) {
+      g.energy += 65;
+      g.food += 80;
+      e.civilianMorale = clamp(e.civilianMorale - 4, 0, 100);
+    } else {
+      e.civilianMorale = clamp(e.civilianMorale + 3, 0, 100);
+    }
+    e.lastPolicy = `${t("economy.ration", "Racionamento")}: ${e.rationing ? t("economy.rationOn", "Ativo") : t("economy.rationOff", "Inativo")}`;
+  }
+  if (kind === "propaganda") {
+    if (g.finance < 35) { g.events.push(eventText("warn", currentLang === "en-US" ? "Not enough funds for public campaign." : currentLang === "es-ES" ? "Fondos insuficientes para campaña pública." : "Finanças insuficientes para campanha pública.")); renderGame(); return; }
+    g.finance -= 35;
+    g.stability = clamp(g.stability + 3, 0, 100);
+    e.civilianMorale = clamp(e.civilianMorale + 7, 0, 100);
+    e.propaganda = clamp(e.propaganda + 24, 0, 100);
+    e.lastPolicy = t("economy.propaganda", "Campanha pública");
+  }
+  g.events.push(eventText("sistema", `${t("economy.title", "Economia de Guerra")}: ${e.lastPolicy}.`));
+  saveGame();
+  renderGame();
+}
+
+function renderWarEconomy() {
+  const panel = $("#warEconomyPanel");
+  if (!panel || !state.game) return;
+  const e = ensureWarEconomy();
+  const mods = economyMonthlyModifiers();
+  const g = state.game;
+  panel.innerHTML = `
+    <section class="economy-hero">
+      <div>
+        <small>${t("economy.status", "Estado econômico")}</small>
+        <strong>${mobilizationLabel(e.mobilization)}</strong>
+        <span>${e.lastPolicy || ""}</span>
+      </div>
+      <div class="economy-badge">${t("economy.gdp", "PIB de guerra")} ${Math.round((g.finance + g.industry + g.energy) / 12)}</div>
+    </section>
+    <div class="economy-kpis">
+      <div><small>${t("economy.inflation", "Inflação")}</small><strong>${e.inflation}%</strong></div>
+      <div><small>${t("economy.morale", "Moral civil")}</small><strong>${e.civilianMorale}%</strong></div>
+      <div><small>${t("economy.industry", "Capacidade industrial")}</small><strong>${e.industrialCapacity}%</strong></div>
+      <div><small>${t("economy.energyStress", "Pressão energética")}</small><strong>${e.energyStress}%</strong></div>
+      <div><small>${t("economy.trade", "Fluxo comercial")}</small><strong>${e.tradeFlow}%</strong></div>
+      <div><small>${t("economy.debt", "Títulos de guerra")}</small><strong>${e.warBonds}</strong></div>
+    </div>
+    <div class="economy-bars">
+      ${economyBar(t("economy.inflation", "Inflação"), e.inflation, "danger")}
+      ${economyBar(t("economy.morale", "Moral civil"), e.civilianMorale, "good")}
+      ${economyBar(t("economy.energyStress", "Pressão energética"), e.energyStress, "warn")}
+    </div>
+    <h3>${t("economy.monthly", "Impacto mensal")}</h3>
+    <div class="economy-impact">
+      <span>💵 ${mods.finance >= 0 ? "+" : ""}${mods.finance}</span>
+      <span>🏭 ${mods.industry >= 0 ? "+" : ""}${mods.industry}</span>
+      <span>⚡ ${mods.energy >= 0 ? "+" : ""}${mods.energy}</span>
+      <span>🛡️ ${mods.stability >= 0 ? "+" : ""}${mods.stability}</span>
+    </div>
+    <h3>${t("economy.policy", "Políticas rápidas")}</h3>
+    <div class="economy-actions">
+      <button data-economy-action="mobilize">🪖 ${t("economy.mobilize", "Mobilizar país")}</button>
+      <button data-economy-action="demobilize">🕊️ ${t("economy.demobilize", "Reduzir mobilização")}</button>
+      <button data-economy-action="bonds">💵 ${t("economy.bonds", "Emitir títulos")}</button>
+      <button data-economy-action="shift">🏭 ${t("economy.shift", "Indústria militar")}</button>
+      <button data-economy-action="ration">🍞 ${t("economy.ration", "Racionamento")} · ${e.rationing ? t("economy.rationOn", "Ativo") : t("economy.rationOff", "Inativo")}</button>
+      <button data-economy-action="propaganda">📣 ${t("economy.propaganda", "Campanha pública")}</button>
+    </div>
+    <p class="economy-tip">${t("economy.tip", "Dica: mobilização aumenta produção, mas inflação e moral civil podem destruir a estabilidade.")}</p>
+  `;
+  $$("#warEconomyPanel [data-economy-action]").forEach(btn => btn.addEventListener("click", () => warEconomyAction(btn.dataset.economyAction)));
+}
+
+function economyBar(label, value, kind) {
+  const pct = clamp(value, 0, 100);
+  return `<div class="economy-bar ${kind}"><span>${label}</span><b>${value}%</b><i style="width:${pct}%"></i></div>`;
+}
+
 function makeInitialGame(countryId) {
   const country = state.countries.find(c => c.id === countryId) || state.countries[0];
   const regions = makeRegions(country);
@@ -494,6 +687,7 @@ function makeInitialGame(countryId) {
     monthlyLosses: 0,
     globalWar: makeGlobalWar(country),
     aiWorld: makeAiWorld(country),
+    warEconomy: makeWarEconomy(country),
     tutorial: makeTutorialState(),
     relations: seedRelations(country),
     events: [eventText("sistema", `Campanha iniciada com ${country.name}. Agora sua prioridade é ocupar slots regionais, produzir forças e sustentar a manutenção militar.`)],
@@ -637,6 +831,7 @@ function saveGame() {
 function renderGame() {
   ensureTutorial();
   evaluateTutorialMissions();
+  ensureWarEconomy();
   renderSummary();
   renderCommanderGuide();
   renderRegionSelect();
@@ -646,6 +841,7 @@ function renderGame() {
   renderUnitList();
   renderArsenal();
   renderMaintenance();
+  renderWarEconomy();
   renderGlobalWar();
   renderAiWorld();
   renderTargetSelect();
@@ -676,6 +872,7 @@ function renderSummary() {
       <div class="metric"><small>${currentLang === "en-US" ? "Power" : currentLang === "es-ES" ? "Poder" : "Poder"}</small><strong>${powerIndex()}</strong></div>
       <div class="metric"><small>${currentLang === "en-US" ? "Force" : currentLang === "es-ES" ? "Fuerza" : "Força"}</small><strong>${cond}%</strong></div>
       <div class="metric"><small>DEFCON</small><strong>${g.globalWar?.defcon ?? 5}</strong></div>
+      <div class="metric"><small>${t("economy.inflation", "Inflação")}</small><strong>${ensureWarEconomy().inflation}%</strong></div>
     </div>`;
 }
 
@@ -706,6 +903,8 @@ function commanderRecommendation() {
   if (!canProduce && regionBases(r.id).length) return { title: t("rec.infrastructure", "Evoluir ou construir estrutura"), text: t("rec.infrastructureText", "Suba o nível de uma base ou construa a estrutura exigida pelo arsenal."), action: "build", panel: "panelBuild" };
   if (canProduce && !hasProd) return { title: t("rec.produce", "Produzir unidade"), text: t("rec.produceText", "Há unidade disponível na região ativa."), action: "produce", panel: "panelForces" };
   if (hasProd) return { title: t("rec.month", "Avançar mês"), text: t("rec.monthText", "Existe produção/obra em andamento."), action: "month", panel: "panelGuide" };
+  const econ = ensureWarEconomy();
+  if ((g.finance < 120 || g.industry < 100 || econ.inflation > 35 || econ.civilianMorale < 35) && g.month > 0) return { title: t("rec.economy", "Ajustar economia de guerra"), text: t("rec.economyText", "Recursos baixos ou inflação alta."), action: "economy", panel: "panelEconomy" };
   if ((g.globalWar?.nuclearRisk || 0) > 55) return { title: t("rec.world", "Reduzir crise mundial"), text: t("rec.worldText", "O risco nuclear está alto."), action: "world", panel: "panelGlobal" };
   const hostile = topAiThreats(1)[0];
   if (hostile && hostile.hostility > 75) return { title: currentLang === "en-US" ? "Monitor dangerous rival" : currentLang === "es-ES" ? "Monitorear rival peligroso" : "Monitorar rival perigoso", text: `${getCountry(hostile.id)?.name || "Rival"} ${currentLang === "en-US" ? "is in" : currentLang === "es-ES" ? "está en postura" : "está em postura"} ${hostile.posture}.`, action: "ai", panel: "panelAiWorld" };
@@ -724,7 +923,7 @@ function renderCommanderGuide() {
   const queue = g.construction.length + g.production.length;
   const cond = forceCondition();
   const flag = flagHtml(c, "hq-flag-img");
-  const mainActionLabel = rec.action === "repair" ? t("guide.repair", "Reparar") : rec.action === "produce" ? t("guide.produce", "Produzir") : rec.action === "month" ? t("nextMonth", "Avançar mês") : rec.action === "world" ? t("guide.world", "Mundo") : rec.action === "ai" ? t("guide.ai", "IA") : rec.action === "ops" ? t("guide.attack", "Atacar") : t("guide.build", "Construir");
+  const mainActionLabel = rec.action === "repair" ? t("guide.repair", "Reparar") : rec.action === "produce" ? t("guide.produce", "Produzir") : rec.action === "month" ? t("nextMonth", "Avançar mês") : rec.action === "economy" ? t("guide.economy", "Economia") : rec.action === "world" ? t("guide.world", "Mundo") : rec.action === "ai" ? t("guide.ai", "IA") : rec.action === "ops" ? t("guide.attack", "Atacar") : t("guide.build", "Construir");
   box.innerHTML = `
     <article class="mobile-hq-card">
       <div class="hq-flag-block">${flag}</div>
@@ -766,6 +965,7 @@ function renderCommanderGuide() {
       <button id="quickProduceBtn"><b>🪖 ${t("guide.produce", "Produzir")}</b><span>${t("guide.produceSub", "melhor unidade")}</span></button>
       <button id="quickRepairBtn"><b>🛠️ ${t("guide.repair", "Reparar")}</b><span>${t("guide.repairSub", "base crítica")}</span></button>
       <button id="quickOpsBtn"><b>⚔️ ${t("guide.attack", "Atacar")}</b><span>${t("guide.attackSub", "abrir operações")}</span></button>
+      <button id="quickEconomyBtn"><b>🏭 ${t("guide.economy", "Economia")}</b><span>${t("guide.economySub", "mobilização e inflação")}</span></button>
       <button id="quickWorldBtn"><b>🌐 ${t("guide.world", "Mundo")}</b><span>${t("guide.worldSub", "DEFCON e crise")}</span></button>
       <button id="quickAiBtn"><b>🛰️ ${t("guide.ai", "IA")}</b><span>${t("guide.aiSub", "rivais ativos")}</span></button>
     </div>`;
@@ -774,6 +974,7 @@ function renderCommanderGuide() {
   $("#quickProduceBtn")?.addEventListener("click", quickProduceRecommended);
   $("#quickRepairBtn")?.addEventListener("click", quickRepairPriority);
   $("#quickOpsBtn")?.addEventListener("click", () => activatePanel("panelOps"));
+  $("#quickEconomyBtn")?.addEventListener("click", () => activatePanel("panelEconomy"));
   $("#quickWorldBtn")?.addEventListener("click", () => activatePanel("panelGlobal"));
   $("#quickAiBtn")?.addEventListener("click", () => activatePanel("panelAiWorld"));
   bindTutorialMissionButtons();
@@ -785,6 +986,7 @@ function runRecommendedAction(rec) {
   if (rec.action === "repair") return quickRepairPriority();
   if (rec.action === "produce") return quickProduceRecommended();
   if (rec.action === "month") return advanceMonth();
+  if (rec.action === "economy") return activatePanel("panelEconomy");
   if (rec.action === "world") return activatePanel("panelGlobal");
   if (rec.action === "ai") return activatePanel("panelAiWorld");
   if (rec.action === "ops") return activatePanel("panelOps");
@@ -1331,10 +1533,11 @@ function advanceMonth() {
   g.month += 1;
   if (g.month % 12 === 0) g.year += 1;
   const upkeep = monthlyUpkeep();
-  g.finance = Math.max(0, g.finance + Math.round(45 + c.economy * 1.2 + g.stability / 3) - upkeep.finance);
-  g.industry = Math.max(0, g.industry + Math.round(24 + c.industry * .65 - g.bases.length) - upkeep.industry);
-  g.energy = Math.max(0, g.energy + Math.round(22 + c.oil * .55 - g.bases.length * 2) - upkeep.energy);
-  g.food += Math.round(15 + c.food * .4);
+  const economyMods = progressWarEconomy(upkeep);
+  g.finance = Math.max(0, g.finance + Math.round(45 + c.economy * 1.2 + g.stability / 3 + economyMods.finance) - upkeep.finance);
+  g.industry = Math.max(0, g.industry + Math.round(24 + c.industry * .65 - g.bases.length + economyMods.industry) - upkeep.industry);
+  g.energy = Math.max(0, g.energy + Math.round(22 + c.oil * .55 - g.bases.length * 2 + economyMods.energy) - upkeep.energy);
+  g.food += Math.round(15 + c.food * .4 + (ensureWarEconomy().rationing ? 12 : 0));
   applyMonthlyWear(upkeep);
   g.readiness = clamp(g.readiness + Math.round(g.logistics / 24) - Math.round(g.worldTension / 36) - (forceCondition() < 45 ? 3 : 0), 0, 100);
   g.worldTension = clamp(g.worldTension + randomInt(-3, 5), 0, 100);

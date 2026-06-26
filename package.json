@@ -1,6 +1,6 @@
 {
   "name": "modern-war-dominion",
-  "version": "1.7.1",
+  "version": "1.8.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -8,5 +8,5 @@
     "audit": "node tools/audit.mjs",
     "integrity": "node tools/integrity.mjs"
   },
-  "description": "Modern War Dominion Fase 17.1 — hotfix seleção de país"
+  "description": "Modern War Dominion Fase 18 — economia de guerra, mobilização, inflação e indústria militar"
 }

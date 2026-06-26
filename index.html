@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
   <meta name="theme-color" content="#050914">
   <meta name="description" content="Modern War Dominion — jogo mobile de dominação militar global com mapa real, bases regionais, produção de unidades e escalada de guerra mundial.">
-  <title>Modern War Dominion — Fase 17.1</title>
+  <title>Modern War Dominion — Fase 18</title>
   <link rel="manifest" href="manifest.json">
   <link rel="icon" href="assets/img/icon.svg" type="image/svg+xml">
   <link rel="preconnect" href="https://unpkg.com">
@@ -42,7 +42,7 @@
         </select>
         <button class="mini-btn" id="fullscreenBtn" data-i18n="top.fullscreen">Tela cheia</button>
         <button class="mini-btn" id="installBtn" hidden data-i18n="top.install">Instalar</button>
-        <div class="build-chip" data-i18n="phase.label">Fase 17.1 · v1.7.1</div>
+        <div class="build-chip" data-i18n="phase.label">Fase 18 · v1.8.0</div>
       </div>
     </header>
 
@@ -50,20 +50,20 @@
       <section class="screen screen-active" id="screenHome">
         <div class="home-layout">
           <article class="hero-card glass-panel">
-            <p class="eyebrow" data-i18n="home.eyebrow">Fase 17 — Tela de Batalha</p>
-            <h1 data-i18n="home.title">Agora atacar gera relatório visual de combate.</h1>
-            <p data-i18n="home.text">As operações militares deixam de ser apenas texto no alerta. Cada ataque agora cria um relatório visual com resultado, perdas e dano causado.</p>
+            <p class="eyebrow" data-i18n="home.eyebrow">Fase 18 — Economia de Guerra</p>
+            <h1 data-i18n="home.title">Agora vencer exige sustentar a nação, não apenas produzir tropas.</h1>
+            <p data-i18n="home.text">A campanha ganha economia de guerra: mobilização, inflação, moral civil, títulos de guerra, racionamento, indústria militar e pressão energética.</p>
             <div class="hero-actions">
               <button class="primary-btn" id="newGameBtn" data-i18n="home.new">Nova campanha militar</button>
               <button class="ghost-btn" id="continueBtn" disabled data-i18n="home.continue">Continuar campanha</button>
             </div>
             <div class="status-strip">
-              <span data-i18n="home.tag1">Batalha visual</span><span data-i18n="home.tag2">Relatórios</span><span data-i18n="home.tag3">Perdas</span><span data-i18n="home.tag4">Dano</span><span data-i18n="home.tag5">Mobile</span><span data-i18n="home.tag6">PT / EN / ES</span>
+              <span data-i18n="home.tag1">Economia de guerra</span><span data-i18n="home.tag2">Mobilização</span><span data-i18n="home.tag3">Inflação</span><span data-i18n="home.tag4">Moral civil</span><span data-i18n="home.tag5">Indústria</span><span data-i18n="home.tag6">Mobile</span>
             </div>
           </article>
           <aside class="glass-panel doctrine-panel">
-            <h2 data-i18n="home.sideTitle">Combate mais claro</h2>
-            <p data-i18n="home.sideText">Depois de atacar, o jogo abre a tela Batalha com o resultado. Isso deixa o gameplay mais visível e menos dependente de textos pequenos.</p>
+            <h2 data-i18n="home.sideTitle">Profundidade estratégica</h2>
+            <p data-i18n="home.sideText">A guerra longa agora cobra preço: manter tropas, expandir indústria e financiar operações pode aumentar inflação, derrubar moral civil e reduzir estabilidade.</p>
             <div class="doctrine-grid">
               <span>🇧🇷 PT-BR</span><span>🇺🇸 EN-US</span><span>🇪🇸 ES-ES</span><span>🏳️ Flags</span><span>📱 Mobile</span><span>🌍 Global</span>
             </div>
@@ -116,6 +116,7 @@
               <button class="side-tab" data-panel="panelForces" data-i18n="tab.production">Produção</button>
               <button class="side-tab" data-panel="panelArsenal" data-i18n="tab.arsenal">Arsenal</button>
               <button class="side-tab" data-panel="panelMaintenance" data-i18n="tab.maintenance">Manut.</button>
+              <button class="side-tab" data-panel="panelEconomy" data-i18n="tab.economy">Economia</button>
               <button class="side-tab" data-panel="panelGlobal" data-i18n="tab.world">Mundo</button>
               <button class="side-tab" data-panel="panelAiWorld" data-i18n="tab.ai">IA</button>
               <button class="side-tab" data-panel="panelOps" data-i18n="tab.attack">Atacar</button>
@@ -168,6 +169,13 @@
               <div id="maintenanceList" class="maintenance-list"></div>
             </div>
 
+
+            <div class="side-panel" id="panelEconomy">
+              <h2 data-i18n="economy.title">Economia de Guerra</h2>
+              <p class="muted" data-i18n="economy.text">Controle mobilização nacional, indústria, inflação, moral civil, títulos de guerra, racionamento e pressão de energia.</p>
+              <div id="warEconomyPanel" class="war-economy-panel"></div>
+            </div>
+
             <div class="side-panel" id="panelGlobal">
               <h2 data-i18n="global.title">Terceira Guerra Mundial</h2>
               <p class="muted" data-i18n="global.text">Gerencie blocos, sanções, ultimatos, invasões e a crise nuclear. Cada decisão pode proteger sua nação ou empurrar o mundo para guerra total.</p>
@@ -217,6 +225,7 @@
             <button class="dock-btn" data-panel="panelForces">🪖<span data-i18n="dock.produce">Produzir</span></button>
             <button class="dock-btn" data-panel="panelOps">⚔️<span data-i18n="dock.attack">Atacar</span></button>
             <button class="dock-btn" data-panel="panelBattle">📊<span data-i18n="dock.battle">Batalha</span></button>
+            <button class="dock-btn" data-panel="panelEconomy">🏭<span data-i18n="dock.economy">Economia</span></button>
             <button class="dock-btn" data-panel="panelGlobal">🌐<span data-i18n="dock.world">Mundo</span></button>
             <button class="dock-btn dock-next" id="dockNextMonthBtn" type="button">⏭️<span data-i18n="dock.month">Mês</span></button>
           </nav>
@@ -225,8 +234,8 @@
 
       <section class="screen" id="screenRoadmap">
         <div class="roadmap glass-panel">
-          <p class="eyebrow" data-i18n="roadmap.eyebrow">Fase 17 — batalha visual</p>
-          <h1 data-i18n="roadmap.title">Operações militares agora geram relatório visual de combate no mobile.</h1>
+          <p class="eyebrow" data-i18n="roadmap.eyebrow">Fase 18 — economia de guerra</p>
+          <h1 data-i18n="roadmap.title">A campanha agora exige equilibrar poder militar, inflação, indústria e moral civil.</h1>
           <div class="roadmap-grid">
             <article><strong>Fase 9</strong><span>Manutenção, desgaste, baixas, reposição de lotes e custo real de guerra longa.</span></article>
             <article><strong>Fase 10</strong><span>Terceira Guerra Mundial: blocos, ultimatos, sanções, invasões e crise nuclear.</span></article>
@@ -245,4 +254,4 @@
 </body>
 </html>
 
-<!-- Fase 17.1: hotfix seleção de país e confirmação visível. -->
+<!-- Fase 18: economia de guerra, mobilização, inflação, moral civil e indústria militar. -->
