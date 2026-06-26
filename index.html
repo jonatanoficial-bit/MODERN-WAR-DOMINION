@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
   <meta name="theme-color" content="#050914">
   <meta name="description" content="Modern War Dominion — jogo mobile de dominação militar global com mapa real, bases regionais, produção de unidades e escalada de guerra mundial.">
-  <title>Modern War Dominion — Fase 27</title>
+  <title>Modern War Dominion — Fase 28</title>
   <link rel="manifest" href="manifest.json">
   <link rel="icon" href="assets/img/icon.svg" type="image/svg+xml">
   <link rel="preconnect" href="https://unpkg.com">
@@ -42,7 +42,7 @@
         </select>
         <button class="mini-btn" id="fullscreenBtn" data-i18n="top.fullscreen">Tela cheia</button>
         <button class="mini-btn" id="installBtn" hidden data-i18n="top.install">Instalar</button>
-        <div class="build-chip" data-i18n="phase.label">Fase 27 · v2.7.0</div>
+        <div class="build-chip" data-i18n="phase.label">Fase 28 · v2.8.0</div>
       </div>
     </header>
 
@@ -50,7 +50,7 @@
       <section class="screen screen-active" id="screenHome">
         <div class="home-layout">
           <article class="hero-card glass-panel">
-            <p class="eyebrow" data-i18n="home.eyebrow">Fase 27 — IA Ofensiva e Defesa Nacional</p>
+            <p class="eyebrow" data-i18n="home.eyebrow">Fase 28 — Alianças e Coalizões Globais</p>
             <h1 data-i18n="home.title">Agora a dissuasão estratégica muda o equilíbrio da guerra.</h1>
             <p data-i18n="home.text">A campanha ganha estoque de mísseis, escudo antimíssil, alerta antecipado, ataque convencional de precisão e postura de dissuasão nuclear simulada.</p>
             <div class="hero-actions">
@@ -121,6 +121,7 @@
               <button class="side-tab" data-panel="panelEconomy" data-i18n="tab.economy">Economia</button>
               <button class="side-tab" data-panel="panelCyber" data-i18n="tab.cyber">Cyber</button>
               <button class="side-tab" data-panel="panelGlobal" data-i18n="tab.world">Mundo</button>
+              <button class="side-tab" data-panel="panelCoalition" data-i18n="tab.coalition">Coalizão</button>
               <button class="side-tab" data-panel="panelAiWorld" data-i18n="tab.ai">IA</button>
               <button class="side-tab" data-panel="panelDefense" data-i18n="tab.defense">Defesa</button>
               <button class="side-tab" data-panel="panelOps" data-i18n="tab.attack">Atacar</button>
@@ -210,6 +211,12 @@
 
 
 
+            <div class="side-panel" id="panelCoalition">
+              <h2 data-i18n="coalition.title">Alianças e Coalizão</h2>
+              <p class="muted" data-i18n="coalition.text">Convide países, melhore relações, peça apoio e use defesa coletiva contra rivais hostis.</p>
+              <div id="coalitionPanel" class="coalition-panel"></div>
+            </div>
+
             <div class="side-panel" id="panelAiWorld">
               <h2 data-i18n="ai.title">IA dos países</h2>
               <p class="muted" data-i18n="ai.text">Os países crescem, mobilizam forças e reagem à tensão mundial. Use este painel para entender quem está ficando perigoso.</p>
@@ -281,6 +288,7 @@
             <button class="dock-btn" data-panel="panelForces">🪖<span data-i18n="dock.produce">Produzir</span></button>
             <button class="dock-btn" data-panel="panelMovement">🚛<span data-i18n="dock.movement">Mover</span></button>
             <button class="dock-btn" data-panel="panelLogistics">🚚<span data-i18n="dock.logistics">Logística</span></button>
+            <button class="dock-btn" data-panel="panelCoalition">🤝<span data-i18n="dock.coalition">Aliados</span></button>
             <button class="dock-btn" data-panel="panelDefense">🛡️<span data-i18n="dock.defense">Defesa</span></button>
             <button class="dock-btn" data-panel="panelOps">⚔️<span data-i18n="dock.attack">Atacar</span></button>
             <button class="dock-btn" data-panel="panelAir">✈️<span data-i18n="dock.air">Aérea</span></button>
@@ -298,8 +306,8 @@
 
       <section class="screen" id="screenRoadmap">
         <div class="roadmap glass-panel">
-          <p class="eyebrow" data-i18n="roadmap.eyebrow">Fase 27 — IA ofensiva</p>
-          <h1 data-i18n="roadmap.title">A campanha agora tem inimigos atacando no mapa, defesa nacional, interceptação e contra-ataques visuais.</h1>
+          <p class="eyebrow" data-i18n="roadmap.eyebrow">Fase 28 — alianças e coalizões</p>
+          <h1 data-i18n="roadmap.title">A campanha agora tem aliados, apoio militar/econômico, defesa coletiva e rotas aliadas no mapa.</h1>
           <div class="roadmap-grid">
             <article><strong>Fase 9</strong><span>Manutenção, desgaste, baixas, reposição de lotes e custo real de guerra longa.</span></article>
             <article><strong>Fase 10</strong><span>Terceira Guerra Mundial: blocos, ultimatos, sanções, invasões e crise nuclear.</span></article>

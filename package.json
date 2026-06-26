@@ -1,6 +1,6 @@
 {
   "name": "modern-war-dominion",
-  "version": "2.7.0",
+  "version": "2.8.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -8,5 +8,5 @@
     "audit": "node tools/audit.mjs",
     "integrity": "node tools/integrity.mjs"
   },
-  "description": "Modern War Dominion Fase 27 — IA ofensiva e defesa nacional"
+  "description": "Modern War Dominion Fase 28 — alianças, coalizões e apoio aliado"
 }

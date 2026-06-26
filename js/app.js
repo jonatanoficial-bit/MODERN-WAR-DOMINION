@@ -1,5 +1,5 @@
-const VERSION = "2.7.0";
-const PHASE = "Fase 27 — IA ofensiva e defesa nacional";
+const VERSION = "2.8.0";
+const PHASE = "Fase 28 — alianças e coalizões globais";
 const SAVE_KEY = "MWD_SAVE_F17";
 
 const $ = (sel, root = document) => root.querySelector(sel);
@@ -2851,6 +2851,274 @@ function renderDefensePanel() {
   $$("#defensePanel [data-defense-action]").forEach(btn => btn.addEventListener("click", () => defenseAction(btn.dataset.defenseAction)));
 }
 
+
+function makeCoalitionSystem() {
+  return {
+    selectedCandidateId: null,
+    allies: [],
+    support: [],
+    history: [],
+    coalitionReadiness: 0
+  };
+}
+
+function ensureCoalition() {
+  if (!state.game) return null;
+  if (!state.game.coalition) state.game.coalition = makeCoalitionSystem();
+  const co = state.game.coalition;
+  if (!Array.isArray(co.allies)) co.allies = [];
+  if (!Array.isArray(co.support)) co.support = [];
+  if (!Array.isArray(co.history)) co.history = [];
+  co.allies = co.allies.filter(id => getCountry(id) && id !== state.game.countryId);
+  co.coalitionReadiness = clamp(co.coalitionReadiness ?? 0, 0, 180);
+  const candidates = coalitionCandidates();
+  if (!co.selectedCandidateId || !getCountry(co.selectedCandidateId) || co.selectedCandidateId === state.game.countryId) {
+    co.selectedCandidateId = candidates[0]?.id || state.countries.find(c => c.id !== state.game.countryId)?.id;
+  }
+  return co;
+}
+
+function coalitionScore(country) {
+  const g = state.game;
+  const rel = g.relations?.find(r => r.id === country.id);
+  const ai = g.aiWorld?.find(a => a.id === country.id);
+  const sameBloc = country.bloc === getPlayerCountry().bloc ? 18 : 0;
+  const posture = ai?.posture === "aliado" ? 16 : ai?.posture === "hostil" ? -26 : ai?.posture === "alerta" ? -8 : 6;
+  return clamp((rel?.relation ?? 50) + sameBloc + posture - Math.round((rel?.tension ?? 30) / 5), 0, 100);
+}
+
+function coalitionCandidates(limit = 12) {
+  return state.countries
+    .filter(c => c.id !== state.game.countryId)
+    .map(c => ({ ...c, coalitionScore: coalitionScore(c), relation: state.game.relations?.find(r => r.id === c.id), ai: state.game.aiWorld?.find(a => a.id === c.id) }))
+    .sort((a,b) => b.coalitionScore - a.coalitionScore)
+    .slice(0, limit);
+}
+
+function coalitionHistory(kind, country, text, success = true) {
+  const co = ensureCoalition();
+  co.history.unshift({
+    id: cryptoId(),
+    kind,
+    countryId: country?.id,
+    countryName: country?.name || "",
+    countryFlag: country?.flag || "",
+    text,
+    success,
+    at: `${monthNames[state.game.month % 12]}/${state.game.year}`
+  });
+  co.history = co.history.slice(0, 12);
+}
+
+function selectedCoalitionCountry() {
+  const co = ensureCoalition();
+  return getCountry($("#coalitionCandidateSelect")?.value || co.selectedCandidateId);
+}
+
+function coalitionCost(kind) {
+  const costs = {
+    improve: { finance: 36, industry: 6, energy: 4 },
+    invite: { finance: 58, industry: 10, energy: 8 },
+    economic: { finance: 24, industry: 4, energy: 4 },
+    military: { finance: 42, industry: 16, energy: 14 },
+    defense: { finance: 48, industry: 12, energy: 18 }
+  };
+  return costs[kind] || costs.improve;
+}
+
+function payCoalitionCost(cost) {
+  const g = state.game;
+  if (g.finance < cost.finance || g.industry < cost.industry || g.energy < cost.energy) return false;
+  g.finance -= cost.finance;
+  g.industry -= cost.industry;
+  g.energy -= cost.energy;
+  return true;
+}
+
+function coalitionSupportLabel(kind) {
+  if (kind === "economic") return t("coalition.support.economic", "apoio econômico");
+  if (kind === "military") return t("coalition.support.military", "apoio militar");
+  if (kind === "defense") return t("coalition.support.defense", "defesa coletiva");
+  return kind;
+}
+
+function coalitionAction(kind) {
+  const g = state.game;
+  const co = ensureCoalition();
+  const c = selectedCoalitionCountry();
+  if (!c) return;
+  co.selectedCandidateId = c.id;
+  const cost = coalitionCost(kind);
+  if (!payCoalitionCost(cost)) {
+    g.events.push(eventText("warn", currentLang === "en-US" ? "Insufficient resources for coalition action." : currentLang === "es-ES" ? "Recursos insuficientes para acción de coalición." : "Recursos insuficientes para ação de coalizão."));
+    saveGame(); renderGame(); return;
+  }
+  const rel = g.relations.find(r => r.id === c.id);
+  const ai = g.aiWorld?.find(a => a.id === c.id);
+  if (kind === "improve") {
+    if (rel) { rel.relation = clamp(rel.relation + randomInt(8, 15), 0, 100); rel.tension = clamp(rel.tension - randomInt(3, 8), 0, 100); }
+    if (ai) ai.hostility = clamp(ai.hostility - randomInt(2, 6), 0, 100);
+    co.coalitionReadiness = clamp(co.coalitionReadiness + 2, 0, 180);
+    const text = `${c.name}: relação diplomática melhorada.`;
+    g.events.push(eventText("sistema", text));
+    coalitionHistory(kind, c, text, true);
+  }
+  if (kind === "invite") {
+    const chance = coalitionScore(c) + randomInt(-16, 18);
+    if (chance >= 62 && !co.allies.includes(c.id)) {
+      co.allies.push(c.id);
+      co.coalitionReadiness = clamp(co.coalitionReadiness + 12 + Math.round((c.military || 50) / 8), 0, 180);
+      if (rel) rel.relation = clamp(rel.relation + 8, 0, 100);
+      if (ai) { ai.posture = "aliado"; ai.hostility = clamp(ai.hostility - 15, 0, 100); }
+      const text = `${c.name}: entrou na coalizão.`;
+      g.events.push(eventText("sistema", text));
+      coalitionHistory(kind, c, text, true);
+    } else {
+      const text = `${c.name}: recusou aliança formal por enquanto.`;
+      g.events.push(eventText("warn", text));
+      coalitionHistory(kind, c, text, false);
+      if (rel) rel.relation = clamp(rel.relation + 2, 0, 100);
+    }
+  }
+  if (["economic", "military", "defense"].includes(kind)) {
+    const isAlly = co.allies.includes(c.id);
+    const score = coalitionScore(c) + (isAlly ? 24 : 0);
+    if (score < 58) {
+      const text = `${c.name}: apoio negado. Relação insuficiente.`;
+      g.events.push(eventText("warn", text));
+      coalitionHistory(kind, c, text, false);
+    } else {
+      const support = {
+        id: cryptoId(),
+        kind,
+        allyId: c.id,
+        allyName: c.name,
+        allyFlag: c.flag,
+        fromCoords: c.coords,
+        toCoords: getPlayerCountry().coords,
+        remaining: kind === "defense" ? 1 : 2,
+        total: kind === "defense" ? 1 : 2,
+        progress: 0,
+        value: kind === "economic" ? randomInt(55, 120) : kind === "military" ? randomInt(2, 5) : randomInt(12, 26)
+      };
+      co.support.push(support);
+      co.coalitionReadiness = clamp(co.coalitionReadiness + (kind === "defense" ? 8 : 5), 0, 180);
+      const text = `${c.name}: ${coalitionSupportLabel(kind)} aprovado.`;
+      g.events.push(eventText("sistema", text));
+      coalitionHistory(kind, c, text, true);
+    }
+  }
+  saveGame();
+  renderGame();
+  activatePanel("panelCoalition");
+}
+
+function progressCoalitionSupport() {
+  const g = state.game;
+  const co = ensureCoalition();
+  if (!co) return;
+  co.coalitionReadiness = clamp(co.coalitionReadiness + Math.round(co.allies.length / 2) - (g.worldTension > 75 ? 1 : 0), 0, 180);
+  co.support.forEach(s => {
+    s.remaining -= 1;
+    s.progress = clamp(100 - Math.round((s.remaining / Math.max(1, s.total)) * 100), 0, 100);
+  });
+  const arrived = co.support.filter(s => s.remaining <= 0);
+  co.support = co.support.filter(s => s.remaining > 0);
+  arrived.forEach(s => {
+    const ally = getCountry(s.allyId);
+    if (s.kind === "economic") {
+      g.finance += s.value;
+      g.industry += Math.round(s.value * .45);
+      g.energy += Math.round(s.value * .22);
+    }
+    if (s.kind === "military") {
+      const units = state.units.filter(u => ["Terrestre","Aéreo"].includes(u.class));
+      const u = units[randomInt(0, units.length - 1)];
+      const region = getRegion("capital");
+      const existing = g.units.find(x => x.id === u.id && x.regionId === region.id);
+      if (existing) existing.qty += s.value;
+      else g.units.push({ id: u.id, regionId: region.id, qty: s.value, veteran: 1, condition: 92, uid: cryptoId() });
+      addUnitPower(u);
+      g.readiness = clamp(g.readiness + 4, 0, 100);
+    }
+    if (s.kind === "defense") {
+      const eo = ensureEnemyOffensives();
+      const active = eo.active[0];
+      eo.defenseReadiness = clamp(eo.defenseReadiness + s.value, 0, 180);
+      if (active) active.strength = clamp(active.strength - s.value, 1, 120);
+      g.defense = clamp(g.defense + 2, 0, 220);
+    }
+    const text = `${s.allyName}: ${coalitionSupportLabel(s.kind)} chegou.`;
+    g.events.push(eventText("sistema", text));
+    coalitionHistory("arrival", ally, text, true);
+  });
+}
+
+function renderCoalitionMapOverlays(player) {
+  const co = ensureCoalition();
+  if (!state.map || !state.layers.tactical || !window.L || !co) return;
+  co.allies.slice(0, 8).forEach(id => {
+    const ally = getCountry(id);
+    if (!ally) return;
+    const icon = L.divIcon({ className: "", html: `<div class="marker-ally">${flagHtml(ally, "marker-flag-img")}</div>`, iconSize: [36,36], iconAnchor: [18,18] });
+    L.marker(ally.coords, { icon }).addTo(state.layers.tactical).bindPopup(`<strong>${ally.flag} ${ally.name}</strong><br>${t("coalition.allies","Aliados")}`);
+  });
+  co.support.forEach((s, index) => {
+    const to = s.toCoords || player.coords;
+    L.polyline([s.fromCoords, to], { color: "#6affad", weight: 4, opacity: .72, dashArray: "10 12", className: "allied-route" }).addTo(state.layers.tactical)
+      .bindPopup(`${t("coalition.route","Rota aliada")} · ${s.allyName}`);
+    const ratio = clamp((s.total - s.remaining) / Math.max(1, s.total), .12, .88);
+    const point = interpolateCoords(s.fromCoords, to, ratio);
+    const icon = L.divIcon({ className: "", html: `<div class="marker-allied-support">${s.kind === "economic" ? "💰" : s.kind === "military" ? "🪖" : "🛡️"}</div>`, iconSize: [38,38], iconAnchor: [19,19] });
+    L.marker(point, { icon }).addTo(state.layers.tactical).bindPopup(`${s.allyFlag} ${s.allyName}: ${coalitionSupportLabel(s.kind)} · ${t("coalition.arrives","Chega em")} ${s.remaining}m`);
+  });
+}
+
+function renderCoalitionPanel() {
+  const panel = $("#coalitionPanel");
+  if (!panel || !state.game) return;
+  const co = ensureCoalition();
+  const candidates = coalitionCandidates(10);
+  const allies = co.allies.map(getCountry).filter(Boolean);
+  panel.innerHTML = `
+    <div class="coalition-readiness">
+      <div><small>${t("coalition.readiness","Força da coalizão")}</small><strong>${co.coalitionReadiness}</strong><span>${allies.length} ${t("coalition.allies","Aliados")}</span></div>
+      <i><b style="width:${clamp(co.coalitionReadiness,0,100)}%"></b></i>
+    </div>
+    <div class="coalition-selector">
+      <label><span>${t("coalition.candidates","Candidatos")}</span>
+        <select id="coalitionCandidateSelect">
+          ${candidates.map(c => `<option value="${c.id}" ${c.id === co.selectedCandidateId ? "selected" : ""}>${c.flag} ${c.name} · ${t("coalition.score","Aderência")} ${c.coalitionScore}</option>`).join("")}
+        </select>
+      </label>
+    </div>
+    <div class="coalition-actions">
+      <button data-coalition-action="improve">🤝 ${t("coalition.improve","Melhorar relação")}</button>
+      <button data-coalition-action="invite">📝 ${t("coalition.invite","Convidar aliança")}</button>
+      <button data-coalition-action="economic">💰 ${t("coalition.economic","Pedir apoio econômico")}</button>
+      <button data-coalition-action="military">🪖 ${t("coalition.military","Pedir apoio militar")}</button>
+      <button data-coalition-action="defense">🛡️ ${t("coalition.defense","Defesa coletiva")}</button>
+    </div>
+    <section class="coalition-allies">
+      <h3>${t("coalition.allies","Aliados")}</h3>
+      ${allies.length ? allies.map(a => `<article><b>${flagHtml(a, "ally-flag-img")}</b><div><strong>${a.name}</strong><span>${a.bloc} · ${a.doctrine || ""}</span></div></article>`).join("") : `<p class="muted">${t("coalition.noAllies","Nenhum aliado formal ainda.")}</p>`}
+    </section>
+    <section class="coalition-support">
+      <h3>${t("coalition.support","Apoios ativos")}</h3>
+      ${co.support.length ? co.support.map(s => `<article><b>${s.kind === "economic" ? "💰" : s.kind === "military" ? "🪖" : "🛡️"}</b><div><strong>${s.allyFlag} ${s.allyName}</strong><span>${coalitionSupportLabel(s.kind)} · ${t("coalition.arrives","Chega em")} ${s.remaining}m</span><i><em style="width:${s.progress || 0}%"></em></i></div></article>`).join("") : `<p class="muted">${t("coalition.noSupport","Nenhum apoio aliado em trânsito.")}</p>`}
+    </section>
+    <section class="coalition-history">
+      <h3>${t("coalition.history","Histórico aliado")}</h3>
+      ${co.history.length ? co.history.slice(0,7).map(item => `<article class="${item.success ? "success" : "failure"}"><strong>${item.countryFlag || "🤝"} ${item.countryName || item.kind}</strong><span>${item.at} · ${item.text}</span></article>`).join("") : `<p class="muted">${t("coalition.noHistory","Nenhuma ação diplomática registrada.")}</p>`}
+    </section>`;
+  $("#coalitionCandidateSelect")?.addEventListener("change", e => {
+    co.selectedCandidateId = e.target.value;
+    saveGame();
+    renderCoalitionPanel();
+  });
+  $$("#coalitionPanel [data-coalition-action]").forEach(btn => btn.addEventListener("click", () => coalitionAction(btn.dataset.coalitionAction)));
+}
+
 function makeInitialGame(countryId) {
   const country = state.countries.find(c => c.id === countryId) || state.countries[0];
   const regions = makeRegions(country);
@@ -2886,6 +3154,7 @@ function makeInitialGame(countryId) {
     battleReports: [],
     battleScenes: [],
     enemyOps: makeEnemyOffensiveSystem(),
+    coalition: makeCoalitionSystem(),
     logisticsBudget: 100,
     monthlyLosses: 0,
     globalWar: makeGlobalWar(country),
@@ -3045,6 +3314,7 @@ function renderGame() {
   ensureLogisticsSystem();
   ensureMovementSystem();
   ensureEnemyOffensives();
+  ensureCoalition();
   renderSummary();
   renderCommanderGuide();
   renderRegionSelect();
@@ -3063,6 +3333,7 @@ function renderGame() {
   renderMissileWar();
   renderMovementSystem();
   renderDefensePanel();
+  renderCoalitionPanel();
   renderGlobalWar();
   renderAiWorld();
   renderTargetSelect();
@@ -3132,6 +3403,8 @@ function commanderRecommendation() {
   const mainThreat = topAiThreats(1)[0];
   const enemyOps = ensureEnemyOffensives();
   if (enemyOps?.active?.length) return { title: t("rec.defense", "Responder ameaça"), text: t("rec.defenseText", "Há ofensiva inimiga ativa."), action: "defense", panel: "panelDefense" };
+  const coalition = ensureCoalition();
+  if (g.month > 2 && mainThreat && mainThreat.hostility > 68 && coalition.allies.length === 0) return { title: t("rec.coalition", "Formar coalizão"), text: t("rec.coalitionText", "Rivais hostis estão pressionando."), action: "coalition", panel: "panelCoalition" };
   if (mainThreat && mainThreat.hostility > 70 && cyberOps.spyNetwork < 45 && g.month > 1) return { title: t("rec.cyber", "Executar inteligência"), text: t("rec.cyberText", "Rivais hostis estão crescendo."), action: "cyber", panel: "panelCyber" };
   const air = ensureAirWar();
   if (g.units.length && g.month > 2 && air.airSupremacy < 55) return { title: t("rec.air", "Buscar superioridade aérea"), text: t("rec.airText", "Domine o céu antes de escalar ataques maiores."), action: "air", panel: "panelAir" };
@@ -3203,6 +3476,7 @@ function renderCommanderGuide() {
       <button id="quickRepairBtn"><b>🛠️ ${t("guide.repair", "Reparar")}</b><span>${t("guide.repairSub", "base crítica")}</span></button>
       <button id="quickOpsBtn"><b>⚔️ ${t("guide.attack", "Atacar")}</b><span>${t("guide.attackSub", "abrir operações")}</span></button>
       <button id="quickDefenseBtn"><b>🛡️ ${t("guide.defense", "Defesa")}</b><span>${t("guide.defenseSub", "bloquear ataques")}</span></button>
+      <button id="quickCoalitionBtn"><b>🤝 ${t("guide.coalition", "Aliados")}</b><span>${t("guide.coalitionSub", "pedir apoio")}</span></button>
       <button id="quickAirBtn"><b>✈️ ${t("guide.air", "Aérea")}</b><span>${t("guide.airSub", "dominar o céu")}</span></button>
       <button id="quickNavalBtn"><b>⚓ ${t("guide.naval", "Naval")}</b><span>${t("guide.navalSub", "controlar mares")}</span></button>
       <button id="quickMissileBtn"><b>🚀 ${t("guide.missile", "Mísseis")}</b><span>${t("guide.missileSub", "defesa estratégica")}</span></button>
@@ -3220,6 +3494,7 @@ function renderCommanderGuide() {
   $("#quickRepairBtn")?.addEventListener("click", quickRepairPriority);
   $("#quickOpsBtn")?.addEventListener("click", () => activatePanel("panelOps"));
   $("#quickDefenseBtn")?.addEventListener("click", () => activatePanel("panelDefense"));
+  $("#quickCoalitionBtn")?.addEventListener("click", () => activatePanel("panelCoalition"));
   $("#quickAirBtn")?.addEventListener("click", () => activatePanel("panelAir"));
   $("#quickNavalBtn")?.addEventListener("click", () => activatePanel("panelNaval"));
   $("#quickMissileBtn")?.addEventListener("click", () => activatePanel("panelMissile"));
@@ -3809,6 +4084,7 @@ function updateMapLayers() {
     L.marker(item.coords, { icon }).addTo(state.layers.logistics).bindPopup(`<strong>${item.regionName}</strong><br>${item.label}<br>${item.effect}`);
   });
   renderTacticalMapOverlays(player);
+  renderCoalitionMapOverlays(player);
   renderBattlefieldMapOverlays(player);
   renderEnemyOffensivesMap(player);
   if (!state.mapUserMoved && !state.mapAutoCentered) {

@@ -231,3 +231,16 @@ Abra `index.html` ou publique no GitHub Pages. No celular, use tela deitada/full
 - Ofensivas resolvidas podem danificar bases, unidades, energia, indústria, cyber e estabilidade.
 - O sistema usa as cenas cinematográficas da Fase 26 para mostrar impacto/defesa no mapa.
 - Save key mantida para preservar campanhas anteriores.
+
+
+## Fase 28 — Alianças e Coalizões Globais
+
+- Novo painel Coalizão / Alianças.
+- Países candidatos são avaliados por relação, bloco, tensão e postura da IA.
+- Ações: melhorar relação, convidar aliança, pedir apoio econômico, apoio militar e defesa coletiva.
+- Apoios aliados aparecem no mapa com rotas verdes e marcadores em deslocamento.
+- Apoio econômico entrega finanças, indústria e energia.
+- Apoio militar envia lotes de unidades prontas.
+- Defesa coletiva reforça a defesa nacional e pode reduzir ameaças inimigas ativas.
+- Sistema integrado ao HQ mobile, IA ofensiva, defesa nacional, mapa visual, economia e três idiomas.
+- Save key mantida para preservar campanhas anteriores.

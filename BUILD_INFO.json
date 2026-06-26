@@ -1,7 +1,7 @@
 {
   "project": "Modern War Dominion",
-  "version": "2.7.0",
-  "phase": "Fase 27 — IA Ofensiva e Defesa Nacional",
+  "version": "2.8.0",
+  "phase": "Fase 28 — Alianças e Coalizões Globais",
   "generated_at": "2026-06-24",
   "base": "Fase 5 assets integrados",
   "features": [
@@ -12,13 +12,14 @@
     "mapa real preservado"
   ],
   "notes": [
-    "Novo painel Defesa Nacional",
-    "Rivais hostis agora geram ofensivas contra o jogador",
-    "Ataques inimigos podem ser aéreos, terrestres, navais, mísseis ou cyber",
-    "Ameaças ativas aparecem no mapa real com rotas vermelhas e marcadores",
-    "Jogador pode reforçar região, interceptar ameaça e elevar alerta nacional",
-    "Ofensivas resolvidas podem danificar bases, unidades, energia, indústria, cyber e estabilidade",
-    "Sistema integrado às cenas cinematográficas de batalha e ao HQ mobile"
+    "Novo painel Coalizão/Alianças",
+    "Candidatos de aliança calculados por relação, bloco e postura IA",
+    "Ações: melhorar relação, convidar aliança, pedir apoio econômico, pedir apoio militar e defesa coletiva",
+    "Apoios aliados chegam por rotas no mapa real",
+    "Apoio econômico entrega finanças/indústria/energia",
+    "Apoio militar entrega unidades prontas",
+    "Defesa coletiva reforça Defesa Nacional e reduz ameaças ativas",
+    "Sistema integrado ao HQ mobile, IA ofensiva, defesa nacional e mapa visual"
   ],
   "countries_count": 249,
   "countries_available": 249,
@@ -91,6 +92,13 @@
     "defesa nacional",
     "ofensivas inimigas",
     "ameaças no mapa",
-    "contra-ataques visuais"
+    "contra-ataques visuais",
+    "alianças globais",
+    "coalizões",
+    "apoio aliado",
+    "defesa coletiva",
+    "rotas aliadas",
+    "ajuda econômica",
+    "ajuda militar"
   ]
 }
