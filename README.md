@@ -207,3 +207,15 @@ Abra `index.html` ou publique no GitHub Pages. No celular, use tela deitada/full
 - O teatro de operações ficou mais vivo e próximo de jogos estratégicos com movimentação militar visível.
 - Sistema integrado ao HQ mobile, logística, frentes terrestres, guerra aérea, naval, mísseis, IA, economia e três idiomas.
 - Save key mantida para preservar campanhas anteriores.
+
+
+## Fase 26 — Batalha Cinemática no Mapa
+
+- Relatório de batalha agora mostra uma cena visual cinematográfica.
+- Ataques geram zonas de combate no mapa real.
+- Explosões, fumaça, rotas de ataque e marcadores de impacto aparecem visualmente.
+- Operações terrestres, aéreas, navais e mísseis passam a registrar cenas de batalha.
+- Histórico visual das últimas cenas de combate.
+- O mapa mantém arraste com mouse/toque e ganha leitura de guerra mais clara.
+- Sistema integrado ao teatro dinâmico, frentes, logística, ar, naval, mísseis, IA, economia e três idiomas.
+- Save key mantida para preservar campanhas anteriores.

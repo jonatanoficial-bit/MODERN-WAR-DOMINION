@@ -1,7 +1,7 @@
 {
   "project": "Modern War Dominion",
-  "version": "2.5.0",
-  "phase": "Fase 25 — Teatro Dinâmico e Movimentação Tática",
+  "version": "2.6.0",
+  "phase": "Fase 26 — Batalha Cinemática no Mapa",
   "generated_at": "2026-06-24",
   "base": "Fase 5 assets integrados",
   "features": [
@@ -12,13 +12,12 @@
     "mapa real preservado"
   ],
   "notes": [
-    "Novo painel Movimento/Movimentação Tática",
-    "Reposicionamento de forças entre regiões",
-    "Envio de reforços para a frente ativa",
-    "Colunas em trânsito com progresso e ETA",
-    "Mapas mostram comboios terrestres e deslocamento de tropas",
-    "Teatro de guerra mais vivo e visual no mapa real",
-    "Sistema integrado ao HQ mobile e aos três idiomas"
+    "Relatório de batalha ganhou cena cinematográfica visual",
+    "Ataques geram zonas de combate no mapa real",
+    "Explosões, fumaça, rotas de ataque e marcadores de impacto aparecem no mapa",
+    "Operações terrestres, aéreas, navais e mísseis registram cenas de batalha",
+    "Histórico visual das últimas cenas de combate",
+    "Mantido mapa arrastável com mouse/toque e teatro dinâmico da Fase 25"
   ],
   "countries_count": 249,
   "countries_available": 249,
@@ -80,6 +79,12 @@
     "deslocamento de tropas",
     "reforço de frente",
     "colunas em trânsito",
-    "teatro dinâmico"
+    "teatro dinâmico",
+    "batalha cinematográfica",
+    "zonas de confronto",
+    "explosões no mapa",
+    "fumaça no mapa",
+    "rotas de ataque visuais",
+    "relatório de batalha cinematográfico"
   ]
 }

@@ -1,5 +1,5 @@
-const VERSION = "2.5.0";
-const PHASE = "Fase 25 — teatro dinâmico e movimentação tática";
+const VERSION = "2.6.0";
+const PHASE = "Fase 26 — batalha cinematográfica no mapa";
 const SAVE_KEY = "MWD_SAVE_F17";
 
 const $ = (sel, root = document) => root.querySelector(sel);
@@ -14,7 +14,7 @@ const state = {
   map: null,
   mapUserMoved: false,
   mapAutoCentered: false,
-  layers: { countries: null, regions: null, bases: null, threats: null, fronts: null, airOps: null, navalOps: null, missiles: null, logistics: null, tactical: null },
+  layers: { countries: null, regions: null, bases: null, threats: null, fronts: null, airOps: null, navalOps: null, missiles: null, logistics: null, tactical: null, battleEffects: null },
   arsenalFilter: "Todos"
 };
 
@@ -315,6 +315,141 @@ function latestBattleReport() {
   return list[list.length - 1] || null;
 }
 
+
+function ensureBattleScenes() {
+  if (!state.game) return [];
+  if (!Array.isArray(state.game.battleScenes)) state.game.battleScenes = [];
+  return state.game.battleScenes;
+}
+
+function sceneIcon(kind) {
+  if (kind === "airstrike" || kind === "precision" || kind === "drone" || kind === "sead" || kind === "carrier") return "✈️";
+  if (kind === "naval" || kind === "blockade" || kind === "submarine") return "🚢";
+  if (kind === "missile" || kind === "deterrence") return "🚀";
+  if (kind === "ground" || kind === "combined" || kind === "reinforce") return "🪖";
+  if (kind === "recon") return "🛰️";
+  return "⚔️";
+}
+
+function recordBattleScene(kind, target, success, intensity = 50, label = "", details = "") {
+  if (!state.game || !target?.coords) return null;
+  const player = getPlayerCountry();
+  const scenes = ensureBattleScenes();
+  const targetCoords = jitter(target.coords, .75);
+  const fromCoords = player?.coords || getSelectedRegion()?.coords || target.coords;
+  const scene = {
+    id: cryptoId(),
+    kind,
+    icon: sceneIcon(kind),
+    label: label || battleOperationLabel(kind) || kind,
+    details: details || "",
+    success: !!success,
+    targetId: target.id,
+    targetName: target.name,
+    targetFlag: target.flag,
+    fromCoords,
+    coords: targetCoords,
+    intensity: clamp(intensity, 8, 100),
+    smoke: clamp(intensity + randomInt(6, 28), 18, 100),
+    fire: clamp(intensity + (success ? 20 : 8), 10, 100),
+    month: state.game.month,
+    year: state.game.year,
+    at: `${monthNames[state.game.month % 12]}/${state.game.year}`
+  };
+  scenes.unshift(scene);
+  state.game.battleScenes = scenes.slice(0, 14);
+  return scene;
+}
+
+function latestBattleScene() {
+  const scenes = ensureBattleScenes();
+  if (scenes.length) return scenes[0];
+  const report = latestBattleReport();
+  if (!report) return null;
+  return {
+    id: "report-preview",
+    kind: "combined",
+    icon: report.success ? "⚔️" : "⚠️",
+    label: report.operation,
+    details: report.success ? t("battle.success", "Sucesso tático") : t("battle.failure", "Falha operacional"),
+    success: report.success,
+    targetName: report.targetName,
+    targetFlag: report.targetFlag,
+    intensity: clamp(Math.round((report.attack + report.defense) / 2), 20, 100),
+    smoke: clamp(report.enemyDamage + report.ownLosses, 15, 100),
+    fire: clamp(report.enemyDamage, 10, 100),
+    at: `${monthNames[report.month % 12]}/${report.year}`
+  };
+}
+
+function renderBattlefieldCinematic() {
+  const scene = latestBattleScene();
+  const scenes = ensureBattleScenes().slice(0, 6);
+  if (!scene) return `<div class="battlefield-empty">${t("battlefield.noScene", "Nenhuma cena de batalha registrada ainda.")}</div>`;
+  const smokeDots = Array.from({length: 7}, (_, i) => `<i class="smoke s${i+1}"></i>`).join("");
+  const fireDots = Array.from({length: 5}, (_, i) => `<b class="blast b${i+1}"></b>`).join("");
+  return `
+    <section class="battlefield-cinematic ${scene.success ? "success" : "failure"}">
+      <div class="battlefield-stage">
+        <div class="battlefield-route-line"></div>
+        <div class="battlefield-side our"><span>MWD</span><strong>${scene.icon}</strong></div>
+        <div class="battlefield-impact">
+          ${smokeDots}${fireDots}
+          <strong>${scene.targetFlag || "🏳️"}</strong>
+        </div>
+        <div class="battlefield-side enemy"><span>${scene.targetName || "Alvo"}</span><strong>${scene.success ? "🔥" : "🛡️"}</strong></div>
+      </div>
+      <div class="battlefield-info">
+        <div><small>${t("battlefield.live", "Confronto visual")}</small><strong>${scene.label}</strong><span>${scene.targetFlag || "🏳️"} ${scene.targetName || ""} · ${scene.at || ""}</span></div>
+        <div class="battlefield-bars">
+          <p><span>${t("battlefield.intensity", "Intensidade")}</span><b>${scene.intensity}</b><i style="width:${scene.intensity}%"></i></p>
+          <p><span>${t("battlefield.smoke", "fumaça")}</span><b>${scene.smoke}</b><i style="width:${scene.smoke}%"></i></p>
+          <p><span>${t("battlefield.fire", "impacto")}</span><b>${scene.fire}</b><i style="width:${scene.fire}%"></i></p>
+        </div>
+        <em>${t("battlefield.mapNote", "Acompanhe explosões, fumaça e rotas no mapa real.")}</em>
+      </div>
+      <div class="battlefield-timeline">
+        ${scenes.length ? scenes.map(item => `<article class="${item.success ? "success" : "failure"}"><b>${item.icon}</b><div><strong>${item.label}</strong><span>${item.targetFlag || ""} ${item.targetName} · ${item.at}</span></div><small>${item.intensity}</small></article>`).join("") : ""}
+      </div>
+    </section>`;
+}
+
+function renderBattlefieldMapOverlays(player) {
+  const scenes = ensureBattleScenes().slice(0, 8);
+  if (!state.map || !state.layers.battleEffects || !window.L || !scenes.length) return;
+  scenes.forEach((scene, index) => {
+    if (!scene.coords) return;
+    const target = getCountry(scene.targetId);
+    const opacity = Math.max(.25, 1 - index * .09);
+    L.circle(scene.coords, {
+      radius: 65000 + scene.intensity * 1200,
+      color: scene.success ? "#ff784f" : "#ffd166",
+      fillColor: scene.success ? "#ff3f2f" : "#ffd166",
+      fillOpacity: .10 * opacity,
+      opacity: .42 * opacity,
+      weight: 2,
+      className: "battle-zone-ring"
+    }).addTo(state.layers.battleEffects).bindPopup(`<strong>${t("battlefield.zone","Zona de combate")}</strong><br>${scene.targetFlag || ""} ${scene.targetName}<br>${scene.label}`);
+    const impactIcon = L.divIcon({ className: "", html: `<div class="marker-battle-impact ${scene.success ? "success" : "failure"}"><span>${scene.icon}</span><i></i><b></b></div>`, iconSize: [54, 54], iconAnchor: [27, 27] });
+    L.marker(scene.coords, { icon: impactIcon }).addTo(state.layers.battleEffects).bindPopup(`<strong>${scene.label}</strong><br>${scene.targetFlag || ""} ${scene.targetName}<br>${t("battlefield.intensity","Intensidade")}: ${scene.intensity}`);
+    const smokeIcon = L.divIcon({ className: "", html: `<div class="marker-smoke-cloud"><i></i><i></i><i></i></div>`, iconSize: [46, 34], iconAnchor: [23, 17] });
+    L.marker(jitter(scene.coords, .45), { icon: smokeIcon }).addTo(state.layers.battleEffects).bindPopup(`${t("battlefield.smoke","fumaça")} · ${scene.targetName}`);
+    if (scene.fromCoords) {
+      L.polyline([scene.fromCoords, scene.coords], {
+        color: scene.success ? "#ff784f" : "#ffd166",
+        weight: 4,
+        opacity: .70 * opacity,
+        dashArray: "10 12",
+        className: "battle-attack-route"
+      }).addTo(state.layers.battleEffects).bindPopup(`${t("battlefield.route","Rota de ataque")} · ${scene.label}`);
+      const ratio = .58 + ((Date.now() / 7000 + index * .12) % .25);
+      const moving = interpolateCoords(scene.fromCoords, scene.coords, Math.min(.92, ratio));
+      const attackIcon = L.divIcon({ className: "", html: `<div class="marker-attack-unit">${scene.icon}</div>`, iconSize: [32, 32], iconAnchor: [16, 16] });
+      L.marker(moving, { icon: attackIcon }).addTo(state.layers.battleEffects).bindPopup(`${scene.label} → ${scene.targetName}`);
+    }
+  });
+}
+
 function renderBattleReportMini() {
   const report = latestBattleReport();
   if (!report) return "";
@@ -334,7 +469,7 @@ function renderBattleReport() {
   if (!box || !state.game) return;
   const report = latestBattleReport();
   if (!report) {
-    box.innerHTML = `<div class="empty-battle">${t("battle.empty", "Nenhuma batalha registrada ainda. Faça reconhecimento ou ataque um alvo no painel Atacar.")}</div>`;
+    box.innerHTML = `<div class="empty-battle">${t("battle.empty", "Nenhuma batalha registrada ainda. Faça reconhecimento ou ataque um alvo no painel Atacar.")}</div>${renderBattlefieldCinematic()}`;
     return;
   }
   const resultText = report.success ? t("battle.success", "Sucesso tático") : t("battle.failure", "Falha operacional");
@@ -351,6 +486,8 @@ function renderBattleReport() {
         <p>${report.operation} · ${report.targetFlag || "🏳️"} ${report.targetName}</p>
       </div>
     </article>
+
+    ${renderBattlefieldCinematic()}
 
     <div class="battle-bars">
       <div><span>${t("battle.ourForce", "Nossa força")}</span><b>${report.attack}</b><i style="width:${clamp(report.attack, 0, 140)}%"></i></div>
@@ -980,6 +1117,7 @@ function recordGroundHistory(kind, front, text) {
   };
   gw.history.unshift(item);
   gw.history = gw.history.slice(0, 12);
+  recordBattleScene("ground", getCountry(front.targetId), front.status !== "collapsing", front.progress || 35, text || groundStatusLabel(front.status), `${front.progress}%`);
 }
 
 function groundOperation(kind) {
@@ -1252,6 +1390,7 @@ function recordAirHistory(kind, success, target, effect, damage = 0) {
   };
   aw.history.unshift(report);
   aw.history = aw.history.slice(0, 12);
+  recordBattleScene(kind, target, success, damage >= 10 ? damage * 4 : 38, airOperationLabel(kind), effect);
 }
 
 function airWarOperation(kind) {
@@ -1500,6 +1639,7 @@ function recordNavalHistory(kind, success, target, effect, impact = 0) {
   };
   nw.history.unshift(report);
   nw.history = nw.history.slice(0, 12);
+  recordBattleScene(kind === "carrier" ? "carrier" : "naval", target, success, impact >= 10 ? impact * 4 : 36, navalOperationLabel(kind), effect);
 }
 
 function navalOperation(kind) {
@@ -1748,6 +1888,7 @@ function recordMissileHistory(kind, success, target, effect, impact = 0) {
   };
   mw.history.unshift(report);
   mw.history = mw.history.slice(0, 12);
+  recordBattleScene(kind === "precision" ? "missile" : kind, target, success, impact >= 10 ? impact * 4 : 42, missileOperationLabel(kind), effect);
 }
 
 function missileOperation(kind) {
@@ -2467,6 +2608,7 @@ function makeInitialGame(countryId) {
     production: [],
     units: [],
     battleReports: [],
+    battleScenes: [],
     logisticsBudget: 100,
     monthlyLosses: 0,
     globalWar: makeGlobalWar(country),
@@ -3314,6 +3456,7 @@ function initMap() {
   state.layers.missiles = L.layerGroup().addTo(state.map);
   state.layers.logistics = L.layerGroup().addTo(state.map);
   state.layers.tactical = L.layerGroup().addTo(state.map);
+  state.layers.battleEffects = L.layerGroup().addTo(state.map);
   state.map.dragging.enable();
   state.map.scrollWheelZoom.enable();
   state.map.doubleClickZoom.enable();
@@ -3383,6 +3526,7 @@ function updateMapLayers() {
     L.marker(item.coords, { icon }).addTo(state.layers.logistics).bindPopup(`<strong>${item.regionName}</strong><br>${item.label}<br>${item.effect}`);
   });
   renderTacticalMapOverlays(player);
+  renderBattlefieldMapOverlays(player);
   if (!state.mapUserMoved && !state.mapAutoCentered) {
     state.map.setView(player.coords, Math.max(state.map.getZoom(), 3), { animate: false });
     state.mapAutoCentered = true;
@@ -3520,6 +3664,7 @@ function launchOperation(kind) {
     g.events.push(eventText("danger", `${label} contra ${target.name} falhou. Perdas políticas e alerta inimigo aumentaram.`));
   }
   const report = makeBattleReport(kind, target, attack, defense, success, op);
+  recordBattleScene(kind, target, success, Math.round((attack + defense) / 2), label, `${report.ownLosses}/${report.enemyDamage}`);
   if (success && kind === "combined") {
     const ground = ensureGroundWar();
     if (ground) ground.selectedTargetId = target.id;
