@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
   <meta name="theme-color" content="#050914">
   <meta name="description" content="Modern War Dominion — jogo mobile de dominação militar global com mapa real, bases regionais, produção de unidades e escalada de guerra mundial.">
-  <title>Modern War Dominion — Fase 31</title>
+  <title>Modern War Dominion — Fase 32</title>
   <link rel="manifest" href="manifest.json">
   <link rel="icon" href="assets/img/icon.svg" type="image/svg+xml">
   <link rel="preconnect" href="https://unpkg.com">
@@ -42,7 +42,7 @@
         </select>
         <button class="mini-btn" id="fullscreenBtn" data-i18n="top.fullscreen">Tela cheia</button>
         <button class="mini-btn" id="installBtn" hidden data-i18n="top.install">Instalar</button>
-        <div class="build-chip" data-i18n="phase.label">Fase 31 · v3.1.0</div>
+        <div class="build-chip" data-i18n="phase.label">Fase 32 · v3.2.0</div>
       </div>
     </header>
 
@@ -50,7 +50,7 @@
       <section class="screen screen-active" id="screenHome">
         <div class="home-layout">
           <article class="hero-card glass-panel">
-            <p class="eyebrow" data-i18n="home.eyebrow">Fase 31 — Inteligência Avançada e Névoa de Guerra</p>
+            <p class="eyebrow" data-i18n="home.eyebrow">Fase 32 — Estado-Maior, Comandantes e Doutrina</p>
             <h1 data-i18n="home.title">Agora a dissuasão estratégica muda o equilíbrio da guerra.</h1>
             <p data-i18n="home.text">A campanha ganha estoque de mísseis, escudo antimíssil, alerta antecipado, ataque convencional de precisão e postura de dissuasão nuclear simulada.</p>
             <div class="hero-actions">
@@ -113,6 +113,7 @@
             <div class="country-summary" id="countrySummary"></div>
             <div class="tabline" role="tablist">
               <button class="side-tab is-active" data-panel="panelGuide" data-i18n="tab.guide">Guia</button>
+              <button class="side-tab" data-panel="panelStaff" data-i18n="tab.staff">Estado-Maior</button>
               <button class="side-tab" data-panel="panelMapOps" data-i18n="tab.map">Mapa</button>
               <button class="side-tab" data-panel="panelEnvironment" data-i18n="tab.environment">Ambiente</button>
               <button class="side-tab" data-panel="panelBuild" data-i18n="tab.regions">Regiões</button>
@@ -140,6 +141,12 @@
               <h2 data-i18n="guide.title">Quartel-General e Tutorial</h2>
               <p class="muted" data-i18n="guide.text">Siga as missões de campanha. Cada missão explica o próximo passo e dá recompensa para acelerar o começo sem confusão.</p>
               <div id="commanderGuide" class="commander-guide"></div>
+            </div>
+
+            <div class="side-panel" id="panelStaff">
+              <h2 data-i18n="staff.title">Estado-Maior e Doutrina</h2>
+              <p class="muted" data-i18n="staff.text">Atribua comandantes, escolha doutrina, gerencie moral/fadiga e emita ordens estratégicas para melhorar a campanha.</p>
+              <div id="staffPanel" class="staff-panel"></div>
             </div>
 
             <div class="side-panel" id="panelMapOps">
@@ -301,6 +308,7 @@
 
           <nav class="mobile-action-dock" id="mobileActionDock" aria-label="Ações rápidas de comando">
             <button class="dock-btn is-active" data-panel="panelGuide">🏳️<span data-i18n="dock.command">Comando</span></button>
+            <button class="dock-btn" data-panel="panelStaff">🎖️<span data-i18n="dock.staff">Estado-Maior</span></button>
             <button class="dock-btn" data-panel="panelMapOps">🗺️<span data-i18n="dock.map">Mapa</span></button>
             <button class="dock-btn" data-panel="panelEnvironment">🌦️<span data-i18n="dock.environment">Ambiente</span></button>
             <button class="dock-btn" data-panel="panelBuild">🏗️<span data-i18n="dock.bases">Bases</span></button>
@@ -326,7 +334,7 @@
 
       <section class="screen" id="screenRoadmap">
         <div class="roadmap glass-panel">
-          <p class="eyebrow" data-i18n="roadmap.eyebrow">Fase 31 — inteligência avançada do mapa</p>
+          <p class="eyebrow" data-i18n="roadmap.eyebrow">Fase 32 — Estado-Maior do mapa</p>
           <h1 data-i18n="roadmap.title">A campanha agora tem controle de camadas, presets visuais e foco rápido para comandar o mapa.</h1>
           <div class="roadmap-grid">
             <article><strong>Fase 9</strong><span>Manutenção, desgaste, baixas, reposição de lotes e custo real de guerra longa.</span></article>

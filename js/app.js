@@ -3967,6 +3967,7 @@ function renderGame() {
   ensureCoalition();
   ensureEnvironmentSystem();
   ensureIntelSystem();
+  ensureStaffSystem();
   ensureMapSettings();
   renderSummary();
   renderCommanderGuide();
@@ -3988,6 +3989,7 @@ function renderGame() {
   renderDefensePanel();
   renderCoalitionPanel();
   renderEnvironmentPanel();
+  renderStaffPanel();
   renderMapOpsPanel();
   renderGlobalWar();
   renderAiWorld();
@@ -4058,6 +4060,8 @@ function commanderRecommendation() {
   if (g.month > 1 && (severeWeatherScore() > 48 || environment.fatigue > 45)) return { title: t("rec.environment", "Preparar ambiente"), text: t("rec.environmentText", "Condições climáticas severas podem travar operações."), action: "environment", panel: "panelEnvironment" };
   const intelSystem = ensureIntelSystem();
   if (g.month > 1 && (intelSystem.fog > 62 || intelSystem.confidence < 35)) return { title: t("rec.intel", "Melhorar inteligência"), text: t("rec.intelText", "A névoa de guerra está alta."), action: "intel", panel: "panelIntel" };
+  const staff = ensureStaffSystem();
+  if (g.month > 1 && (staff.fatigue > 64 || staff.morale < 42)) return { title: t("rec.staff", "Reorganizar Estado-Maior"), text: t("rec.staffText", "A fadiga de comando está alta ou a moral está baixa."), action: "staff", panel: "panelStaff" };
   const cyberOps = ensureCyberOps();
   const mainThreat = topAiThreats(1)[0];
   const enemyOps = ensureEnemyOffensives();
@@ -4130,6 +4134,7 @@ function renderCommanderGuide() {
 
     <div class="mobile-command-grid">
       <button id="quickMapBtn"><b>🗺️ ${t("guide.map", "Mapa")}</b><span>${t("guide.mapSub", "filtrar camadas")}</span></button>
+      <button id="quickStaffBtn"><b>🎖️ ${t("guide.staff", "Estado-Maior")}</b><span>${t("guide.staffSub", "oficiais e doutrina")}</span></button>
       <button id="quickBuildBtn"><b>🏗️ ${t("guide.build", "Construir")}</b><span>${t("guide.buildSub", "base recomendada")}</span></button>
       <button id="quickProduceBtn"><b>🪖 ${t("guide.produce", "Produzir")}</b><span>${t("guide.produceSub", "melhor unidade")}</span></button>
       <button id="quickLogisticsBtn"><b>🚚 ${t("guide.logistics", "Logística")}</b><span>${t("guide.logisticsSub", "suprir tropas")}</span></button>
@@ -4872,10 +4877,10 @@ function launchOperation(kind) {
   ensureTutorial();
   if (kind === "recon" && g.tutorial) g.tutorial.reconDone = true;
   const costs = {
-    recon: { finance: 12, energy: 4, tension: 2, power: g.intel + g.cyber },
-    airstrike: { finance: 35, energy: 16, tension: 8, power: g.airPower + g.missilePower / 2 },
-    naval: { finance: 42, energy: 18, tension: 9, power: g.navalPower + g.logistics / 2 },
-    combined: { finance: 85, energy: 30, tension: 17, power: g.landPower + g.airPower + g.navalPower + g.missilePower }
+    recon: { finance: 12, energy: 4, tension: 2, power: g.intel + g.cyber + staffBonus("intel") },
+    airstrike: { finance: 35, energy: 16, tension: 8, power: g.airPower + g.missilePower / 2 + staffBonus("air") },
+    naval: { finance: 42, energy: 18, tension: 9, power: g.navalPower + g.logistics / 2 + staffBonus("naval") },
+    combined: { finance: 85, energy: 30, tension: 17, power: g.landPower + g.airPower + g.navalPower + g.missilePower + staffBonus("ground") + staffBonus("air") + staffBonus("naval") }
   };
   const op = costs[kind];
   if (g.finance < op.finance || g.energy < op.energy) {
@@ -4935,6 +4940,7 @@ function advanceMonth() {
   g.worldTension = clamp(g.worldTension + randomInt(-3, 5), 0, 100);
   progressEnvironmentSystem();
   progressIntelSystem();
+  applyStaffPassiveBonuses();
   progressConstruction();
   progressProduction();
   progressCyberOps();

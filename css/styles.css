@@ -1384,3 +1384,42 @@ body:has(#screenWar.screen-active) .nation-confirm-tray{
   .intel-actions{grid-template-columns:repeat(4,1fr);gap:6px}
   .intel-actions button{min-height:44px;font-size:.62rem;padding:7px;border-radius:12px}
 }
+
+
+/* Fase 32 — Estado-Maior, comandantes e doutrina */
+.staff-panel{display:grid;gap:12px}
+.staff-status{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.staff-status>div{border:1px solid rgba(255,209,102,.22);border-radius:16px;background:linear-gradient(145deg,rgba(95,70,24,.20),rgba(7,12,20,.48));padding:10px}
+.staff-status small{display:block;color:#ffd166;text-transform:uppercase;letter-spacing:.11em;font-size:.58rem;font-weight:900}
+.staff-status strong{display:block;font-size:.96rem;color:#ffd166;margin:3px 0}
+.staff-status span{display:block;color:#d7e6f4;font-size:.64rem}
+.staff-status i{display:block;height:7px;border-radius:999px;background:rgba(255,255,255,.08);overflow:hidden}
+.staff-status b{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,#ffd166,#6affad)}
+.staff-doctrine,.staff-orders,.staff-commanders,.staff-history{display:grid;gap:8px}
+.staff-doctrine h3,.staff-commanders h3,.staff-history h3{font-size:.9rem;margin:2px 0}
+.staff-doctrine>div{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.staff-doctrine button,.staff-orders button{min-height:48px;text-align:left;border-radius:15px;background:rgba(7,12,20,.58);border:1px solid rgba(255,209,102,.18);padding:9px;color:var(--text);font-weight:900}
+.staff-doctrine button.is-active{background:linear-gradient(135deg,rgba(255,209,102,.28),rgba(106,255,173,.18));border-color:rgba(255,209,102,.45)}
+.staff-orders{grid-template-columns:repeat(2,1fr)}
+.staff-commanders article{display:grid;grid-template-columns:42px 1fr;gap:10px;align-items:start;border:1px solid rgba(255,255,255,.08);border-radius:15px;background:rgba(255,255,255,.035);padding:10px}
+.staff-commanders article>b{display:grid;place-items:center;width:40px;height:40px;border-radius:50%;background:rgba(255,209,102,.12);border:1px solid rgba(255,209,102,.25);box-shadow:0 0 18px rgba(255,209,102,.16)}
+.staff-commanders strong,.staff-history strong{display:block;font-size:.82rem}
+.staff-commanders span,.staff-history span{display:block;color:#d7e6f4;font-size:.66rem;margin-top:2px}
+.staff-commanders label{display:grid;gap:5px;margin-top:7px}
+.staff-commanders label small{font-size:.58rem;text-transform:uppercase;letter-spacing:.09em;color:#ffd166;font-weight:900}
+.staff-commanders select{width:100%;border:1px solid rgba(255,209,102,.22);background:rgba(4,10,18,.60);color:var(--text);border-radius:11px;padding:8px;font-size:.7rem}
+.staff-history article{border:1px solid rgba(255,255,255,.08);border-radius:14px;background:rgba(255,255,255,.035);padding:9px}
+@media(max-width:980px){
+  .staff-status{grid-template-columns:1fr}
+  .staff-orders,.staff-doctrine>div{grid-template-columns:1fr}
+}
+@media(max-height:560px){
+  .staff-status{grid-template-columns:repeat(3,1fr);gap:6px}
+  .staff-status>div{padding:7px;border-radius:12px}
+  .staff-status small{font-size:.48rem}
+  .staff-status strong{font-size:.72rem}
+  .staff-orders,.staff-doctrine>div{grid-template-columns:repeat(4,1fr);gap:6px}
+  .staff-orders button,.staff-doctrine button{min-height:40px;font-size:.6rem;padding:6px;border-radius:11px}
+  .staff-commanders article{grid-template-columns:34px 1fr;padding:8px}
+  .staff-commanders article>b{width:32px;height:32px}
+}

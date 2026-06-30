@@ -300,3 +300,15 @@ Abra `index.html` ou publique no GitHub Pages. No celular, use tela deitada/full
 - Varreduras aparecem no mapa real com anéis, rotas e marcadores.
 - Inteligência baixa aumenta risco de surpresa e incerteza contra rivais.
 - Save key mantida para preservar campanhas anteriores.
+
+
+## Fase 32 — Estado-Maior, Comandantes e Doutrina
+
+- Novo painel Estado-Maior e Doutrina.
+- Comandantes por função: terrestre, aérea, naval, logística e inteligência.
+- Sistema de moral do Estado-Maior e fadiga de comando.
+- Doutrinas: armas combinadas, batalha aeroterrestre, projeção marítima, defesa em profundidade e guerra de informação.
+- Ordens estratégicas: reorganizar Estado-Maior, conselho de guerra, treino de oficiais e rodízio/descanso.
+- Bônus de comandantes e doutrina afetam ataques, logística e inteligência.
+- Gameplay fica mais realista: o jogador passa a comandar por oficiais e não operar tudo sozinho.
+- Save key mantida para preservar campanhas anteriores.
