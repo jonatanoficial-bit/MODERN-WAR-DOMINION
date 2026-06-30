@@ -1,7 +1,7 @@
 {
   "project": "Modern War Dominion",
-  "version": "3.4.0",
-  "phase": "Fase 34 — Indústria Bélica e Cadeias Estratégicas",
+  "version": "3.5.0",
+  "phase": "Fase 35 — Comércio Global, Sanções e Recursos Estratégicos",
   "generated_at": "2026-06-24",
   "base": "Fase 5 assets integrados",
   "features": [
@@ -12,13 +12,13 @@
     "mapa real preservado"
   ],
   "notes": [
-    "Novo painel Indústria Bélica",
-    "Estoques estratégicos: aço militar, semicondutores, terras raras, munição, estaleiros e células aéreas",
-    "Capacidade industrial, autonomia estratégica e gargalo industrial",
-    "Ações: expandir fábricas, garantir terras raras, contrato de chips, mutirão de munição, expandir estaleiros e compra emergencial",
-    "Indústria afeta velocidade de produção e pode gerar gargalos reais",
-    "Nova camada Indústria na Sala de Guerra e marcadores de polos industriais no mapa",
-    "Integração com P&D, logística, produção militar e tecnologia"
+    "Novo painel Comércio Global e Sanções",
+    "Sistema de balança comercial, acesso ao mercado, vulnerabilidade e segurança de rotas",
+    "Ações: importar chips, importar terras raras, acordo energético, exportar excedente, aplicar sanção, mercado paralelo e proteger rota",
+    "Acordos comerciais entregam insumos ao longo dos meses",
+    "Sanções afetam rivais e aumentam hostilidade/tensão",
+    "Rotas comerciais aparecem no mapa real com linhas e marcadores",
+    "Integração com indústria, logística, coalizões, naval, IA e economia"
   ],
   "countries_count": 249,
   "countries_available": 249,
@@ -136,6 +136,13 @@
     "semicondutores",
     "terras raras",
     "gargalos industriais",
-    "contratos emergenciais"
+    "contratos emergenciais",
+    "comércio global",
+    "sanções econômicas",
+    "embargos",
+    "importações estratégicas",
+    "exportações",
+    "mercado paralelo",
+    "rotas comerciais"
   ]
 }

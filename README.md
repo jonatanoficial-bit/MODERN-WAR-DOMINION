@@ -340,3 +340,16 @@ Abra `index.html` ou publique no GitHub Pages. No celular, use tela deitada/full
 - Polos industriais aparecem no mapa real com marcadores e anéis de gargalo.
 - Integração com P&D, tecnologia, logística, produção militar, economia e mapa.
 - Save key mantida para preservar campanhas anteriores.
+
+
+## Fase 35 — Comércio Global, Sanções e Recursos Estratégicos
+
+- Novo painel Comércio Global e Sanções.
+- Sistema de balança comercial, acesso ao mercado, vulnerabilidade e segurança de rotas.
+- Ações: importar chips, importar terras raras, acordo energético, exportar excedente, aplicar sanção, mercado paralelo e proteger rota.
+- Acordos comerciais entregam insumos ao longo dos meses.
+- Sanções afetam rivais, reduzem poder/prontidão inimiga e aumentam hostilidade/tensão.
+- Rotas comerciais aparecem no mapa real com linhas e marcadores.
+- Rotas vulneráveis aumentam gargalos industriais.
+- Integração com indústria, logística, coalizões, naval, IA e economia.
+- Save key mantida para preservar campanhas anteriores.

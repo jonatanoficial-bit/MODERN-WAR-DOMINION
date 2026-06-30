@@ -1507,3 +1507,46 @@ body:has(#screenWar.screen-active) .nation-confirm-tray{
   .industry-stockpiles article{grid-template-columns:34px 1fr;padding:8px}
   .industry-stockpiles article>b{width:32px;height:32px}
 }
+
+
+/* Fase 35 — Comércio global, sanções e recursos estratégicos */
+.trade-panel{display:grid;gap:12px}
+.trade-status{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.trade-status>div{border:1px solid rgba(103,240,208,.22);border-radius:16px;background:linear-gradient(145deg,rgba(21,72,70,.20),rgba(7,12,20,.48));padding:10px}
+.trade-status small{display:block;color:#67f0d0;text-transform:uppercase;letter-spacing:.11em;font-size:.58rem;font-weight:900}
+.trade-status strong{display:block;font-size:1rem;color:#67f0d0;margin:3px 0}
+.trade-status i{display:block;height:7px;border-radius:999px;background:rgba(255,255,255,.08);overflow:hidden}
+.trade-status b{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,#67f0d0,#5ff3ff,#ffd166)}
+.trade-partner{display:grid;gap:6px;border:1px solid rgba(255,255,255,.09);background:rgba(255,255,255,.035);padding:10px;border-radius:16px}
+.trade-partner span{font-size:.66rem;text-transform:uppercase;letter-spacing:.08em;color:#67f0d0;font-weight:900}
+.trade-partner select{width:100%;border:1px solid rgba(103,240,208,.24);background:rgba(4,10,18,.62);color:var(--text);border-radius:12px;padding:10px}
+.trade-actions{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.trade-actions button{min-height:54px;text-align:left;border-radius:16px;background:rgba(7,12,20,.58);border:1px solid rgba(103,240,208,.20);padding:10px;color:var(--text);font-weight:900}
+.trade-actions button:active{transform:scale(.98)}
+.trade-lists{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.trade-lists>div,.trade-history{display:grid;gap:8px}
+.trade-lists h3,.trade-history h3{font-size:.9rem;margin:2px 0}
+.trade-lists article,.trade-history article{border:1px solid rgba(255,255,255,.08);border-radius:14px;background:rgba(255,255,255,.035);padding:9px}
+.trade-history article.success{border-color:rgba(103,240,208,.24)}
+.trade-history article.failure{border-color:rgba(255,120,79,.28)}
+.trade-lists strong,.trade-history strong{display:block;font-size:.8rem}
+.trade-lists span,.trade-history span,.trade-history small{display:block;color:#d7e6f4;font-size:.64rem;margin-top:3px}
+.marker-trade-route{display:grid;place-items:center;width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,#0d3d38,#67f0d0);color:#02110e;border:2px solid rgba(255,255,255,.68);box-shadow:0 0 28px rgba(103,240,208,.70),0 12px 26px rgba(0,0,0,.45);font-size:1.12rem;animation:tradePulse 1.15s ease-in-out infinite alternate}
+.marker-sanction{display:grid;place-items:center;width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#4b120c,#ff784f);color:#fff;border:2px solid rgba(255,255,255,.68);box-shadow:0 0 26px rgba(255,120,79,.68),0 12px 26px rgba(0,0,0,.45);font-size:1.05rem;animation:sanctionPulse 1s ease-in-out infinite alternate}
+.leaflet-overlay-pane path.trade-route,.leaflet-overlay-pane path.trade-route-risk{animation:tacticalDash 1.1s linear infinite;filter:drop-shadow(0 0 8px rgba(103,240,208,.55))}
+.leaflet-overlay-pane path.trade-route-risk{filter:drop-shadow(0 0 8px rgba(255,120,79,.65))}
+@keyframes tradePulse{0%{transform:scale(.92)}100%{transform:scale(1.08)}}
+@keyframes sanctionPulse{0%{transform:scale(.92) rotate(-4deg)}100%{transform:scale(1.08) rotate(4deg)}}
+@media(max-width:980px){
+  .trade-status{grid-template-columns:1fr}
+  .trade-actions{grid-template-columns:1fr}
+  .trade-lists{grid-template-columns:1fr}
+}
+@media(max-height:560px){
+  .trade-status{grid-template-columns:repeat(4,1fr);gap:6px}
+  .trade-status>div{padding:7px;border-radius:12px}
+  .trade-status small{font-size:.48rem}
+  .trade-status strong{font-size:.72rem}
+  .trade-actions{grid-template-columns:repeat(4,1fr);gap:6px}
+  .trade-actions button{min-height:40px;font-size:.55rem;padding:6px;border-radius:11px}
+}

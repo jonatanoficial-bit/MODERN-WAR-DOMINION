@@ -1,5 +1,5 @@
-const VERSION = "3.4.0";
-const PHASE = "Fase 34 — indústria bélica e cadeias estratégicas";
+const VERSION = "3.5.0";
+const PHASE = "Fase 35 — comércio global sanções e recursos estratégicos";
 const SAVE_KEY = "MWD_SAVE_F17";
 
 const $ = (sel, root = document) => root.querySelector(sel);
@@ -14,7 +14,7 @@ const state = {
   map: null,
   mapUserMoved: false,
   mapAutoCentered: false,
-  layers: { countries: null, regions: null, bases: null, threats: null, fronts: null, airOps: null, navalOps: null, missiles: null, logistics: null, tactical: null, battleEffects: null, weather: null, intel: null, tech: null, industry: null },
+  layers: { countries: null, regions: null, bases: null, threats: null, fronts: null, airOps: null, navalOps: null, missiles: null, logistics: null, tactical: null, battleEffects: null, weather: null, intel: null, tech: null, industry: null, trade: null },
   arsenalFilter: "Todos"
 };
 
@@ -3600,7 +3600,8 @@ function makeMapSettings() {
     weather: true,
     intel: true,
     tech: true,
-    industry: true
+    industry: true,
+    trade: true
   };
 }
 
@@ -3630,7 +3631,8 @@ function mapLayerMeta() {
     ["weather", t("mapops.weather", "Clima"), "🌦️"],
     ["intel", t("mapops.intelLayer", "Inteligência"), "🛰️"],
     ["tech", t("mapops.tech", "Tecnologia"), "🧪"],
-    ["industry", t("mapops.industry", "Indústria"), "🏭"]
+    ["industry", t("mapops.industry", "Indústria"), "🏭"],
+    ["trade", t("mapops.trade", "Comércio"), "💱"]
   ];
 }
 
@@ -3717,6 +3719,10 @@ function focusMap(kind) {
     ["capital","industrial","coast","border"].forEach(id => { const r = getRegion(id); if (r) coords.push(r.coords); });
     if (!coords.length) coords.push(player.coords);
   }
+  if (kind === "trade") {
+    coords.push(player.coords);
+    tradePartners(5).forEach(p => coords.push(p.coords));
+  }
   mapFitCoords(coords.length ? coords : [player.coords], kind === "player" ? 4 : 3);
 }
 
@@ -3739,6 +3745,8 @@ function mapOpsIntelText() {
   if (techSystem) parts.push(`${t("mapops.tech", "Tecnologia").toLowerCase()} ${techPowerIndex()}`);
   const industrial = ensureIndustrySystem();
   if (industrial) parts.push(`${t("mapops.industry", "Indústria").toLowerCase()} ${industryReadiness()}`);
+  const trade = ensureTradeSystem();
+  if (trade) parts.push(`${t("mapops.trade", "Comércio").toLowerCase()} ${trade.marketAccess}/${trade.routeSecurity}`);
   return parts.length ? parts.join(" · ") : `${activeLayers} ${t("mapops.activeLayers", "Camadas ativas").toLowerCase()}`;
 }
 
@@ -3772,6 +3780,7 @@ function renderMapOpsPanel() {
         <button data-map-focus="intel">🛰️ ${t("mapops.intelLayer", "Inteligência")}</button>
         <button data-map-focus="tech">🧪 ${t("mapops.tech", "Tecnologia")}</button>
         <button data-map-focus="industry">🏭 ${t("mapops.industry", "Indústria")}</button>
+        <button data-map-focus="trade">💱 ${t("mapops.trade", "Comércio")}</button>
       </div>
     </section>
     <section class="mapops-layers">
@@ -4243,6 +4252,290 @@ function renderIndustryPanel() {
   $$("#industryPanel [data-industry-action]").forEach(btn => btn.addEventListener("click", () => industryAction(btn.dataset.industryAction)));
 }
 
+
+function makeTradeSystem(country = null) {
+  return {
+    balance: Math.round((country?.economy || 50) * 1.2 - 30),
+    marketAccess: clamp(48 + Math.round((country?.economy || 50) / 3), 20, 160),
+    vulnerability: 28,
+    routeSecurity: 42,
+    history: [],
+    deals: [],
+    sanctions: [],
+    selectedPartnerId: null
+  };
+}
+
+function ensureTradeSystem() {
+  if (!state.game) return null;
+  if (!state.game.tradeSystem) state.game.tradeSystem = makeTradeSystem(getPlayerCountry());
+  const ts = state.game.tradeSystem;
+  if (!Array.isArray(ts.history)) ts.history = [];
+  if (!Array.isArray(ts.deals)) ts.deals = [];
+  if (!Array.isArray(ts.sanctions)) ts.sanctions = [];
+  ts.balance = Math.round(ts.balance ?? 0);
+  ts.marketAccess = clamp(ts.marketAccess ?? 50, 0, 180);
+  ts.vulnerability = clamp(ts.vulnerability ?? 25, 0, 100);
+  ts.routeSecurity = clamp(ts.routeSecurity ?? 40, 0, 160);
+  const partner = tradePartners()[0];
+  if (!ts.selectedPartnerId || !getCountry(ts.selectedPartnerId) || ts.selectedPartnerId === state.game.countryId) {
+    ts.selectedPartnerId = partner?.id || state.countries.find(c => c.id !== state.game.countryId)?.id;
+  }
+  return ts;
+}
+
+function tradePartners(limit = 12) {
+  const g = state.game;
+  if (!g) return [];
+  ensureAiWorld();
+  return state.countries
+    .filter(c => c.id !== g.countryId)
+    .map(c => {
+      const rel = g.relations?.find(r => r.id === c.id);
+      const ai = g.aiWorld?.find(a => a.id === c.id);
+      const score = clamp((rel?.relation ?? 50) + (c.economy || 40) / 3 + (c.oil || 0) / 5 + (ai?.posture === "aliado" ? 16 : ai?.posture === "hostil" ? -24 : 0) - (rel?.tension || 0) / 4, 0, 100);
+      return { ...c, tradeScore: Math.round(score), relation: rel, ai };
+    })
+    .sort((a,b) => b.tradeScore - a.tradeScore)
+    .slice(0, limit);
+}
+
+function tradeDealLabel(kind) {
+  return {
+    importChips: t("trade.importChips", "Importar chips"),
+    importRare: t("trade.importRare", "Importar terras raras"),
+    energyDeal: t("trade.energyDeal", "Acordo energético"),
+    exportFood: t("trade.exportFood", "Exportar excedente"),
+    sanction: t("trade.sanction", "Aplicar sanção"),
+    blackMarket: t("trade.blackMarket", "Mercado paralelo"),
+    secureRoute: t("trade.secureRoute", "Proteger rota")
+  }[kind] || kind;
+}
+
+function recordTradeHistory(kind, partner, text, success = true) {
+  const ts = ensureTradeSystem();
+  ts.history.unshift({
+    id: cryptoId(),
+    kind,
+    partnerId: partner?.id,
+    partnerName: partner?.name || "",
+    partnerFlag: partner?.flag || "",
+    text,
+    success,
+    at: `${monthNames[state.game.month % 12]}/${state.game.year}`
+  });
+  ts.history = ts.history.slice(0, 12);
+}
+
+function selectedTradePartner() {
+  const ts = ensureTradeSystem();
+  return getCountry($("#tradePartnerSelect")?.value || ts.selectedPartnerId) || tradePartners()[0];
+}
+
+function tradeCost(kind) {
+  return {
+    importChips: { finance: 62, industry: 4, energy: 4 },
+    importRare: { finance: 58, industry: 6, energy: 6 },
+    energyDeal: { finance: 48, industry: 6, energy: 0 },
+    exportFood: { finance: 8, industry: 4, energy: 3, food: 45 },
+    sanction: { finance: 20, industry: 4, energy: 4 },
+    blackMarket: { finance: 88, industry: 2, energy: 2 },
+    secureRoute: { finance: 54, industry: 14, energy: 18 }
+  }[kind] || { finance: 20, industry: 0, energy: 0 };
+}
+
+function canPayTrade(cost) {
+  const g = state.game;
+  return g.finance >= (cost.finance || 0) && g.industry >= (cost.industry || 0) && g.energy >= (cost.energy || 0) && g.food >= (cost.food || 0);
+}
+
+function payTrade(cost) {
+  const g = state.game;
+  g.finance -= cost.finance || 0;
+  g.industry -= cost.industry || 0;
+  g.energy -= cost.energy || 0;
+  g.food -= cost.food || 0;
+}
+
+function tradeAction(kind) {
+  const g = state.game;
+  const ts = ensureTradeSystem();
+  const partner = selectedTradePartner();
+  if (!partner) return;
+  ts.selectedPartnerId = partner.id;
+  const cost = tradeCost(kind);
+  if (!canPayTrade(cost)) {
+    g.events.push(eventText("warn", currentLang === "en-US" ? "Insufficient resources for trade action." : currentLang === "es-ES" ? "Recursos insuficientes para acción comercial." : "Recursos insuficientes para ação comercial."));
+    saveGame(); renderGame(); return;
+  }
+  payTrade(cost);
+  const rel = g.relations?.find(r => r.id === partner.id);
+  const ai = g.aiWorld?.find(a => a.id === partner.id);
+  const is = ensureIndustrySystem();
+  let text = "";
+  let success = true;
+  const score = (tradePartners(50).find(p => p.id === partner.id)?.tradeScore ?? 50) + randomInt(-12, 14);
+
+  if (["importChips","importRare","energyDeal","exportFood"].includes(kind) && score < 38) {
+    success = false;
+    ts.vulnerability = clamp(ts.vulnerability + 4, 0, 100);
+    text = `${partner.name}: ${tradeDealLabel(kind)} recusado por baixa confiança comercial.`;
+  } else if (kind === "importChips") {
+    is.stockpiles.chips += randomInt(28, 56);
+    ts.balance -= randomInt(10, 20);
+    ts.marketAccess = clamp(ts.marketAccess + 2, 0, 180);
+    ts.deals.unshift({ id: cryptoId(), kind, partnerId: partner.id, partnerName: partner.name, partnerFlag: partner.flag, remaining: 3, value: 8 });
+    text = `${partner.name}: semicondutores contratados.`;
+  } else if (kind === "importRare") {
+    is.stockpiles.rare += randomInt(30, 58);
+    ts.balance -= randomInt(8, 18);
+    ts.deals.unshift({ id: cryptoId(), kind, partnerId: partner.id, partnerName: partner.name, partnerFlag: partner.flag, remaining: 3, value: 7 });
+    text = `${partner.name}: terras raras importadas.`;
+  } else if (kind === "energyDeal") {
+    g.energy += randomInt(36, 72);
+    ts.balance -= randomInt(5, 12);
+    ts.routeSecurity = clamp(ts.routeSecurity + 4, 0, 160);
+    ts.deals.unshift({ id: cryptoId(), kind, partnerId: partner.id, partnerName: partner.name, partnerFlag: partner.flag, remaining: 4, value: 10 });
+    text = `${partner.name}: acordo energético assinado.`;
+  } else if (kind === "exportFood") {
+    g.finance += randomInt(40, 78);
+    ts.balance += randomInt(14, 24);
+    ts.marketAccess = clamp(ts.marketAccess + 3, 0, 180);
+    if (rel) rel.relation = clamp(rel.relation + 2, 0, 100);
+    text = `${partner.name}: exportação de excedente fechada.`;
+  } else if (kind === "sanction") {
+    ts.sanctions.unshift({ id: cryptoId(), targetId: partner.id, targetName: partner.name, targetFlag: partner.flag, remaining: 4, pressure: randomInt(8, 18) });
+    ts.marketAccess = clamp(ts.marketAccess - randomInt(2, 6), 0, 180);
+    g.worldTension = clamp(g.worldTension + randomInt(2, 6), 0, 100);
+    if (rel) { rel.relation = clamp(rel.relation - 8, 0, 100); rel.tension = clamp(rel.tension + 8, 0, 100); }
+    if (ai) { ai.power = clamp(ai.power - randomInt(1, 4), 1, 100); ai.hostility = clamp(ai.hostility + randomInt(3, 8), 0, 100); }
+    text = `${partner.name}: sanção econômica aplicada.`;
+  } else if (kind === "blackMarket") {
+    const risk = randomInt(0, 100);
+    is.stockpiles.chips += randomInt(12, 30);
+    is.stockpiles.rare += randomInt(12, 26);
+    ts.vulnerability = clamp(ts.vulnerability + randomInt(3, 9), 0, 100);
+    if (risk > 68) {
+      g.stability = clamp(g.stability - randomInt(1, 4), 0, 100);
+      g.worldTension = clamp(g.worldTension + 2, 0, 100);
+      text = `Mercado paralelo entregou insumos, mas gerou risco diplomático.`;
+    } else {
+      text = `Mercado paralelo entregou insumos críticos discretamente.`;
+    }
+  } else if (kind === "secureRoute") {
+    ts.routeSecurity = clamp(ts.routeSecurity + randomInt(10, 20) + Math.round(ensureNavalWar().convoySecurity / 20), 0, 160);
+    ts.vulnerability = clamp(ts.vulnerability - randomInt(5, 12), 0, 100);
+    const ls = ensureLogisticsSystem();
+    if (ls) ls.routeSecurity = clamp((ls.routeSecurity || 0) + 6, 0, 160);
+    text = `${t("trade.secureRoute", "Proteger rota")}: comboios e seguros reforçados.`;
+  }
+  ts.deals = ts.deals.slice(0, 8);
+  ts.sanctions = ts.sanctions.slice(0, 8);
+  recordTradeHistory(kind, partner, text, success);
+  g.events.push(eventText(success ? "sistema" : "warn", text));
+  saveGame(); renderGame(); activatePanel("panelTrade");
+}
+
+function progressTradeSystem() {
+  const g = state.game;
+  const ts = ensureTradeSystem();
+  const is = ensureIndustrySystem();
+  if (!ts || !is) return;
+  const accessBonus = Math.round(ts.marketAccess / 34);
+  const routePenalty = ts.routeSecurity < 38 ? 2 : 0;
+  const vulnerabilityPenalty = ts.vulnerability > 60 ? 2 : 0;
+  ts.balance += Math.round((ts.marketAccess - ts.vulnerability - g.worldTension / 3) / 35);
+  ts.marketAccess = clamp(ts.marketAccess + (ensureCoalition()?.allies?.length ? 1 : 0) - (ts.sanctions.length ? 1 : 0), 0, 180);
+  ts.vulnerability = clamp(ts.vulnerability + Math.round(g.worldTension / 55) - Math.round(ts.routeSecurity / 70), 0, 100);
+  ts.routeSecurity = clamp(ts.routeSecurity + Math.round(ensureNavalWar().convoySecurity / 80) - routePenalty, 0, 160);
+
+  ts.deals.forEach(d => {
+    d.remaining -= 1;
+    if (d.kind === "importChips") is.stockpiles.chips += Math.max(1, d.value - routePenalty - vulnerabilityPenalty);
+    if (d.kind === "importRare") is.stockpiles.rare += Math.max(1, d.value - routePenalty);
+    if (d.kind === "energyDeal") g.energy += Math.max(2, d.value * 2 - vulnerabilityPenalty);
+  });
+  ts.deals = ts.deals.filter(d => d.remaining > 0);
+
+  ts.sanctions.forEach(s => {
+    s.remaining -= 1;
+    const ai = g.aiWorld?.find(a => a.id === s.targetId);
+    if (ai) {
+      ai.power = clamp(ai.power - Math.max(1, Math.round(s.pressure / 7)), 1, 100);
+      ai.readiness = clamp(ai.readiness - Math.max(1, Math.round(s.pressure / 9)), 1, 100);
+      ai.hostility = clamp(ai.hostility + 1, 0, 100);
+    }
+  });
+  ts.sanctions = ts.sanctions.filter(s => s.remaining > 0);
+
+  if ((ts.vulnerability > 72 || ts.routeSecurity < 25) && Math.random() < .25) {
+    is.bottleneck = clamp(is.bottleneck + randomInt(3, 8), 0, 100);
+    g.events.push(eventText("warn", currentLang === "en-US" ? "Trade route disruption increased industrial bottlenecks." : currentLang === "es-ES" ? "Rutas comerciales afectadas aumentaron cuellos industriales." : "Interrupção de rota comercial aumentou gargalos industriais."));
+  }
+}
+
+function renderTradeMapOverlays(player) {
+  const ts = ensureTradeSystem();
+  if (!state.map || !state.layers.trade || !window.L || !ts) return;
+  const origin = getPlayerCountry()?.coords || player.coords;
+  const partners = [
+    ...ts.deals.map(d => getCountry(d.partnerId)).filter(Boolean),
+    ...tradePartners(3)
+  ].filter((c, idx, arr) => c && arr.findIndex(x => x.id === c.id) === idx).slice(0, 6);
+  partners.forEach((p, index) => {
+    const routeClass = ts.routeSecurity < 35 ? "trade-route-risk" : "trade-route";
+    L.polyline([origin, p.coords], { color: ts.routeSecurity < 35 ? "#ff784f" : "#67f0d0", weight: 4, opacity: .62, dashArray: "9 12", className: routeClass }).addTo(state.layers.trade)
+      .bindPopup(`<strong>${p.flag} ${p.name}</strong><br>${t("trade.routes", "Rotas comerciais")} · ${t("trade.access","Acesso ao mercado")}: ${ts.marketAccess}`);
+    const point = interpolateCoords(origin, p.coords, .35 + (index % 3) * .14);
+    const icon = L.divIcon({ className: "", html: `<div class="marker-trade-route">💱</div>`, iconSize: [38, 38], iconAnchor: [19, 19] });
+    L.marker(point, { icon }).addTo(state.layers.trade).bindPopup(`${p.name}: ${t("trade.routes", "Rotas comerciais")}`);
+  });
+  ts.sanctions.forEach(s => {
+    const c = getCountry(s.targetId);
+    if (!c) return;
+    const icon = L.divIcon({ className: "", html: `<div class="marker-sanction">⛔</div>`, iconSize: [36, 36], iconAnchor: [18, 18] });
+    L.marker(jitter(c.coords, .35), { icon }).addTo(state.layers.trade).bindPopup(`${s.targetFlag} ${s.targetName}: ${t("trade.sanctions", "Sanções")} ${s.remaining}m`);
+  });
+}
+
+function renderTradePanel() {
+  const panel = $("#tradePanel");
+  if (!panel || !state.game) return;
+  const ts = ensureTradeSystem();
+  const partners = tradePartners(10);
+  panel.innerHTML = `
+    <div class="trade-status">
+      <div><small>${t("trade.balance","Balança comercial")}</small><strong>${ts.balance}</strong><i><b style="width:${clamp(ts.balance + 50,0,100)}%"></b></i></div>
+      <div><small>${t("trade.access","Acesso ao mercado")}</small><strong>${ts.marketAccess}</strong><i><b style="width:${clamp(ts.marketAccess,0,100)}%"></b></i></div>
+      <div><small>${t("trade.vulnerability","Vulnerabilidade")}</small><strong>${ts.vulnerability}%</strong><i><b style="width:${clamp(ts.vulnerability,0,100)}%"></b></i></div>
+      <div><small>${t("trade.routes","Rotas comerciais")}</small><strong>${ts.routeSecurity}</strong><i><b style="width:${clamp(ts.routeSecurity,0,100)}%"></b></i></div>
+    </div>
+    <label class="trade-partner"><span>${t("trade.partner","Parceiro comercial")}</span>
+      <select id="tradePartnerSelect">
+        ${partners.map(p => `<option value="${p.id}" ${p.id === ts.selectedPartnerId ? "selected" : ""}>${p.flag} ${p.name} · score ${p.tradeScore}</option>`).join("")}
+      </select>
+    </label>
+    <div class="trade-actions">
+      <button data-trade-action="importChips">💾 ${t("trade.importChips","Importar chips")}</button>
+      <button data-trade-action="importRare">⛏️ ${t("trade.importRare","Importar terras raras")}</button>
+      <button data-trade-action="energyDeal">⚡ ${t("trade.energyDeal","Acordo energético")}</button>
+      <button data-trade-action="exportFood">🌾 ${t("trade.exportFood","Exportar excedente")}</button>
+      <button data-trade-action="sanction">⛔ ${t("trade.sanction","Aplicar sanção")}</button>
+      <button data-trade-action="blackMarket">🕶️ ${t("trade.blackMarket","Mercado paralelo")}</button>
+      <button data-trade-action="secureRoute">🛳️ ${t("trade.secureRoute","Proteger rota")}</button>
+    </div>
+    <section class="trade-lists">
+      <div><h3>${t("trade.deals","Acordos ativos")}</h3>${ts.deals.length ? ts.deals.map(d => `<article><strong>${d.partnerFlag} ${d.partnerName}</strong><span>${tradeDealLabel(d.kind)} · ${d.remaining}m</span></article>`).join("") : `<p class="muted">—</p>`}</div>
+      <div><h3>${t("trade.sanctions","Sanções")}</h3>${ts.sanctions.length ? ts.sanctions.map(s => `<article><strong>${s.targetFlag} ${s.targetName}</strong><span>${s.remaining}m · pressão ${s.pressure}</span></article>`).join("") : `<p class="muted">—</p>`}</div>
+    </section>
+    <section class="trade-history">
+      <h3>${t("trade.history","Histórico comercial")}</h3>
+      ${ts.history.length ? ts.history.slice(0,7).map(item => `<article class="${item.success ? "success" : "failure"}"><strong>${item.partnerFlag || "💱"} ${tradeDealLabel(item.kind)}</strong><span>${item.at} · ${item.partnerName}</span><small>${item.text}</small></article>`).join("") : `<p class="muted">${t("trade.noHistory","Nenhuma ação comercial registrada.")}</p>`}
+    </section>`;
+  $("#tradePartnerSelect")?.addEventListener("change", e => { ts.selectedPartnerId = e.target.value; saveGame(); renderTradePanel(); });
+  $$("#tradePanel [data-trade-action]").forEach(btn => btn.addEventListener("click", () => tradeAction(btn.dataset.tradeAction)));
+}
+
 function makeInitialGame(countryId) {
   const country = state.countries.find(c => c.id === countryId) || state.countries[0];
   const regions = makeRegions(country);
@@ -4447,6 +4740,7 @@ function renderGame() {
   ensureStaffSystem();
   ensureTechSystem();
   ensureIndustrySystem();
+  ensureTradeSystem();
   ensureMapSettings();
   renderSummary();
   renderCommanderGuide();
@@ -4471,6 +4765,7 @@ function renderGame() {
   renderStaffPanel();
   renderTechPanel();
   renderIndustryPanel();
+  renderTradePanel();
   renderMapOpsPanel();
   renderGlobalWar();
   renderAiWorld();
@@ -4547,6 +4842,8 @@ function commanderRecommendation() {
   if (g.month > 2 && (techPowerIndex() < powerIndex() / 2 || techSystem.budget < 34)) return { title: t("rec.tech", "Investir em tecnologia"), text: t("rec.techText", "Seu nível tecnológico está ficando abaixo da ameaça global."), action: "tech", panel: "panelTech" };
   const industrial = ensureIndustrySystem();
   if (g.month > 1 && (industrial.bottleneck > 58 || industryReadiness() < 45)) return { title: t("rec.industry", "Reduzir gargalo industrial"), text: t("rec.industryText", "A cadeia militar está pressionada."), action: "industry", panel: "panelIndustry" };
+  const trade = ensureTradeSystem();
+  if (g.month > 1 && (trade.vulnerability > 58 || trade.routeSecurity < 34 || trade.marketAccess < 34)) return { title: t("rec.trade", "Proteger comércio"), text: t("rec.tradeText", "Mercado externo ou rotas comerciais estão pressionados."), action: "trade", panel: "panelTrade" };
   const cyberOps = ensureCyberOps();
   const mainThreat = topAiThreats(1)[0];
   const enemyOps = ensureEnemyOffensives();
@@ -4622,6 +4919,7 @@ function renderCommanderGuide() {
       <button id="quickStaffBtn"><b>🎖️ ${t("guide.staff", "Estado-Maior")}</b><span>${t("guide.staffSub", "oficiais e doutrina")}</span></button>
       <button id="quickTechBtn"><b>🧪 ${t("guide.tech", "Tech")}</b><span>${t("guide.techSub", "P&D militar")}</span></button>
       <button id="quickIndustryBtn"><b>🏭 ${t("guide.industry", "Indústria")}</b><span>${t("guide.industrySub", "fábricas e insumos")}</span></button>
+      <button id="quickTradeBtn"><b>💱 ${t("guide.trade", "Comércio")}</b><span>${t("guide.tradeSub", "rotas e sanções")}</span></button>
       <button id="quickBuildBtn"><b>🏗️ ${t("guide.build", "Construir")}</b><span>${t("guide.buildSub", "base recomendada")}</span></button>
       <button id="quickProduceBtn"><b>🪖 ${t("guide.produce", "Produzir")}</b><span>${t("guide.produceSub", "melhor unidade")}</span></button>
       <button id="quickLogisticsBtn"><b>🚚 ${t("guide.logistics", "Logística")}</b><span>${t("guide.logisticsSub", "suprir tropas")}</span></button>
@@ -5183,6 +5481,7 @@ function initMap() {
   state.layers.intel = L.layerGroup().addTo(state.map);
   state.layers.tech = L.layerGroup().addTo(state.map);
   state.layers.industry = L.layerGroup().addTo(state.map);
+  state.layers.trade = L.layerGroup().addTo(state.map);
   state.map.dragging.enable();
   state.map.scrollWheelZoom.enable();
   state.map.doubleClickZoom.enable();
@@ -5259,6 +5558,7 @@ function updateMapLayers() {
   renderIntelMapOverlays(player);
   renderTechMapOverlays(player);
   renderIndustryMapOverlays(player);
+  renderTradeMapOverlays(player);
   applyMapLayerVisibility();
   if (!state.mapUserMoved && !state.mapAutoCentered) {
     state.map.setView(player.coords, Math.max(state.map.getZoom(), 3), { animate: false });
@@ -5434,6 +5734,7 @@ function advanceMonth() {
   applyStaffPassiveBonuses();
   progressTechSystem();
   progressIndustrySystem();
+  progressTradeSystem();
   progressConstruction();
   progressProduction();
   progressCyberOps();
