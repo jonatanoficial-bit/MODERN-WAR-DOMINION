@@ -1,5 +1,5 @@
-const VERSION = "3.0.0";
-const PHASE = "Fase 30 — clima terreno e condições operacionais";
+const VERSION = "3.0.2";
+const PHASE = "Fase 30.2 — hotfix definitivo seleção de país no mobile";
 const SAVE_KEY = "MWD_SAVE_F17";
 
 const $ = (sel, root = document) => root.querySelector(sel);
@@ -235,18 +235,44 @@ function renderNationConfirmTray(list = state.countries) {
     tray.className = "nation-confirm-tray";
     $("#screenNation")?.appendChild(tray);
   }
+  let topTray = $("#nationTopConfirm");
+  if (!topTray) {
+    topTray = document.createElement("div");
+    topTray.id = "nationTopConfirm";
+    topTray.className = "nation-top-confirm";
+    const grid = $("#nationGrid");
+    grid?.parentNode?.insertBefore(topTray, grid);
+  }
   const selected = state.selectedCountry || list[0] || state.countries[0];
   if (!selected) {
     tray.innerHTML = "";
+    topTray.innerHTML = "";
     return;
   }
-  tray.innerHTML = `
+  tray.setAttribute("data-country-id", selected.id);
+  topTray.setAttribute("data-country-id", selected.id);
+
+  const selectedMarkup = `
     <div class="confirm-country">
-      ${flagHtml(selected, "confirm-flag-img")}
-      <div><small>${t("nation.selectedHint", "País selecionado")}</small><strong>${selected.name}</strong><span>${selected.capital} · ${selected.region}</span></div>
+      <div class="confirm-flag-wrap">${flagHtml(selected, "confirm-flag-img")}</div>
+      <div class="confirm-country-meta">
+        <small>${t("nation.selectedHint", "País selecionado")}</small>
+        <strong>${selected.name}</strong>
+        <span>${selected.capital} · ${selected.region}</span>
+      </div>
     </div>
-    <button id="confirmNationBtn" type="button">${t("nation.confirm", "Confirmar país")}</button>`;
-  $("#confirmNationBtn")?.addEventListener("click", () => startGame(selected.id));
+    <button class="confirm-nation-btn" type="button" data-confirm-nation="${selected.id}">✅ ${t("nation.confirm", "Confirmar país")}</button>`;
+
+  tray.innerHTML = selectedMarkup;
+  topTray.innerHTML = selectedMarkup;
+
+  $$("[data-confirm-nation]").forEach(btn => {
+    btn.addEventListener("click", event => {
+      event.preventDefault();
+      event.stopPropagation();
+      startGame(btn.dataset.confirmNation || selected.id);
+    });
+  });
 }
 
 function makeTutorialState() {

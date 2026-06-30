@@ -1,7 +1,7 @@
 {
   "project": "Modern War Dominion",
-  "version": "3.0.0",
-  "phase": "Fase 30 — Clima, Terreno e Condições Operacionais",
+  "version": "3.0.2",
+  "phase": "Fase 30.2 — Hotfix definitivo seleção de país no mobile",
   "generated_at": "2026-06-24",
   "base": "Fase 5 assets integrados",
   "features": [
@@ -12,13 +12,12 @@
     "mapa real preservado"
   ],
   "notes": [
-    "Novo painel Ambiente/Clima e Terreno",
-    "Clima por região: céu limpo, chuva, tempestade, neblina, calor, frio e poeira/areia",
-    "Nova camada Clima no mapa e na Sala de Guerra",
-    "Clima severo afeta logística, prontidão, aviação, suprimento e avanço de frentes",
-    "Ações: atualizar previsão, preparar tropas, rotas alternativas e janela favorável",
-    "Sistema de fadiga climática e preparação operacional",
-    "Correção de integração mensal: movimento, IA ofensiva e coalizões também progridem ao avançar mês"
+    "Correção definitiva para seleção de país no mobile",
+    "Adicionado botão Confirmar país visível dentro da própria tela, acima da grade",
+    "O botão não depende mais apenas da bandeja fixa inferior",
+    "Grade de nações deixa de esconder o CTA em telas baixas/landscape",
+    "Bandeja fixa inferior continua como reforço em telas compatíveis",
+    "Mantidos todos os sistemas da Fase 30"
   ],
   "countries_count": 249,
   "countries_available": 249,

@@ -272,3 +272,21 @@
 - A Sala de Guerra agora pode focar zonas climáticas.
 - Correção de integração mensal: movimento tático, IA ofensiva e coalizões também progridem ao avançar mês.
 - Save key mantida para preservar campanhas anteriores.
+
+
+## Fase 30.1 — Hotfix seleção de país no mobile
+
+- Correção da bandeja de confirmação na escolha do país inicial.
+- Botão **Confirmar país** agora fica claramente visível no mobile.
+- Layout do rodapé de confirmação foi reorganizado para coluna no celular.
+- Área inferior da grade recebeu espaço extra para o CTA não ficar escondido.
+- Resumo do país selecionado ficou mais claro: bandeira, nome, capital e região.
+
+
+## Fase 30.2 — Hotfix definitivo seleção de país no mobile
+
+- Adicionado botão **Confirmar país** dentro da própria tela de escolha de nação, acima da grade de países.
+- O início da campanha não depende mais apenas do rodapé fixo, que alguns navegadores mobile escondiam.
+- A tela de escolha de país agora rola corretamente no mobile/landscape.
+- A grade deixou de usar altura travada que cortava o botão em telas baixas.
+- O rodapé fixo continua como reforço em telas onde ele funciona bem.

@@ -1,6 +1,6 @@
 {
   "name": "modern-war-dominion",
-  "version": "3.0.0",
+  "version": "3.0.2",
   "private": true,
   "type": "module",
   "scripts": {
@@ -8,5 +8,5 @@
     "audit": "node tools/audit.mjs",
     "integrity": "node tools/integrity.mjs"
   },
-  "description": "Modern War Dominion Fase 30 — clima, terreno e condições operacionais"
+  "description": "Modern War Dominion Fase 30.2 — hotfix definitivo seleção de país mobile"
 }
