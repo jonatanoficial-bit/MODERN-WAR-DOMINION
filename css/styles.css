@@ -1423,3 +1423,47 @@ body:has(#screenWar.screen-active) .nation-confirm-tray{
   .staff-commanders article{grid-template-columns:34px 1fr;padding:8px}
   .staff-commanders article>b{width:32px;height:32px}
 }
+
+
+/* Fase 33 — Pesquisa, tecnologia e modernização militar */
+.tech-panel{display:grid;gap:12px}
+.tech-status{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.tech-status>div{border:1px solid rgba(103,240,208,.22);border-radius:16px;background:linear-gradient(145deg,rgba(25,92,83,.20),rgba(7,12,20,.48));padding:10px}
+.tech-status small{display:block;color:#67f0d0;text-transform:uppercase;letter-spacing:.11em;font-size:.58rem;font-weight:900}
+.tech-status strong{display:block;font-size:.94rem;color:#67f0d0;margin:3px 0}
+.tech-status span{display:block;color:#d7e6f4;font-size:.64rem}
+.tech-focus-select{display:grid;gap:6px;border:1px solid rgba(255,255,255,.09);background:rgba(255,255,255,.035);padding:10px;border-radius:16px}
+.tech-focus-select span{font-size:.66rem;text-transform:uppercase;letter-spacing:.08em;color:#67f0d0;font-weight:900}
+.tech-focus-select select{width:100%;border:1px solid rgba(103,240,208,.24);background:rgba(4,10,18,.62);color:var(--text);border-radius:12px;padding:10px}
+.tech-actions{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.tech-actions button{min-height:54px;text-align:left;border-radius:16px;background:rgba(7,12,20,.58);border:1px solid rgba(103,240,208,.20);padding:10px;color:var(--text);font-weight:900}
+.tech-actions button:active{transform:scale(.98)}
+.tech-tree{display:grid;gap:8px}
+.tech-tree article{display:grid;grid-template-columns:42px 1fr;gap:10px;align-items:center;border:1px solid rgba(255,255,255,.08);border-radius:15px;background:rgba(255,255,255,.035);padding:10px}
+.tech-tree article.active{border-color:rgba(103,240,208,.38);background:linear-gradient(145deg,rgba(25,92,83,.18),rgba(7,12,20,.46))}
+.tech-tree article>b{display:grid;place-items:center;width:40px;height:40px;border-radius:50%;background:rgba(103,240,208,.12);border:1px solid rgba(103,240,208,.25);box-shadow:0 0 18px rgba(103,240,208,.16)}
+.tech-tree strong,.tech-history strong{display:block;font-size:.82rem}
+.tech-tree span,.tech-history span{display:block;color:#d7e6f4;font-size:.66rem;margin-top:2px}
+.tech-tree i{display:block;height:7px;margin-top:6px;border-radius:999px;background:rgba(255,255,255,.08);overflow:hidden}
+.tech-tree em{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,#67f0d0,#5ff3ff,#ffd166)}
+.tech-history{display:grid;gap:8px}
+.tech-history h3{font-size:.9rem;margin:2px 0}
+.tech-history article{border:1px solid rgba(255,255,255,.08);border-radius:14px;background:rgba(255,255,255,.035);padding:9px}
+.marker-tech-lab{display:grid;place-items:center;width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,#0f3c34,#67f0d0);color:#02110e;border:2px solid rgba(255,255,255,.68);box-shadow:0 0 28px rgba(103,240,208,.70),0 12px 26px rgba(0,0,0,.45);font-size:1.12rem;animation:techLabPulse 1.2s ease-in-out infinite alternate}
+.leaflet-overlay-pane path.tech-lab-ring{animation:techRing 2s ease-in-out infinite;filter:drop-shadow(0 0 10px rgba(103,240,208,.48))}
+@keyframes techLabPulse{0%{transform:scale(.92)}100%{transform:scale(1.08)}}
+@keyframes techRing{0%,100%{opacity:.22}50%{opacity:.55}}
+@media(max-width:980px){
+  .tech-status{grid-template-columns:1fr}
+  .tech-actions{grid-template-columns:1fr}
+}
+@media(max-height:560px){
+  .tech-status{grid-template-columns:repeat(3,1fr);gap:6px}
+  .tech-status>div{padding:7px;border-radius:12px}
+  .tech-status small{font-size:.48rem}
+  .tech-status strong{font-size:.72rem}
+  .tech-actions{grid-template-columns:repeat(5,1fr);gap:6px}
+  .tech-actions button{min-height:40px;font-size:.58rem;padding:6px;border-radius:11px}
+  .tech-tree article{grid-template-columns:34px 1fr;padding:8px}
+  .tech-tree article>b{width:32px;height:32px}
+}

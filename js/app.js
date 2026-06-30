@@ -1,5 +1,5 @@
-const VERSION = "3.1.0";
-const PHASE = "Fase 31 — inteligência avançada e névoa de guerra";
+const VERSION = "3.3.0";
+const PHASE = "Fase 33 — pesquisa tecnologia e modernização militar";
 const SAVE_KEY = "MWD_SAVE_F17";
 
 const $ = (sel, root = document) => root.querySelector(sel);
@@ -14,7 +14,7 @@ const state = {
   map: null,
   mapUserMoved: false,
   mapAutoCentered: false,
-  layers: { countries: null, regions: null, bases: null, threats: null, fronts: null, airOps: null, navalOps: null, missiles: null, logistics: null, tactical: null, battleEffects: null, weather: null, intel: null },
+  layers: { countries: null, regions: null, bases: null, threats: null, fronts: null, airOps: null, navalOps: null, missiles: null, logistics: null, tactical: null, battleEffects: null, weather: null, intel: null, tech: null },
   arsenalFilter: "Todos"
 };
 
@@ -3598,7 +3598,8 @@ function makeMapSettings() {
     tactical: true,
     battleEffects: true,
     weather: true,
-    intel: true
+    intel: true,
+    tech: true
   };
 }
 
@@ -3626,7 +3627,8 @@ function mapLayerMeta() {
     ["tactical", t("mapops.tactical", "Tropas/rotas"), "🪖"],
     ["battleEffects", t("mapops.battleEffects", "Batalha/ameaças"), "🔥"],
     ["weather", t("mapops.weather", "Clima"), "🌦️"],
-    ["intel", t("mapops.intelLayer", "Inteligência"), "🛰️"]
+    ["intel", t("mapops.intelLayer", "Inteligência"), "🛰️"],
+    ["tech", t("mapops.tech", "Tecnologia"), "🧪"]
   ];
 }
 
@@ -3704,6 +3706,11 @@ function focusMap(kind) {
     if (!coords.length) topAiThreats(4).forEach(ai => { const c = getCountry(ai.id); if (c) coords.push(c.coords); });
     if (!coords.length) coords.push(player.coords);
   }
+  if (kind === "tech") {
+    const cap = getRegion("capital")?.coords || player.coords;
+    const ind = getRegion("industrial")?.coords || jitter(cap, 1.2);
+    coords.push(cap, ind);
+  }
   mapFitCoords(coords.length ? coords : [player.coords], kind === "player" ? 4 : 3);
 }
 
@@ -3722,6 +3729,8 @@ function mapOpsIntelText() {
   if (severity > 35) parts.push(`${t("mapops.weather", "Clima").toLowerCase()} ${severity}`);
   const intelSystem = ensureIntelSystem();
   if (intelSystem?.fog > 50) parts.push(`${t("intel.fog", "Névoa de guerra").toLowerCase()} ${intelSystem.fog}%`);
+  const techSystem = ensureTechSystem();
+  if (techSystem) parts.push(`${t("mapops.tech", "Tecnologia").toLowerCase()} ${techPowerIndex()}`);
   return parts.length ? parts.join(" · ") : `${activeLayers} ${t("mapops.activeLayers", "Camadas ativas").toLowerCase()}`;
 }
 
@@ -3753,6 +3762,7 @@ function renderMapOpsPanel() {
         <button data-map-focus="fronts">⚔️ ${t("mapops.focusFronts", "Frentes")}</button>
         <button data-map-focus="weather">🌦️ ${t("mapops.weather", "Clima")}</button>
         <button data-map-focus="intel">🛰️ ${t("mapops.intelLayer", "Inteligência")}</button>
+        <button data-map-focus="tech">🧪 ${t("mapops.tech", "Tecnologia")}</button>
       </div>
     </section>
     <section class="mapops-layers">
@@ -3764,6 +3774,242 @@ function renderMapOpsPanel() {
   $$("#mapOpsPanel [data-map-preset]").forEach(btn => btn.addEventListener("click", () => setMapPreset(btn.dataset.mapPreset)));
   $$("#mapOpsPanel [data-map-focus]").forEach(btn => btn.addEventListener("click", () => focusMap(btn.dataset.mapFocus)));
   $$("#mapOpsPanel [data-map-layer]").forEach(btn => btn.addEventListener("click", () => toggleMapLayer(btn.dataset.mapLayer)));
+}
+
+
+function techName(key) {
+  const labels = {
+    drones: t("tech.drones", "Drones autônomos"),
+    stealth: t("tech.stealth", "Furtividade aérea"),
+    hypersonic: t("tech.hypersonic", "Mísseis hipersônicos"),
+    missileDefense: t("tech.missileDefense", "Defesa antimíssil"),
+    aiLogistics: t("tech.aiLogistics", "IA logística"),
+    quantumCyber: t("tech.quantumCyber", "Cyber quântico"),
+    navalPropulsion: t("tech.navalPropulsion", "Propulsão naval"),
+    armorSystems: t("tech.armorSystems", "Blindagem modular")
+  };
+  return labels[key] || key;
+}
+
+function techIcon(key) {
+  return {
+    drones: "🛸",
+    stealth: "🛩️",
+    hypersonic: "🚀",
+    missileDefense: "🛡️",
+    aiLogistics: "🧠",
+    quantumCyber: "💠",
+    navalPropulsion: "⚓",
+    armorSystems: "🪖"
+  }[key] || "🧪";
+}
+
+function techDomain(key) {
+  return {
+    drones: "air",
+    stealth: "air",
+    hypersonic: "missile",
+    missileDefense: "defense",
+    aiLogistics: "logistics",
+    quantumCyber: "cyber",
+    navalPropulsion: "naval",
+    armorSystems: "ground"
+  }[key] || "general";
+}
+
+function makeTechSystem(country = null) {
+  const keys = ["drones","stealth","hypersonic","missileDefense","aiLogistics","quantumCyber","navalPropulsion","armorSystems"];
+  const base = clamp(Math.round((country?.industry || 50) / 16 + (country?.intel || 40) / 18), 1, 12);
+  return {
+    labs: 1,
+    budget: 46,
+    focus: "drones",
+    history: [],
+    techs: keys.map((key, idx) => ({
+      key,
+      level: idx < 2 ? 1 : 0,
+      progress: idx < 2 ? 20 + base : randomInt(0, base),
+      applied: idx < 2 ? 1 : 0
+    }))
+  };
+}
+
+function ensureTechSystem() {
+  if (!state.game) return null;
+  if (!state.game.techSystem) state.game.techSystem = makeTechSystem(getPlayerCountry());
+  const ts = state.game.techSystem;
+  const keys = ["drones","stealth","hypersonic","missileDefense","aiLogistics","quantumCyber","navalPropulsion","armorSystems"];
+  if (!Array.isArray(ts.techs)) ts.techs = [];
+  keys.forEach(key => {
+    if (!ts.techs.find(tk => tk.key === key)) ts.techs.push({ key, level: 0, progress: 0, applied: 0 });
+  });
+  if (!Array.isArray(ts.history)) ts.history = [];
+  ts.labs = clamp(ts.labs ?? 1, 1, 20);
+  ts.budget = clamp(ts.budget ?? 40, 0, 200);
+  ts.focus = ts.focus || "drones";
+  ts.techs.forEach(tk => {
+    tk.level = clamp(tk.level ?? 0, 0, 5);
+    tk.progress = clamp(tk.progress ?? 0, 0, 100);
+    tk.applied = clamp(tk.applied ?? 0, 0, 5);
+  });
+  return ts;
+}
+
+function getTech(key) {
+  return ensureTechSystem()?.techs?.find(tk => tk.key === key);
+}
+
+function techPowerIndex() {
+  const ts = ensureTechSystem();
+  if (!ts) return 0;
+  return ts.techs.reduce((sum, tk) => sum + tk.level * 10 + Math.round(tk.progress / 20), 0) + ts.labs * 4 + Math.round(ts.budget / 10);
+}
+
+function recordTechHistory(kind, key, text) {
+  const ts = ensureTechSystem();
+  ts.history.unshift({ id: cryptoId(), kind, key, icon: techIcon(key), name: techName(key), text, at: `${monthNames[state.game.month % 12]}/${state.game.year}` });
+  ts.history = ts.history.slice(0, 12);
+}
+
+function applyTechLevelEffect(key, level) {
+  const g = state.game;
+  const amount = Math.max(1, level);
+  if (key === "drones") { g.airPower = clamp(g.airPower + amount * 2, 0, 999); g.intel = clamp(g.intel + amount, 0, 220); }
+  if (key === "stealth") { g.airPower = clamp(g.airPower + amount * 3, 0, 999); }
+  if (key === "hypersonic") { g.missilePower = clamp(g.missilePower + amount * 4, 0, 999); }
+  if (key === "missileDefense") { g.defense = clamp(g.defense + amount * 3, 0, 999); ensureMissileWar().shield = clamp(ensureMissileWar().shield + amount * 5, 0, 160); }
+  if (key === "aiLogistics") { g.logistics = clamp(g.logistics + amount * 3, 0, 220); const ls = ensureLogisticsSystem(); if (ls) ls.bottleneck = clamp(ls.bottleneck - amount * 4, 0, 100); }
+  if (key === "quantumCyber") { g.cyber = clamp(g.cyber + amount * 4, 0, 220); ensureCyberOps().security = clamp(ensureCyberOps().security + amount * 3, 0, 160); }
+  if (key === "navalPropulsion") { g.navalPower = clamp(g.navalPower + amount * 4, 0, 999); ensureNavalWar().seaControl = clamp(ensureNavalWar().seaControl + amount * 4, 0, 160); }
+  if (key === "armorSystems") { g.landPower = clamp(g.landPower + amount * 4, 0, 999); g.defense = clamp(g.defense + amount * 2, 0, 999); }
+}
+
+function advanceTechProgress(key, gain, source = "research") {
+  const tk = getTech(key);
+  if (!tk) return;
+  tk.progress += gain;
+  while (tk.progress >= 100 && tk.level < 5) {
+    tk.progress -= 100;
+    tk.level += 1;
+    applyTechLevelEffect(key, tk.level);
+    tk.applied = Math.max(tk.applied || 0, tk.level);
+    const text = `${techName(key)} ${currentLang === "en-US" ? "reached level" : currentLang === "es-ES" ? "alcanzó nivel" : "alcançou nível"} ${tk.level}.`;
+    state.game.events.push(eventText("sistema", text));
+    recordTechHistory("level", key, text);
+  }
+  if (tk.level >= 5) tk.progress = 100;
+  if (source !== "monthly") {
+    recordTechHistory(source, key, `${techName(key)}: +${gain}% P&D.`);
+  }
+}
+
+function progressTechSystem() {
+  const ts = ensureTechSystem();
+  if (!ts) return;
+  const staff = ensureStaffSystem();
+  const intel = ensureIntelSystem();
+  const gain = Math.max(1, Math.round(ts.budget / 26) + ts.labs + Math.round((staffBonus("intel") + (intel.confidence || 0) / 28) / 2));
+  advanceTechProgress(ts.focus, gain, "monthly");
+  if (Math.random() < .18 && ts.budget > 60) {
+    const others = ts.techs.filter(tk => tk.key !== ts.focus && tk.level < 5);
+    if (others.length) advanceTechProgress(others[randomInt(0, others.length - 1)].key, 1, "monthly");
+  }
+}
+
+function techAction(kind, key = null) {
+  const g = state.game;
+  const ts = ensureTechSystem();
+  const selected = key || $("#techFocusSelect")?.value || ts.focus;
+  const costs = {
+    focus: { finance: 8, industry: 2, energy: 2 },
+    fund: { finance: 54, industry: 28, energy: 14 },
+    prototype: { finance: 90, industry: 44, energy: 24 },
+    transfer: { finance: 36, industry: 8, energy: 6 },
+    labs: { finance: 110, industry: 64, energy: 28 }
+  };
+  const cost = costs[kind] || costs.fund;
+  if (g.finance < cost.finance || g.industry < cost.industry || g.energy < cost.energy) {
+    g.events.push(eventText("warn", currentLang === "en-US" ? "Insufficient resources for technology action." : currentLang === "es-ES" ? "Recursos insuficientes para acción tecnológica." : "Recursos insuficientes para ação tecnológica."));
+    saveGame(); renderGame(); return;
+  }
+  g.finance -= cost.finance; g.industry -= cost.industry; g.energy -= cost.energy;
+  if (kind === "focus") {
+    ts.focus = selected;
+    recordTechHistory("focus", selected, `${techName(selected)}: ${currentLang === "en-US" ? "new R&D focus." : currentLang === "es-ES" ? "nuevo foco I+D." : "novo foco de P&D."}`);
+  }
+  if (kind === "fund") {
+    ts.budget = clamp(ts.budget + randomInt(8, 16), 0, 200);
+    advanceTechProgress(selected, randomInt(12, 22) + ts.labs, "fund");
+  }
+  if (kind === "prototype") {
+    ts.budget = clamp(ts.budget + 4, 0, 200);
+    advanceTechProgress(selected, randomInt(24, 42) + Math.round(staffBonus("intel") / 2), "prototype");
+    g.readiness = clamp(g.readiness - 1, 0, 100);
+  }
+  if (kind === "transfer") {
+    const allies = ensureCoalition()?.allies?.length || 0;
+    const gain = allies ? randomInt(14, 26) + allies * 4 : randomInt(4, 10);
+    advanceTechProgress(selected, gain, "transfer");
+    if (!allies) g.events.push(eventText("warn", currentLang === "en-US" ? "No formal allies: transfer was limited." : currentLang === "es-ES" ? "Sin aliados formales: transferencia limitada." : "Sem aliados formais: transferência limitada."));
+  }
+  if (kind === "labs") {
+    ts.labs = clamp(ts.labs + 1, 1, 20);
+    ts.budget = clamp(ts.budget + 6, 0, 200);
+    recordTechHistory("labs", selected, `${t("tech.labsBtn", "Expandir laboratórios")}: ${ts.labs}.`);
+  }
+  saveGame(); renderGame(); activatePanel("panelTech");
+}
+
+function renderTechMapOverlays(player) {
+  const ts = ensureTechSystem();
+  if (!state.map || !state.layers.tech || !window.L || !ts) return;
+  const cap = getRegion("capital")?.coords || player.coords;
+  const industrial = getRegion("industrial")?.coords || jitter(cap, 1.2);
+  const focus = getTech(ts.focus);
+  [cap, industrial].forEach((coords, index) => {
+    const icon = L.divIcon({ className: "", html: `<div class="marker-tech-lab">${index ? "🏭" : "🧪"}</div>`, iconSize: [38, 38], iconAnchor: [19, 19] });
+    L.marker(jitter(coords, .25), { icon }).addTo(state.layers.tech).bindPopup(`<strong>${t("tech.labs", "Laboratórios")} ${index + 1}</strong><br>${techName(ts.focus)} · ${t("tech.progress", "Progresso")} ${focus?.progress || 0}%`);
+  });
+  if (focus && focus.progress > 35) {
+    L.circle(industrial, { radius: 75000 + focus.progress * 900, color: "#67f0d0", fillColor: "#67f0d0", fillOpacity: .05, opacity: .34, weight: 2, className: "tech-lab-ring" }).addTo(state.layers.tech);
+  }
+}
+
+function renderTechPanel() {
+  const panel = $("#techPanel");
+  if (!panel || !state.game) return;
+  const ts = ensureTechSystem();
+  const focus = getTech(ts.focus);
+  panel.innerHTML = `
+    <div class="tech-status">
+      <div><small>${t("tech.labs","Laboratórios")}</small><strong>${ts.labs}</strong><span>${t("tech.budget","Orçamento P&D")}: ${ts.budget}</span></div>
+      <div><small>${t("tech.focus","Foco atual")}</small><strong>${techIcon(ts.focus)} ${techName(ts.focus)}</strong><span>${t("tech.level","Nível")} ${focus?.level || 0} · ${t("tech.progress","Progresso")} ${focus?.progress || 0}%</span></div>
+      <div><small>${currentLang === "en-US" ? "Tech index" : currentLang === "es-ES" ? "Índice tech" : "Índice tech"}</small><strong>${techPowerIndex()}</strong><span>${t("tech.mapLayer","Laboratórios")}</span></div>
+    </div>
+    <label class="tech-focus-select"><span>${t("tech.focus","Foco atual")}</span>
+      <select id="techFocusSelect">
+        ${ts.techs.map(tk => `<option value="${tk.key}" ${tk.key === ts.focus ? "selected" : ""}>${techIcon(tk.key)} ${techName(tk.key)} · ${t("tech.level","Nível")} ${tk.level}</option>`).join("")}
+      </select>
+    </label>
+    <div class="tech-actions">
+      <button data-tech-action="focus">🎯 ${t("tech.focusBtn","Definir foco")}</button>
+      <button data-tech-action="fund">💰 ${t("tech.fund","Financiar pesquisa")}</button>
+      <button data-tech-action="prototype">⚙️ ${t("tech.prototype","Protótipo rápido")}</button>
+      <button data-tech-action="transfer">🤝 ${t("tech.transfer","Transferência aliada")}</button>
+      <button data-tech-action="labs">🏗️ ${t("tech.labsBtn","Expandir laboratórios")}</button>
+    </div>
+    <section class="tech-tree">
+      ${ts.techs.map(tk => `<article class="${tk.key === ts.focus ? "active" : ""}">
+        <b>${techIcon(tk.key)}</b>
+        <div><strong>${techName(tk.key)}</strong><span>${t("tech.level","Nível")} ${tk.level} · ${techDomain(tk.key)}</span><i><em style="width:${clamp(tk.progress,0,100)}%"></em></i></div>
+      </article>`).join("")}
+    </section>
+    <section class="tech-history">
+      <h3>${t("tech.history","Histórico tecnológico")}</h3>
+      ${ts.history.length ? ts.history.slice(0,7).map(item => `<article><strong>${item.icon} ${item.name}</strong><span>${item.at} · ${item.text}</span></article>`).join("") : `<p class="muted">${t("tech.noHistory","Nenhuma pesquisa registrada.")}</p>`}
+    </section>`;
+  $("#techFocusSelect")?.addEventListener("change", e => { ts.focus = e.target.value; saveGame(); renderTechPanel(); });
+  $$("#techPanel [data-tech-action]").forEach(btn => btn.addEventListener("click", () => techAction(btn.dataset.techAction)));
 }
 
 function makeInitialGame(countryId) {
@@ -3968,6 +4214,7 @@ function renderGame() {
   ensureEnvironmentSystem();
   ensureIntelSystem();
   ensureStaffSystem();
+  ensureTechSystem();
   ensureMapSettings();
   renderSummary();
   renderCommanderGuide();
@@ -3990,6 +4237,7 @@ function renderGame() {
   renderCoalitionPanel();
   renderEnvironmentPanel();
   renderStaffPanel();
+  renderTechPanel();
   renderMapOpsPanel();
   renderGlobalWar();
   renderAiWorld();
@@ -4062,6 +4310,8 @@ function commanderRecommendation() {
   if (g.month > 1 && (intelSystem.fog > 62 || intelSystem.confidence < 35)) return { title: t("rec.intel", "Melhorar inteligência"), text: t("rec.intelText", "A névoa de guerra está alta."), action: "intel", panel: "panelIntel" };
   const staff = ensureStaffSystem();
   if (g.month > 1 && (staff.fatigue > 64 || staff.morale < 42)) return { title: t("rec.staff", "Reorganizar Estado-Maior"), text: t("rec.staffText", "A fadiga de comando está alta ou a moral está baixa."), action: "staff", panel: "panelStaff" };
+  const techSystem = ensureTechSystem();
+  if (g.month > 2 && (techPowerIndex() < powerIndex() / 2 || techSystem.budget < 34)) return { title: t("rec.tech", "Investir em tecnologia"), text: t("rec.techText", "Seu nível tecnológico está ficando abaixo da ameaça global."), action: "tech", panel: "panelTech" };
   const cyberOps = ensureCyberOps();
   const mainThreat = topAiThreats(1)[0];
   const enemyOps = ensureEnemyOffensives();
@@ -4135,6 +4385,7 @@ function renderCommanderGuide() {
     <div class="mobile-command-grid">
       <button id="quickMapBtn"><b>🗺️ ${t("guide.map", "Mapa")}</b><span>${t("guide.mapSub", "filtrar camadas")}</span></button>
       <button id="quickStaffBtn"><b>🎖️ ${t("guide.staff", "Estado-Maior")}</b><span>${t("guide.staffSub", "oficiais e doutrina")}</span></button>
+      <button id="quickTechBtn"><b>🧪 ${t("guide.tech", "Tech")}</b><span>${t("guide.techSub", "P&D militar")}</span></button>
       <button id="quickBuildBtn"><b>🏗️ ${t("guide.build", "Construir")}</b><span>${t("guide.buildSub", "base recomendada")}</span></button>
       <button id="quickProduceBtn"><b>🪖 ${t("guide.produce", "Produzir")}</b><span>${t("guide.produceSub", "melhor unidade")}</span></button>
       <button id="quickLogisticsBtn"><b>🚚 ${t("guide.logistics", "Logística")}</b><span>${t("guide.logisticsSub", "suprir tropas")}</span></button>
@@ -4694,6 +4945,7 @@ function initMap() {
   state.layers.battleEffects = L.layerGroup().addTo(state.map);
   state.layers.weather = L.layerGroup().addTo(state.map);
   state.layers.intel = L.layerGroup().addTo(state.map);
+  state.layers.tech = L.layerGroup().addTo(state.map);
   state.map.dragging.enable();
   state.map.scrollWheelZoom.enable();
   state.map.doubleClickZoom.enable();
@@ -4768,6 +5020,7 @@ function updateMapLayers() {
   renderEnemyOffensivesMap(player);
   renderEnvironmentMapOverlays(player);
   renderIntelMapOverlays(player);
+  renderTechMapOverlays(player);
   applyMapLayerVisibility();
   if (!state.mapUserMoved && !state.mapAutoCentered) {
     state.map.setView(player.coords, Math.max(state.map.getZoom(), 3), { animate: false });
@@ -4941,6 +5194,7 @@ function advanceMonth() {
   progressEnvironmentSystem();
   progressIntelSystem();
   applyStaffPassiveBonuses();
+  progressTechSystem();
   progressConstruction();
   progressProduction();
   progressCyberOps();

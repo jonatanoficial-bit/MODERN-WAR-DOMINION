@@ -1,6 +1,6 @@
 {
   "name": "modern-war-dominion",
-  "version": "3.2.0",
+  "version": "3.3.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -8,5 +8,5 @@
     "audit": "node tools/audit.mjs",
     "integrity": "node tools/integrity.mjs"
   },
-  "description": "Modern War Dominion Fase 32 — Estado-Maior, comandantes e doutrina"
+  "description": "Modern War Dominion Fase 33 — pesquisa, tecnologia e modernização militar"
 }

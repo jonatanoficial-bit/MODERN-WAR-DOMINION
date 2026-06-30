@@ -315,3 +315,16 @@
 - Bônus de comandantes e doutrina afetam ataques, logística e inteligência.
 - Gameplay fica mais realista: o jogador passa a comandar por oficiais e não operar tudo sozinho.
 - Save key mantida para preservar campanhas anteriores.
+
+
+## Fase 33 — Pesquisa, Tecnologia e Modernização Militar
+
+- Novo painel Pesquisa e Modernização.
+- Árvore tecnológica com drones, furtividade, hipersônicos, defesa antimíssil, IA logística, cyber quântico, propulsão naval e blindagem modular.
+- Sistema de laboratórios, orçamento de P&D, foco tecnológico e progresso mensal.
+- Ações: definir foco, financiar pesquisa, protótipo rápido, transferência aliada e expandir laboratórios.
+- Tecnologias desbloqueiam bônus reais em ar, terra, naval, mísseis, defesa, logística, cyber e inteligência.
+- Nova camada Tecnologia no mapa e na Sala de Guerra.
+- Laboratórios e anéis de P&D aparecem no mapa real.
+- Integração com coalizões, Estado-Maior, inteligência e economia.
+- Save key mantida para preservar campanhas anteriores.

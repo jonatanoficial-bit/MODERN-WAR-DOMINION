@@ -1,7 +1,7 @@
 {
   "project": "Modern War Dominion",
-  "version": "3.2.0",
-  "phase": "Fase 32 — Estado-Maior, Comandantes e Doutrina",
+  "version": "3.3.0",
+  "phase": "Fase 33 — Pesquisa, Tecnologia e Modernização Militar",
   "generated_at": "2026-06-24",
   "base": "Fase 5 assets integrados",
   "features": [
@@ -12,12 +12,13 @@
     "mapa real preservado"
   ],
   "notes": [
-    "Novo painel Estado-Maior e Doutrina",
-    "Comandantes por função: terrestre, aérea, naval, logística e inteligência",
-    "Doutrinas: armas combinadas, batalha aeroterrestre, projeção marítima, defesa em profundidade e guerra de informação",
-    "Moral e fadiga de comando impactam bônus operacionais",
-    "Ordens estratégicas: reorganizar Estado-Maior, conselho de guerra, treino de oficiais e rodízio/descanso",
-    "Bônus do Estado-Maior afetam ataques, logística e inteligência"
+    "Novo painel Pesquisa e Modernização",
+    "Árvore tecnológica com oito linhas de pesquisa",
+    "Sistemas de laboratórios, orçamento de P&D, foco tecnológico e progresso mensal",
+    "Ações: definir foco, financiar pesquisa, protótipo rápido, transferência aliada e expandir laboratórios",
+    "Tecnologias desbloqueiam bônus reais em ar, terra, naval, mísseis, defesa, logística, cyber e inteligência",
+    "Nova camada Tecnologia no mapa e na Sala de Guerra",
+    "Laboratórios e anéis de P&D aparecem no mapa real"
   ],
   "countries_count": 249,
   "countries_available": 249,
@@ -121,6 +122,13 @@
     "doutrina militar",
     "moral de comando",
     "fadiga de comando",
-    "ordens estratégicas"
+    "ordens estratégicas",
+    "P&D militar",
+    "árvore tecnológica",
+    "laboratórios",
+    "protótipos",
+    "modernização militar",
+    "tecnologia hipersônica",
+    "IA logística"
   ]
 }
