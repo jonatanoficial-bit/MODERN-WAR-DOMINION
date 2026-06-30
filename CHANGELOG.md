@@ -290,3 +290,16 @@
 - A tela de escolha de país agora rola corretamente no mobile/landscape.
 - A grade deixou de usar altura travada que cortava o botão em telas baixas.
 - O rodapé fixo continua como reforço em telas onde ele funciona bem.
+
+
+## Fase 31 — Inteligência Avançada e Névoa de Guerra
+
+- Correção mobile: removido o painel fixo inferior da seleção de país para não bloquear a jogabilidade.
+- O botão de confirmação do país permanece dentro da tela, acima da grade, sem depender do painel fixo.
+- Novo sistema de Inteligência Avançada.
+- Névoa de guerra, confiança de dados, satélite e SIGINT.
+- Ações: varredura por satélite, reconhecimento avançado, interceptar comunicações e contraespionagem.
+- Nova camada Inteligência na Sala de Guerra.
+- Varreduras aparecem no mapa real com anéis, rotas e marcadores.
+- Inteligência baixa aumenta risco de surpresa e incerteza contra rivais.
+- Save key mantida para preservar campanhas anteriores.

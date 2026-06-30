@@ -1,7 +1,7 @@
 {
   "project": "Modern War Dominion",
-  "version": "3.0.2",
-  "phase": "Fase 30.2 — Hotfix definitivo seleção de país no mobile",
+  "version": "3.1.0",
+  "phase": "Fase 31 — Inteligência Avançada e Névoa de Guerra",
   "generated_at": "2026-06-24",
   "base": "Fase 5 assets integrados",
   "features": [
@@ -12,12 +12,13 @@
     "mapa real preservado"
   ],
   "notes": [
-    "Correção definitiva para seleção de país no mobile",
-    "Adicionado botão Confirmar país visível dentro da própria tela, acima da grade",
-    "O botão não depende mais apenas da bandeja fixa inferior",
-    "Grade de nações deixa de esconder o CTA em telas baixas/landscape",
-    "Bandeja fixa inferior continua como reforço em telas compatíveis",
-    "Mantidos todos os sistemas da Fase 30"
+    "Correção do painel fixo mobile: a bandeja fixa de seleção de país foi desativada para não bloquear a jogabilidade",
+    "Mantido botão de confirmação dentro da tela de escolha de nação",
+    "Novo sistema de Inteligência Avançada",
+    "Névoa de guerra, confiança, satélite e SIGINT",
+    "Ações: varredura por satélite, reconhecimento avançado, interceptar comunicações e contraespionagem",
+    "Nova camada de inteligência no mapa e na Sala de Guerra",
+    "Varreduras aparecem no mapa real com rotas e anéis de scan"
   ],
   "countries_count": 249,
   "countries_available": 249,
@@ -109,6 +110,12 @@
     "condições ambientais",
     "fadiga climática",
     "previsão meteorológica",
-    "camada clima no mapa"
+    "camada clima no mapa",
+    "inteligência avançada",
+    "névoa de guerra",
+    "satélites",
+    "SIGINT",
+    "varredura no mapa",
+    "confiança de dados"
   ]
 }

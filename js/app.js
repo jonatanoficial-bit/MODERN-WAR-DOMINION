@@ -1,5 +1,5 @@
-const VERSION = "3.0.2";
-const PHASE = "Fase 30.2 — hotfix definitivo seleção de país no mobile";
+const VERSION = "3.1.0";
+const PHASE = "Fase 31 — inteligência avançada e névoa de guerra";
 const SAVE_KEY = "MWD_SAVE_F17";
 
 const $ = (sel, root = document) => root.querySelector(sel);
@@ -14,7 +14,7 @@ const state = {
   map: null,
   mapUserMoved: false,
   mapAutoCentered: false,
-  layers: { countries: null, regions: null, bases: null, threats: null, fronts: null, airOps: null, navalOps: null, missiles: null, logistics: null, tactical: null, battleEffects: null, weather: null },
+  layers: { countries: null, regions: null, bases: null, threats: null, fronts: null, airOps: null, navalOps: null, missiles: null, logistics: null, tactical: null, battleEffects: null, weather: null, intel: null },
   arsenalFilter: "Todos"
 };
 
@@ -3391,6 +3391,199 @@ function renderEnvironmentPanel() {
   $$("#environmentPanel [data-environment-action]").forEach(btn => btn.addEventListener("click", () => environmentAction(btn.dataset.environmentAction)));
 }
 
+
+function makeIntelSystem(country = null) {
+  return {
+    confidence: clamp(34 + Math.round((country?.intel || 40) / 4), 0, 160),
+    satellite: clamp(24 + Math.round((country?.cyber || 30) / 6), 0, 160),
+    sigint: clamp(22 + Math.round((country?.intel || 30) / 5), 0, 160),
+    fog: 68,
+    selectedTargetId: null,
+    scans: [],
+    history: []
+  };
+}
+
+function ensureIntelSystem() {
+  if (!state.game) return null;
+  if (!state.game.intelSystem) state.game.intelSystem = makeIntelSystem(getPlayerCountry());
+  const intel = state.game.intelSystem;
+  if (!Array.isArray(intel.scans)) intel.scans = [];
+  if (!Array.isArray(intel.history)) intel.history = [];
+  intel.confidence = clamp(intel.confidence ?? 40, 0, 160);
+  intel.satellite = clamp(intel.satellite ?? 25, 0, 160);
+  intel.sigint = clamp(intel.sigint ?? 25, 0, 160);
+  intel.fog = clamp(intel.fog ?? 60, 0, 100);
+  const target = topAiThreats(1)[0];
+  if (!intel.selectedTargetId || !getCountry(intel.selectedTargetId) || intel.selectedTargetId === state.game.countryId) {
+    intel.selectedTargetId = target?.id || state.countries.find(c => c.id !== state.game.countryId)?.id;
+  }
+  return intel;
+}
+
+function intelTargets() {
+  ensureAiWorld();
+  return topAiThreats(14).map(ai => {
+    const c = getCountry(ai.id);
+    return c ? { ...c, ai, intelScore: clamp((ai.power + ai.hostility + ai.readiness) / 3, 0, 100) } : null;
+  }).filter(Boolean);
+}
+
+function intelCost(kind) {
+  return {
+    scan: { finance: 34, industry: 5, energy: 18 },
+    recon: { finance: 42, industry: 8, energy: 20 },
+    signal: { finance: 36, industry: 6, energy: 14 },
+    counter: { finance: 30, industry: 10, energy: 10 }
+  }[kind] || { finance: 20, industry: 4, energy: 8 };
+}
+
+function intelLabel(kind) {
+  return {
+    scan: t("intel.scan", "Varredura por satélite"),
+    recon: t("intel.recon", "Reconhecimento avançado"),
+    signal: t("intel.signal", "Interceptar comunicações"),
+    counter: t("intel.counter", "Contraespionagem")
+  }[kind] || kind;
+}
+
+function recordIntelHistory(kind, target, text, success = true) {
+  const intel = ensureIntelSystem();
+  const item = {
+    id: cryptoId(),
+    kind,
+    label: intelLabel(kind),
+    targetId: target?.id,
+    targetName: target?.name || "",
+    targetFlag: target?.flag || "",
+    text,
+    success,
+    coords: target?.coords ? jitter(target.coords, .55) : null,
+    at: `${monthNames[state.game.month % 12]}/${state.game.year}`
+  };
+  intel.history.unshift(item);
+  intel.history = intel.history.slice(0, 12);
+  if (item.coords) {
+    intel.scans.unshift(item);
+    intel.scans = intel.scans.slice(0, 8);
+  }
+}
+
+function intelOperation(kind) {
+  const g = state.game;
+  const intel = ensureIntelSystem();
+  const targetId = $("#intelTargetSelect")?.value || intel.selectedTargetId;
+  const target = getCountry(targetId);
+  if (!target) return;
+  intel.selectedTargetId = target.id;
+  const cost = intelCost(kind);
+  if (g.finance < cost.finance || g.industry < cost.industry || g.energy < cost.energy) {
+    g.events.push(eventText("warn", currentLang === "en-US" ? "Insufficient resources for intelligence operation." : currentLang === "es-ES" ? "Recursos insuficientes para operación de inteligencia." : "Recursos insuficientes para operação de inteligência."));
+    saveGame(); renderGame(); return;
+  }
+  g.finance -= cost.finance;
+  g.industry -= cost.industry;
+  g.energy -= cost.energy;
+  const ai = g.aiWorld?.find(a => a.id === target.id);
+  let text = "";
+  if (kind === "scan") {
+    intel.satellite = clamp(intel.satellite + randomInt(8, 15), 0, 160);
+    intel.confidence = clamp(intel.confidence + randomInt(5, 10), 0, 160);
+    intel.fog = clamp(intel.fog - randomInt(8, 16), 0, 100);
+    g.intel = clamp(g.intel + 2, 0, 160);
+    text = `${target.name}: satélites atualizaram posição de bases, rotas e mobilização.`;
+  }
+  if (kind === "recon") {
+    intel.confidence = clamp(intel.confidence + randomInt(7, 14), 0, 160);
+    intel.fog = clamp(intel.fog - randomInt(6, 12), 0, 100);
+    if (ai) ai.readiness = clamp(ai.readiness - randomInt(1, 4), 1, 100);
+    g.readiness = clamp(g.readiness + 1, 0, 100);
+    text = `${target.name}: reconhecimento avançado reduziu incerteza operacional.`;
+  }
+  if (kind === "signal") {
+    intel.sigint = clamp(intel.sigint + randomInt(9, 16), 0, 160);
+    intel.confidence = clamp(intel.confidence + randomInt(4, 8), 0, 160);
+    intel.fog = clamp(intel.fog - randomInt(4, 10), 0, 100);
+    if (ai) ai.hostility = clamp(ai.hostility - randomInt(1, 3), 0, 100);
+    const eo = ensureEnemyOffensives();
+    eo.active.slice(0,1).forEach(op => op.strength = clamp(op.strength - randomInt(3, 8), 1, 120));
+    text = `${target.name}: comunicações interceptadas melhoraram alerta antecipado.`;
+  }
+  if (kind === "counter") {
+    intel.confidence = clamp(intel.confidence + randomInt(3, 7), 0, 160);
+    intel.fog = clamp(intel.fog - randomInt(2, 5), 0, 100);
+    const cyber = ensureCyberOps();
+    cyber.security = clamp(cyber.security + randomInt(5, 12), 0, 160);
+    cyber.counterIntel = clamp(cyber.counterIntel + randomInt(4, 9), 0, 160);
+    text = `Contraespionagem reforçou segurança interna e reduziu risco de surpresa.`;
+  }
+  recordIntelHistory(kind, target, text, true);
+  g.events.push(eventText("sistema", text));
+  saveGame();
+  renderGame();
+  activatePanel("panelIntel");
+}
+
+function progressIntelSystem() {
+  const intel = ensureIntelSystem();
+  if (!intel) return;
+  const threat = topAiThreats(1)[0];
+  const pressure = (state.game.worldTension || 0) + (threat?.hostility || 0);
+  intel.fog = clamp(intel.fog + Math.round(pressure / 70) - Math.round((intel.satellite + intel.sigint + intel.confidence) / 180), 0, 100);
+  intel.confidence = clamp(intel.confidence - (intel.fog > 70 ? 2 : 0) + (intel.sigint > 80 ? 1 : 0), 0, 160);
+  if (intel.fog > 76 && Math.random() < .22) {
+    state.game.events.push(eventText("warn", currentLang === "en-US" ? "Fog of war increased uncertainty around rival intentions." : currentLang === "es-ES" ? "La niebla de guerra aumentó la incertidumbre sobre rivales." : "Névoa de guerra aumentou a incerteza sobre intenções rivais."));
+  }
+}
+
+function renderIntelMapOverlays(player) {
+  const intel = ensureIntelSystem();
+  if (!state.map || !state.layers.intel || !window.L || !intel) return;
+  intel.scans.slice(0,8).forEach((scan, index) => {
+    if (!scan.coords) return;
+    const icon = L.divIcon({ className: "", html: `<div class="marker-intel-scan">🛰️</div>`, iconSize: [38, 38], iconAnchor: [19, 19] });
+    L.marker(scan.coords, { icon }).addTo(state.layers.intel).bindPopup(`<strong>${scan.targetFlag || ""} ${scan.targetName}</strong><br>${scan.label}<br>${scan.text}`);
+    L.circle(scan.coords, { radius: 85000 + index * 9000, color: "#9b7cff", fillColor: "#9b7cff", fillOpacity: .05, opacity: .34, weight: 2, className: "intel-scan-ring" }).addTo(state.layers.intel);
+    if (player?.coords) L.polyline([player.coords, scan.coords], { color: "#9b7cff", weight: 3, opacity: .55, dashArray: "4 9", className: "intel-scan-route" }).addTo(state.layers.intel);
+  });
+}
+
+function renderAdvancedIntelPanel() {
+  const panel = $("#advancedIntelPanel");
+  if (!panel || !state.game) return;
+  const intel = ensureIntelSystem();
+  const targets = intelTargets();
+  const target = getCountry(intel.selectedTargetId) || targets[0];
+  panel.innerHTML = `
+    <div class="advanced-intel-status">
+      <div><small>${t("intel.confidence", "Confiança")}</small><strong>${intel.confidence}</strong><i><b style="width:${clamp(intel.confidence,0,100)}%"></b></i></div>
+      <div><small>${t("intel.satellite", "Satélites")}</small><strong>${intel.satellite}</strong><i><b style="width:${clamp(intel.satellite,0,100)}%"></b></i></div>
+      <div><small>${t("intel.sigint", "SIGINT")}</small><strong>${intel.sigint}</strong><i><b style="width:${clamp(intel.sigint,0,100)}%"></b></i></div>
+      <div><small>${t("intel.fog", "Névoa de guerra")}</small><strong>${intel.fog}%</strong><i><b style="width:${clamp(intel.fog,0,100)}%"></b></i></div>
+    </div>
+    <label class="intel-target"><span>${t("intel.target", "Alvo de inteligência")}</span>
+      <select id="intelTargetSelect">
+        ${targets.map(c => `<option value="${c.id}" ${c.id === intel.selectedTargetId ? "selected" : ""}>${c.flag} ${c.name} · ${t("intel.confidence","Confiança")} ${c.intelScore}</option>`).join("")}
+      </select>
+    </label>
+    <div class="intel-actions">
+      <button data-intel-action="scan">🛰️ ${t("intel.scan", "Varredura por satélite")}</button>
+      <button data-intel-action="recon">🔭 ${t("intel.recon", "Reconhecimento avançado")}</button>
+      <button data-intel-action="signal">📡 ${t("intel.signal", "Interceptar comunicações")}</button>
+      <button data-intel-action="counter">🛡️ ${t("intel.counter", "Contraespionagem")}</button>
+    </div>
+    <section class="intel-history">
+      <h3>${t("intel.history", "Histórico de inteligência")}</h3>
+      ${intel.history.length ? intel.history.slice(0,7).map(item => `<article class="${item.success ? "success" : "failure"}"><strong>${item.targetFlag || "🛰️"} ${item.label}</strong><span>${item.at} · ${item.targetName}</span><small>${item.text}</small></article>`).join("") : `<p class="muted">${t("intel.noHistory", "Nenhuma operação de inteligência registrada.")}</p>`}
+    </section>`;
+  $("#intelTargetSelect")?.addEventListener("change", e => {
+    intel.selectedTargetId = e.target.value;
+    saveGame();
+    renderAdvancedIntelPanel();
+  });
+  $$("#advancedIntelPanel [data-intel-action]").forEach(btn => btn.addEventListener("click", () => intelOperation(btn.dataset.intelAction)));
+}
+
 function makeMapSettings() {
   return {
     countries: true,
@@ -3404,7 +3597,8 @@ function makeMapSettings() {
     logistics: true,
     tactical: true,
     battleEffects: true,
-    weather: true
+    weather: true,
+    intel: true
   };
 }
 
@@ -3431,7 +3625,8 @@ function mapLayerMeta() {
     ["logistics", t("mapops.logisticLayer", "Logística"), "🚚"],
     ["tactical", t("mapops.tactical", "Tropas/rotas"), "🪖"],
     ["battleEffects", t("mapops.battleEffects", "Batalha/ameaças"), "🔥"],
-    ["weather", t("mapops.weather", "Clima"), "🌦️"]
+    ["weather", t("mapops.weather", "Clima"), "🌦️"],
+    ["intel", t("mapops.intelLayer", "Inteligência"), "🛰️"]
   ];
 }
 
@@ -3504,6 +3699,11 @@ function focusMap(kind) {
     ensureEnvironmentSystem()?.weather?.forEach(w => { const r = getRegion(w.regionId); if (r) coords.push(r.coords); });
     if (!coords.length) coords.push(player.coords);
   }
+  if (kind === "intel") {
+    ensureIntelSystem()?.scans?.forEach(s => { if (s.coords) coords.push(s.coords); });
+    if (!coords.length) topAiThreats(4).forEach(ai => { const c = getCountry(ai.id); if (c) coords.push(c.coords); });
+    if (!coords.length) coords.push(player.coords);
+  }
   mapFitCoords(coords.length ? coords : [player.coords], kind === "player" ? 4 : 3);
 }
 
@@ -3520,6 +3720,8 @@ function mapOpsIntelText() {
   if (scenes?.length) parts.push(`${scenes.length} ${t("battlefield.effects", "Efeitos visuais").toLowerCase()}`);
   const severity = severeWeatherScore();
   if (severity > 35) parts.push(`${t("mapops.weather", "Clima").toLowerCase()} ${severity}`);
+  const intelSystem = ensureIntelSystem();
+  if (intelSystem?.fog > 50) parts.push(`${t("intel.fog", "Névoa de guerra").toLowerCase()} ${intelSystem.fog}%`);
   return parts.length ? parts.join(" · ") : `${activeLayers} ${t("mapops.activeLayers", "Camadas ativas").toLowerCase()}`;
 }
 
@@ -3550,6 +3752,7 @@ function renderMapOpsPanel() {
         <button data-map-focus="allies">🤝 ${t("mapops.focusAllies", "Aliados")}</button>
         <button data-map-focus="fronts">⚔️ ${t("mapops.focusFronts", "Frentes")}</button>
         <button data-map-focus="weather">🌦️ ${t("mapops.weather", "Clima")}</button>
+        <button data-map-focus="intel">🛰️ ${t("mapops.intelLayer", "Inteligência")}</button>
       </div>
     </section>
     <section class="mapops-layers">
@@ -3721,6 +3924,8 @@ function generateThreats(playerCountry) {
 }
 
 function startGame(countryId) {
+  $("#nationConfirmTray")?.replaceChildren();
+  $("#nationTopConfirm")?.replaceChildren();
   state.game = makeInitialGame(countryId);
   state.mapUserMoved = false;
   state.mapAutoCentered = false;
@@ -3761,6 +3966,7 @@ function renderGame() {
   ensureEnemyOffensives();
   ensureCoalition();
   ensureEnvironmentSystem();
+  ensureIntelSystem();
   ensureMapSettings();
   renderSummary();
   renderCommanderGuide();
@@ -3850,6 +4056,8 @@ function commanderRecommendation() {
   if (g.month > 1 && (logisticsSystem.bottleneck > 58 || logisticsSystem.fuelReserve < 24 || logisticsSystem.ammoStock < 24)) return { title: t("rec.logistics", "Reforçar logística"), text: t("rec.logisticsText", "Gargalos ou suprimentos baixos podem travar produção e frentes."), action: "logistics", panel: "panelLogistics" };
   const environment = ensureEnvironmentSystem();
   if (g.month > 1 && (severeWeatherScore() > 48 || environment.fatigue > 45)) return { title: t("rec.environment", "Preparar ambiente"), text: t("rec.environmentText", "Condições climáticas severas podem travar operações."), action: "environment", panel: "panelEnvironment" };
+  const intelSystem = ensureIntelSystem();
+  if (g.month > 1 && (intelSystem.fog > 62 || intelSystem.confidence < 35)) return { title: t("rec.intel", "Melhorar inteligência"), text: t("rec.intelText", "A névoa de guerra está alta."), action: "intel", panel: "panelIntel" };
   const cyberOps = ensureCyberOps();
   const mainThreat = topAiThreats(1)[0];
   const enemyOps = ensureEnemyOffensives();
@@ -3936,6 +4144,7 @@ function renderCommanderGuide() {
       <button id="quickGroundBtn"><b>🗺️ ${t("guide.ground", "Frente")}</b><span>${t("guide.groundSub", "ocupar território")}</span></button>
       <button id="quickMoveBtn"><b>🚛 ${t("guide.movement", "Mover")}</b><span>${t("guide.movementSub", "redistribuir forças")}</span></button>
       <button id="quickCyberBtn"><b>🕵️ ${t("guide.cyber", "Cyber")}</b><span>${t("guide.cyberSub", "espionar rivais")}</span></button>
+      <button id="quickIntelBtn"><b>🛰️ ${t("guide.intel", "Intel")}</b><span>${t("guide.intelSub", "revelar ameaças")}</span></button>
       <button id="quickEconomyBtn"><b>🏭 ${t("guide.economy", "Economia")}</b><span>${t("guide.economySub", "mobilização e inflação")}</span></button>
       <button id="quickWorldBtn"><b>🌐 ${t("guide.world", "Mundo")}</b><span>${t("guide.worldSub", "DEFCON e crise")}</span></button>
       <button id="quickAiBtn"><b>🛰️ ${t("guide.ai", "IA")}</b><span>${t("guide.aiSub", "rivais ativos")}</span></button>
@@ -3955,6 +4164,7 @@ function renderCommanderGuide() {
   $("#quickGroundBtn")?.addEventListener("click", () => activatePanel("panelGround"));
   $("#quickMoveBtn")?.addEventListener("click", () => activatePanel("panelMovement"));
   $("#quickCyberBtn")?.addEventListener("click", () => activatePanel("panelCyber"));
+  $("#quickIntelBtn")?.addEventListener("click", () => activatePanel("panelIntel"));
   $("#quickEconomyBtn")?.addEventListener("click", () => activatePanel("panelEconomy"));
   $("#quickWorldBtn")?.addEventListener("click", () => activatePanel("panelGlobal"));
   $("#quickAiBtn")?.addEventListener("click", () => activatePanel("panelAiWorld"));
@@ -4304,8 +4514,16 @@ function renderTargetSelect() {
 
 function renderIntel() {
   const g = state.game;
-  $("#threatFill").style.width = `${clamp(g.worldTension + g.escalation, 0, 100)}%`;
-  $("#intelGrid").innerHTML = `<div class="metric"><small>Tensão mundial</small><strong>${g.worldTension}</strong></div><div class="metric"><small>Escalada</small><strong>${g.escalation}</strong></div><div class="metric"><small>Defesa</small><strong>${g.defense}</strong></div><div class="metric"><small>Prontidão</small><strong>${g.readiness}</strong></div><div class="metric"><small>Cyber</small><strong>${g.cyber}</strong></div><div class="metric"><small>Logística</small><strong>${g.logistics}</strong></div>`;
+  const intel = ensureIntelSystem();
+  $("#threatFill").style.width = `${clamp(g.worldTension + g.escalation + Math.round(intel.fog / 3), 0, 100)}%`;
+  $("#intelGrid").innerHTML = `
+    <div class="metric"><small>${currentLang === "en-US" ? "World tension" : currentLang === "es-ES" ? "Tensión mundial" : "Tensão mundial"}</small><strong>${g.worldTension}</strong></div>
+    <div class="metric"><small>${t("intel.confidence", "Confiança")}</small><strong>${intel.confidence}</strong></div>
+    <div class="metric"><small>${t("intel.fog", "Névoa de guerra")}</small><strong>${intel.fog}%</strong></div>
+    <div class="metric"><small>${t("intel.satellite", "Satélites")}</small><strong>${intel.satellite}</strong></div>
+    <div class="metric"><small>${t("intel.sigint", "SIGINT")}</small><strong>${intel.sigint}</strong></div>
+    <div class="metric"><small>${currentLang === "en-US" ? "Readiness" : currentLang === "es-ES" ? "Preparación" : "Prontidão"}</small><strong>${g.readiness}</strong></div>`;
+  renderAdvancedIntelPanel();
   const feed = $("#eventFeed");
   feed.innerHTML = "";
   g.events.slice(-8).reverse().forEach(e => {
@@ -4470,6 +4688,7 @@ function initMap() {
   state.layers.tactical = L.layerGroup().addTo(state.map);
   state.layers.battleEffects = L.layerGroup().addTo(state.map);
   state.layers.weather = L.layerGroup().addTo(state.map);
+  state.layers.intel = L.layerGroup().addTo(state.map);
   state.map.dragging.enable();
   state.map.scrollWheelZoom.enable();
   state.map.doubleClickZoom.enable();
@@ -4543,6 +4762,7 @@ function updateMapLayers() {
   renderBattlefieldMapOverlays(player);
   renderEnemyOffensivesMap(player);
   renderEnvironmentMapOverlays(player);
+  renderIntelMapOverlays(player);
   applyMapLayerVisibility();
   if (!state.mapUserMoved && !state.mapAutoCentered) {
     state.map.setView(player.coords, Math.max(state.map.getZoom(), 3), { animate: false });
@@ -4714,6 +4934,7 @@ function advanceMonth() {
   g.readiness = clamp(g.readiness + Math.round(g.logistics / 24) - Math.round(g.worldTension / 36) - (forceCondition() < 45 ? 3 : 0), 0, 100);
   g.worldTension = clamp(g.worldTension + randomInt(-3, 5), 0, 100);
   progressEnvironmentSystem();
+  progressIntelSystem();
   progressConstruction();
   progressProduction();
   progressCyberOps();
