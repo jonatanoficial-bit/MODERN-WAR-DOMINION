@@ -328,3 +328,18 @@
 - Laboratórios e anéis de P&D aparecem no mapa real.
 - Integração com coalizões, Estado-Maior, inteligência e economia.
 - Save key mantida para preservar campanhas anteriores.
+
+
+## Fase 34 — Indústria Bélica e Cadeias Estratégicas
+
+- Novo painel Indústria Bélica.
+- Estoques estratégicos: aço militar, semicondutores, terras raras, munição, estaleiros e células aéreas.
+- Capacidade industrial, autonomia estratégica e gargalo industrial.
+- Ações: expandir fábricas, garantir terras raras, contrato de chips, mutirão de munição, expandir estaleiros e compra emergencial.
+- Indústria afeta a velocidade de produção militar.
+- Produzir unidades consome insumos industriais.
+- Gargalos industriais podem travar a cadeia militar.
+- Nova camada Indústria na Sala de Guerra.
+- Polos industriais aparecem no mapa real com marcadores e anéis de gargalo.
+- Integração com P&D, tecnologia, logística, produção militar, economia e mapa.
+- Save key mantida para preservar campanhas anteriores.

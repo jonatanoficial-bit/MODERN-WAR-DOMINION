@@ -1,5 +1,5 @@
-const VERSION = "3.3.0";
-const PHASE = "Fase 33 — pesquisa tecnologia e modernização militar";
+const VERSION = "3.4.0";
+const PHASE = "Fase 34 — indústria bélica e cadeias estratégicas";
 const SAVE_KEY = "MWD_SAVE_F17";
 
 const $ = (sel, root = document) => root.querySelector(sel);
@@ -14,7 +14,7 @@ const state = {
   map: null,
   mapUserMoved: false,
   mapAutoCentered: false,
-  layers: { countries: null, regions: null, bases: null, threats: null, fronts: null, airOps: null, navalOps: null, missiles: null, logistics: null, tactical: null, battleEffects: null, weather: null, intel: null, tech: null },
+  layers: { countries: null, regions: null, bases: null, threats: null, fronts: null, airOps: null, navalOps: null, missiles: null, logistics: null, tactical: null, battleEffects: null, weather: null, intel: null, tech: null, industry: null },
   arsenalFilter: "Todos"
 };
 
@@ -3599,7 +3599,8 @@ function makeMapSettings() {
     battleEffects: true,
     weather: true,
     intel: true,
-    tech: true
+    tech: true,
+    industry: true
   };
 }
 
@@ -3628,7 +3629,8 @@ function mapLayerMeta() {
     ["battleEffects", t("mapops.battleEffects", "Batalha/ameaças"), "🔥"],
     ["weather", t("mapops.weather", "Clima"), "🌦️"],
     ["intel", t("mapops.intelLayer", "Inteligência"), "🛰️"],
-    ["tech", t("mapops.tech", "Tecnologia"), "🧪"]
+    ["tech", t("mapops.tech", "Tecnologia"), "🧪"],
+    ["industry", t("mapops.industry", "Indústria"), "🏭"]
   ];
 }
 
@@ -3711,6 +3713,10 @@ function focusMap(kind) {
     const ind = getRegion("industrial")?.coords || jitter(cap, 1.2);
     coords.push(cap, ind);
   }
+  if (kind === "industry") {
+    ["capital","industrial","coast","border"].forEach(id => { const r = getRegion(id); if (r) coords.push(r.coords); });
+    if (!coords.length) coords.push(player.coords);
+  }
   mapFitCoords(coords.length ? coords : [player.coords], kind === "player" ? 4 : 3);
 }
 
@@ -3731,6 +3737,8 @@ function mapOpsIntelText() {
   if (intelSystem?.fog > 50) parts.push(`${t("intel.fog", "Névoa de guerra").toLowerCase()} ${intelSystem.fog}%`);
   const techSystem = ensureTechSystem();
   if (techSystem) parts.push(`${t("mapops.tech", "Tecnologia").toLowerCase()} ${techPowerIndex()}`);
+  const industrial = ensureIndustrySystem();
+  if (industrial) parts.push(`${t("mapops.industry", "Indústria").toLowerCase()} ${industryReadiness()}`);
   return parts.length ? parts.join(" · ") : `${activeLayers} ${t("mapops.activeLayers", "Camadas ativas").toLowerCase()}`;
 }
 
@@ -3763,6 +3771,7 @@ function renderMapOpsPanel() {
         <button data-map-focus="weather">🌦️ ${t("mapops.weather", "Clima")}</button>
         <button data-map-focus="intel">🛰️ ${t("mapops.intelLayer", "Inteligência")}</button>
         <button data-map-focus="tech">🧪 ${t("mapops.tech", "Tecnologia")}</button>
+        <button data-map-focus="industry">🏭 ${t("mapops.industry", "Indústria")}</button>
       </div>
     </section>
     <section class="mapops-layers">
@@ -4012,6 +4021,228 @@ function renderTechPanel() {
   $$("#techPanel [data-tech-action]").forEach(btn => btn.addEventListener("click", () => techAction(btn.dataset.techAction)));
 }
 
+
+function makeIndustrySystem(country = null) {
+  const baseIndustry = country?.industry || 50;
+  return {
+    capacity: clamp(42 + Math.round(baseIndustry / 2), 20, 160),
+    bottleneck: 32,
+    autonomy: clamp(25 + Math.round((country?.oil || 30) / 4) + Math.round(baseIndustry / 8), 10, 100),
+    history: [],
+    contracts: [],
+    stockpiles: {
+      steel: 80 + Math.round(baseIndustry * 1.4),
+      chips: 28 + Math.round((country?.intel || 40) / 2),
+      rare: 24 + Math.round((country?.oil || 30) / 3),
+      ammo: 70 + Math.round((country?.military || 40) * 1.1),
+      shipyards: 18 + Math.round((country?.navalPower || country?.military || 40) / 4),
+      airframes: 20 + Math.round((country?.airPower || country?.military || 40) / 4)
+    }
+  };
+}
+
+function ensureIndustrySystem() {
+  if (!state.game) return null;
+  if (!state.game.industrySystem) state.game.industrySystem = makeIndustrySystem(getPlayerCountry());
+  const is = state.game.industrySystem;
+  if (!Array.isArray(is.history)) is.history = [];
+  if (!Array.isArray(is.contracts)) is.contracts = [];
+  if (!is.stockpiles) is.stockpiles = {};
+  ["steel","chips","rare","ammo","shipyards","airframes"].forEach(k => is.stockpiles[k] = Math.max(0, Math.round(is.stockpiles[k] ?? 0)));
+  is.capacity = clamp(is.capacity ?? 50, 0, 220);
+  is.bottleneck = clamp(is.bottleneck ?? 35, 0, 100);
+  is.autonomy = clamp(is.autonomy ?? 35, 0, 160);
+  return is;
+}
+
+function industryLabel(key) {
+  const labels = {
+    steel: t("industry.steel", "Aço militar"),
+    chips: t("industry.chips", "Semicondutores"),
+    rare: t("industry.rare", "Terras raras"),
+    ammo: t("industry.ammo", "Munição"),
+    shipyards: t("industry.shipyards", "Estaleiros"),
+    airframes: t("industry.airframes", "Células aéreas")
+  };
+  return labels[key] || key;
+}
+
+function industryIcon(key) {
+  return { steel: "🔩", chips: "💾", rare: "⛏️", ammo: "📦", shipyards: "⚓", airframes: "✈️" }[key] || "🏭";
+}
+
+function industryReadiness() {
+  const is = ensureIndustrySystem();
+  if (!is) return 0;
+  const avgStock = Math.round(Object.values(is.stockpiles).reduce((a,b)=>a+b,0) / 6);
+  return clamp(Math.round(is.capacity * .45 + is.autonomy * .30 + avgStock * .18 - is.bottleneck * .65), 0, 160);
+}
+
+function recordIndustryHistory(kind, text, resource = null) {
+  const is = ensureIndustrySystem();
+  is.history.unshift({
+    id: cryptoId(),
+    kind,
+    resource,
+    icon: resource ? industryIcon(resource) : "🏭",
+    text,
+    at: `${monthNames[state.game.month % 12]}/${state.game.year}`
+  });
+  is.history = is.history.slice(0, 12);
+}
+
+function industryAction(kind) {
+  const g = state.game;
+  const is = ensureIndustrySystem();
+  const costs = {
+    expand: { finance: 100, industry: 38, energy: 20 },
+    secureRare: { finance: 62, industry: 14, energy: 18 },
+    chipDeal: { finance: 74, industry: 12, energy: 10 },
+    ammoSurge: { finance: 58, industry: 30, energy: 18 },
+    shipyard: { finance: 95, industry: 44, energy: 28 },
+    procurement: { finance: 120, industry: 8, energy: 8 }
+  };
+  const cost = costs[kind] || costs.expand;
+  if (g.finance < cost.finance || g.industry < cost.industry || g.energy < cost.energy) {
+    g.events.push(eventText("warn", currentLang === "en-US" ? "Insufficient resources for industrial action." : currentLang === "es-ES" ? "Recursos insuficientes para acción industrial." : "Recursos insuficientes para ação industrial."));
+    saveGame(); renderGame(); return;
+  }
+  g.finance -= cost.finance;
+  g.industry -= cost.industry;
+  g.energy -= cost.energy;
+  let text = "";
+  if (kind === "expand") {
+    is.capacity = clamp(is.capacity + randomInt(8, 16), 0, 220);
+    is.bottleneck = clamp(is.bottleneck - randomInt(4, 10), 0, 100);
+    is.stockpiles.steel += randomInt(18, 34);
+    text = `${t("industry.expand", "Expandir fábricas")}: +capacidade, -gargalo.`;
+  }
+  if (kind === "secureRare") {
+    is.stockpiles.rare += randomInt(28, 54);
+    is.autonomy = clamp(is.autonomy + randomInt(5, 10), 0, 160);
+    is.bottleneck = clamp(is.bottleneck - randomInt(1, 5), 0, 100);
+    text = `${t("industry.secureRare", "Garantir terras raras")}: reservas críticas protegidas.`;
+  }
+  if (kind === "chipDeal") {
+    is.stockpiles.chips += randomInt(24, 48);
+    is.autonomy = clamp(is.autonomy + randomInt(2, 6), 0, 160);
+    const ts = ensureTechSystem();
+    if (ts) ts.budget = clamp(ts.budget + 4, 0, 200);
+    text = `${t("industry.chipDeal", "Contrato de chips")}: semicondutores entregues.`;
+  }
+  if (kind === "ammoSurge") {
+    is.stockpiles.ammo += randomInt(42, 84);
+    is.bottleneck = clamp(is.bottleneck - randomInt(3, 8), 0, 100);
+    g.readiness = clamp(g.readiness + 2, 0, 100);
+    text = `${t("industry.ammoSurge", "Mutirão de munição")}: munição operacional reforçada.`;
+  }
+  if (kind === "shipyard") {
+    is.stockpiles.shipyards += randomInt(16, 32);
+    is.capacity = clamp(is.capacity + randomInt(4, 8), 0, 220);
+    g.navalPower = clamp(g.navalPower + 2, 0, 999);
+    text = `${t("industry.shipyard", "Expandir estaleiros")}: produção naval fortalecida.`;
+  }
+  if (kind === "procurement") {
+    Object.keys(is.stockpiles).forEach(k => is.stockpiles[k] += randomInt(8, 22));
+    is.bottleneck = clamp(is.bottleneck - randomInt(2, 6), 0, 100);
+    is.contracts.unshift({ id: cryptoId(), at: `${monthNames[g.month % 12]}/${g.year}`, text: t("industry.procurement", "Compra emergencial") });
+    is.contracts = is.contracts.slice(0, 5);
+    text = `${t("industry.procurement", "Compra emergencial")}: estoques críticos reforçados.`;
+  }
+  recordIndustryHistory(kind, text);
+  g.events.push(eventText("sistema", text));
+  saveGame(); renderGame(); activatePanel("panelIndustry");
+}
+
+function progressIndustrySystem() {
+  const g = state.game;
+  const is = ensureIndustrySystem();
+  if (!is) return;
+  const techBonus = Math.round(techPowerIndex() / 80);
+  const logisticsBonus = Math.round((g.logistics || 0) / 45);
+  const output = Math.max(1, Math.round(is.capacity / 18) + techBonus + logisticsBonus - Math.round(is.bottleneck / 35));
+  is.stockpiles.steel += output * 3;
+  is.stockpiles.ammo += output * 4;
+  is.stockpiles.chips += Math.max(1, Math.round(output / 2));
+  is.stockpiles.rare += Math.max(1, Math.round(output / 3));
+  is.stockpiles.airframes += Math.max(1, Math.round(output / 3));
+  is.stockpiles.shipyards += Math.max(1, Math.round(output / 4));
+
+  const pressure = g.production.length * 3 + g.construction.length * 2 + Math.round((g.worldTension || 0) / 35);
+  is.stockpiles.steel = Math.max(0, is.stockpiles.steel - pressure);
+  is.stockpiles.ammo = Math.max(0, is.stockpiles.ammo - Math.round(pressure * 1.3));
+  is.stockpiles.chips = Math.max(0, is.stockpiles.chips - Math.round(g.production.length / 2));
+  is.stockpiles.rare = Math.max(0, is.stockpiles.rare - Math.round(g.production.length / 3));
+  const scarcity = Object.values(is.stockpiles).filter(v => v < 25).length;
+  is.bottleneck = clamp(is.bottleneck + scarcity * 3 + Math.round(pressure / 12) - Math.round(is.autonomy / 55) - techBonus, 0, 100);
+  is.autonomy = clamp(is.autonomy + (is.stockpiles.rare > 60 && is.stockpiles.chips > 60 ? 1 : 0) - (scarcity ? 1 : 0), 0, 160);
+  if (is.bottleneck > 72 && Math.random() < .32) {
+    g.events.push(eventText("warn", currentLang === "en-US" ? "Industrial bottlenecks slowed the military supply chain." : currentLang === "es-ES" ? "Cuellos industriales frenaron la cadena militar." : "Gargalos industriais travaram a cadeia militar."));
+  }
+}
+
+function consumeIndustryForUnit(unit) {
+  const is = ensureIndustrySystem();
+  if (!is || !unit) return true;
+  const needs = { steel: 2, ammo: 2, chips: 0, rare: 0, shipyards: 0, airframes: 0 };
+  if (unit.class === "Aéreo") { needs.chips = 2; needs.rare = 1; needs.airframes = 2; }
+  if (unit.class === "Naval") { needs.steel = 5; needs.chips = 1; needs.shipyards = 3; }
+  if (unit.class === "Estratégico") { needs.chips = 3; needs.rare = 2; needs.steel = 3; }
+  Object.entries(needs).forEach(([k,v]) => is.stockpiles[k] = Math.max(0, is.stockpiles[k] - v));
+  const missing = Object.entries(needs).some(([k,v]) => is.stockpiles[k] <= 0 && v > 0);
+  if (missing) is.bottleneck = clamp(is.bottleneck + 6, 0, 100);
+  return !missing;
+}
+
+function renderIndustryMapOverlays(player) {
+  const is = ensureIndustrySystem();
+  if (!state.map || !state.layers.industry || !window.L || !is) return;
+  const hubs = [
+    { key: "steel", coords: getRegion("industrial")?.coords || player.coords },
+    { key: "ammo", coords: getRegion("capital")?.coords || player.coords },
+    { key: "shipyards", coords: getRegion("coast")?.coords || player.coords },
+    { key: "rare", coords: getRegion("border")?.coords || player.coords }
+  ];
+  hubs.forEach((hub, index) => {
+    const icon = L.divIcon({ className: "", html: `<div class="marker-industry-hub">${industryIcon(hub.key)}</div>`, iconSize: [38, 38], iconAnchor: [19, 19] });
+    L.marker(jitter(hub.coords, .24), { icon }).addTo(state.layers.industry).bindPopup(`<strong>${industryLabel(hub.key)}</strong><br>${t("industry.capacity", "Capacidade industrial")}: ${is.capacity}<br>${t("industry.bottleneck", "Gargalo")}: ${is.bottleneck}`);
+  });
+  if (is.bottleneck > 55) {
+    const coords = getRegion("industrial")?.coords || player.coords;
+    L.circle(coords, { radius: 65000 + is.bottleneck * 900, color: "#ff784f", fillColor: "#ff784f", fillOpacity: .055, opacity: .38, weight: 2, className: "industry-bottleneck-ring" }).addTo(state.layers.industry);
+  }
+}
+
+function renderIndustryPanel() {
+  const panel = $("#industryPanel");
+  if (!panel || !state.game) return;
+  const is = ensureIndustrySystem();
+  panel.innerHTML = `
+    <div class="industry-status">
+      <div><small>${t("industry.capacity","Capacidade industrial")}</small><strong>${is.capacity}</strong><i><b style="width:${clamp(is.capacity,0,100)}%"></b></i></div>
+      <div><small>${t("industry.bottleneck","Gargalo")}</small><strong>${is.bottleneck}%</strong><i><b style="width:${clamp(is.bottleneck,0,100)}%"></b></i></div>
+      <div><small>${t("industry.autonomy","Autonomia estratégica")}</small><strong>${is.autonomy}</strong><i><b style="width:${clamp(is.autonomy,0,100)}%"></b></i></div>
+      <div><small>${currentLang === "en-US" ? "Readiness" : currentLang === "es-ES" ? "Preparación" : "Prontidão industrial"}</small><strong>${industryReadiness()}</strong><i><b style="width:${clamp(industryReadiness(),0,100)}%"></b></i></div>
+    </div>
+    <div class="industry-actions">
+      <button data-industry-action="expand">🏭 ${t("industry.expand","Expandir fábricas")}</button>
+      <button data-industry-action="secureRare">⛏️ ${t("industry.secureRare","Garantir terras raras")}</button>
+      <button data-industry-action="chipDeal">💾 ${t("industry.chipDeal","Contrato de chips")}</button>
+      <button data-industry-action="ammoSurge">📦 ${t("industry.ammoSurge","Mutirão de munição")}</button>
+      <button data-industry-action="shipyard">⚓ ${t("industry.shipyard","Expandir estaleiros")}</button>
+      <button data-industry-action="procurement">🚚 ${t("industry.procurement","Compra emergencial")}</button>
+    </div>
+    <section class="industry-stockpiles">
+      <h3>${t("industry.stockpiles","Estoques estratégicos")}</h3>
+      ${Object.entries(is.stockpiles).map(([key,value]) => `<article><b>${industryIcon(key)}</b><div><strong>${industryLabel(key)}</strong><span>${value}</span><i><em style="width:${clamp(value,0,120)}%"></em></i></div></article>`).join("")}
+    </section>
+    <section class="industry-history">
+      <h3>${t("industry.history","Histórico industrial")}</h3>
+      ${is.history.length ? is.history.slice(0,7).map(item => `<article><strong>${item.icon} ${item.kind}</strong><span>${item.at} · ${item.text}</span></article>`).join("") : `<p class="muted">${t("industry.noHistory","Nenhuma ação industrial registrada.")}</p>`}
+    </section>`;
+  $$("#industryPanel [data-industry-action]").forEach(btn => btn.addEventListener("click", () => industryAction(btn.dataset.industryAction)));
+}
+
 function makeInitialGame(countryId) {
   const country = state.countries.find(c => c.id === countryId) || state.countries[0];
   const regions = makeRegions(country);
@@ -4215,6 +4446,7 @@ function renderGame() {
   ensureIntelSystem();
   ensureStaffSystem();
   ensureTechSystem();
+  ensureIndustrySystem();
   ensureMapSettings();
   renderSummary();
   renderCommanderGuide();
@@ -4238,6 +4470,7 @@ function renderGame() {
   renderEnvironmentPanel();
   renderStaffPanel();
   renderTechPanel();
+  renderIndustryPanel();
   renderMapOpsPanel();
   renderGlobalWar();
   renderAiWorld();
@@ -4312,6 +4545,8 @@ function commanderRecommendation() {
   if (g.month > 1 && (staff.fatigue > 64 || staff.morale < 42)) return { title: t("rec.staff", "Reorganizar Estado-Maior"), text: t("rec.staffText", "A fadiga de comando está alta ou a moral está baixa."), action: "staff", panel: "panelStaff" };
   const techSystem = ensureTechSystem();
   if (g.month > 2 && (techPowerIndex() < powerIndex() / 2 || techSystem.budget < 34)) return { title: t("rec.tech", "Investir em tecnologia"), text: t("rec.techText", "Seu nível tecnológico está ficando abaixo da ameaça global."), action: "tech", panel: "panelTech" };
+  const industrial = ensureIndustrySystem();
+  if (g.month > 1 && (industrial.bottleneck > 58 || industryReadiness() < 45)) return { title: t("rec.industry", "Reduzir gargalo industrial"), text: t("rec.industryText", "A cadeia militar está pressionada."), action: "industry", panel: "panelIndustry" };
   const cyberOps = ensureCyberOps();
   const mainThreat = topAiThreats(1)[0];
   const enemyOps = ensureEnemyOffensives();
@@ -4386,6 +4621,7 @@ function renderCommanderGuide() {
       <button id="quickMapBtn"><b>🗺️ ${t("guide.map", "Mapa")}</b><span>${t("guide.mapSub", "filtrar camadas")}</span></button>
       <button id="quickStaffBtn"><b>🎖️ ${t("guide.staff", "Estado-Maior")}</b><span>${t("guide.staffSub", "oficiais e doutrina")}</span></button>
       <button id="quickTechBtn"><b>🧪 ${t("guide.tech", "Tech")}</b><span>${t("guide.techSub", "P&D militar")}</span></button>
+      <button id="quickIndustryBtn"><b>🏭 ${t("guide.industry", "Indústria")}</b><span>${t("guide.industrySub", "fábricas e insumos")}</span></button>
       <button id="quickBuildBtn"><b>🏗️ ${t("guide.build", "Construir")}</b><span>${t("guide.buildSub", "base recomendada")}</span></button>
       <button id="quickProduceBtn"><b>🪖 ${t("guide.produce", "Produzir")}</b><span>${t("guide.produceSub", "melhor unidade")}</span></button>
       <button id="quickLogisticsBtn"><b>🚚 ${t("guide.logistics", "Logística")}</b><span>${t("guide.logisticsSub", "suprir tropas")}</span></button>
@@ -4946,6 +5182,7 @@ function initMap() {
   state.layers.weather = L.layerGroup().addTo(state.map);
   state.layers.intel = L.layerGroup().addTo(state.map);
   state.layers.tech = L.layerGroup().addTo(state.map);
+  state.layers.industry = L.layerGroup().addTo(state.map);
   state.map.dragging.enable();
   state.map.scrollWheelZoom.enable();
   state.map.doubleClickZoom.enable();
@@ -5021,6 +5258,7 @@ function updateMapLayers() {
   renderEnvironmentMapOverlays(player);
   renderIntelMapOverlays(player);
   renderTechMapOverlays(player);
+  renderIndustryMapOverlays(player);
   applyMapLayerVisibility();
   if (!state.mapUserMoved && !state.mapAutoCentered) {
     state.map.setView(player.coords, Math.max(state.map.getZoom(), 3), { animate: false });
@@ -5195,6 +5433,7 @@ function advanceMonth() {
   progressIntelSystem();
   applyStaffPassiveBonuses();
   progressTechSystem();
+  progressIndustrySystem();
   progressConstruction();
   progressProduction();
   progressCyberOps();
@@ -5237,8 +5476,9 @@ function progressProduction() {
   const g = state.game;
   const finished = [];
   g.production.forEach(job => {
-    const speed = g.logistics > 90 ? 2 : 1;
-    job.remaining -= speed;
+    const industrial = ensureIndustrySystem();
+    const speed = (g.logistics > 90 ? 2 : 1) + (industryReadiness() > 82 ? 1 : 0) - (industrial.bottleneck > 72 ? 1 : 0);
+    job.remaining -= Math.max(1, speed);
     if (job.remaining <= 0) finished.push(job);
   });
   g.production = g.production.filter(job => job.remaining > 0);
