@@ -1,5 +1,5 @@
-const VERSION = "3.5.0";
-const PHASE = "Fase 35 — comércio global sanções e recursos estratégicos";
+const VERSION = "3.6.0";
+const PHASE = "Fase 36 — opinião pública mídia e legitimidade";
 const SAVE_KEY = "MWD_SAVE_F17";
 
 const $ = (sel, root = document) => root.querySelector(sel);
@@ -14,7 +14,7 @@ const state = {
   map: null,
   mapUserMoved: false,
   mapAutoCentered: false,
-  layers: { countries: null, regions: null, bases: null, threats: null, fronts: null, airOps: null, navalOps: null, missiles: null, logistics: null, tactical: null, battleEffects: null, weather: null, intel: null, tech: null, industry: null, trade: null },
+  layers: { countries: null, regions: null, bases: null, threats: null, fronts: null, airOps: null, navalOps: null, missiles: null, logistics: null, tactical: null, battleEffects: null, weather: null, intel: null, tech: null, industry: null, trade: null, society: null },
   arsenalFilter: "Todos"
 };
 
@@ -3601,7 +3601,8 @@ function makeMapSettings() {
     intel: true,
     tech: true,
     industry: true,
-    trade: true
+    trade: true,
+    society: true
   };
 }
 
@@ -3632,7 +3633,8 @@ function mapLayerMeta() {
     ["intel", t("mapops.intelLayer", "Inteligência"), "🛰️"],
     ["tech", t("mapops.tech", "Tecnologia"), "🧪"],
     ["industry", t("mapops.industry", "Indústria"), "🏭"],
-    ["trade", t("mapops.trade", "Comércio"), "💱"]
+    ["trade", t("mapops.trade", "Comércio"), "💱"],
+    ["society", t("mapops.society", "Sociedade"), "📣"]
   ];
 }
 
@@ -3723,6 +3725,10 @@ function focusMap(kind) {
     coords.push(player.coords);
     tradePartners(5).forEach(p => coords.push(p.coords));
   }
+  if (kind === "society") {
+    ["capital","industrial","border"].forEach(id => { const r = getRegion(id); if (r) coords.push(r.coords); });
+    if (!coords.length) coords.push(player.coords);
+  }
   mapFitCoords(coords.length ? coords : [player.coords], kind === "player" ? 4 : 3);
 }
 
@@ -3747,6 +3753,8 @@ function mapOpsIntelText() {
   if (industrial) parts.push(`${t("mapops.industry", "Indústria").toLowerCase()} ${industryReadiness()}`);
   const trade = ensureTradeSystem();
   if (trade) parts.push(`${t("mapops.trade", "Comércio").toLowerCase()} ${trade.marketAccess}/${trade.routeSecurity}`);
+  const society = ensureSocietySystem();
+  if (society) parts.push(`${t("mapops.society", "Sociedade").toLowerCase()} ${society.support}/${society.protests}`);
   return parts.length ? parts.join(" · ") : `${activeLayers} ${t("mapops.activeLayers", "Camadas ativas").toLowerCase()}`;
 }
 
@@ -3781,6 +3789,7 @@ function renderMapOpsPanel() {
         <button data-map-focus="tech">🧪 ${t("mapops.tech", "Tecnologia")}</button>
         <button data-map-focus="industry">🏭 ${t("mapops.industry", "Indústria")}</button>
         <button data-map-focus="trade">💱 ${t("mapops.trade", "Comércio")}</button>
+        <button data-map-focus="society">📣 ${t("mapops.society", "Sociedade")}</button>
       </div>
     </section>
     <section class="mapops-layers">
@@ -4536,6 +4545,183 @@ function renderTradePanel() {
   $$("#tradePanel [data-trade-action]").forEach(btn => btn.addEventListener("click", () => tradeAction(btn.dataset.tradeAction)));
 }
 
+
+function makeSocietySystem(country = null) {
+  return {
+    support: clamp(58 + Math.round((country?.economy || 50) / 12), 30, 95),
+    legitimacy: 62,
+    warWeariness: 12,
+    media: 54,
+    protests: 6,
+    perceivedCasualties: 0,
+    history: [],
+    lastAction: null
+  };
+}
+
+function ensureSocietySystem() {
+  if (!state.game) return null;
+  if (!state.game.societySystem) state.game.societySystem = makeSocietySystem(getPlayerCountry());
+  const s = state.game.societySystem;
+  if (!Array.isArray(s.history)) s.history = [];
+  s.support = clamp(s.support ?? 55, 0, 100);
+  s.legitimacy = clamp(s.legitimacy ?? 60, 0, 100);
+  s.warWeariness = clamp(s.warWeariness ?? 10, 0, 100);
+  s.media = clamp(s.media ?? 50, 0, 100);
+  s.protests = clamp(s.protests ?? 5, 0, 100);
+  s.perceivedCasualties = Math.max(0, Math.round(s.perceivedCasualties ?? 0));
+  return s;
+}
+
+function societyStabilityEffect() {
+  const s = ensureSocietySystem();
+  if (!s) return 0;
+  return clamp(Math.round((s.support + s.legitimacy + s.media - s.warWeariness - s.protests) / 22), -8, 10);
+}
+
+function recordSocietyHistory(kind, text) {
+  const s = ensureSocietySystem();
+  s.history.unshift({ id: cryptoId(), kind, text, at: `${monthNames[state.game.month % 12]}/${state.game.year}` });
+  s.history = s.history.slice(0, 12);
+}
+
+function societyAction(kind) {
+  const g = state.game;
+  const s = ensureSocietySystem();
+  const costs = {
+    address: { finance: 18, industry: 2, energy: 2 },
+    aid: { finance: 52, industry: 12, energy: 8, food: 40 },
+    press: { finance: 20, industry: 2, energy: 2 },
+    censorship: { finance: 28, industry: 4, energy: 5 },
+    veterans: { finance: 44, industry: 8, energy: 4 },
+    reform: { finance: 86, industry: 22, energy: 14, food: 30 }
+  };
+  const cost = costs[kind] || costs.address;
+  if (g.finance < (cost.finance || 0) || g.industry < (cost.industry || 0) || g.energy < (cost.energy || 0) || g.food < (cost.food || 0)) {
+    g.events.push(eventText("warn", currentLang === "en-US" ? "Insufficient resources for home front action." : currentLang === "es-ES" ? "Recursos insuficientes para acción social." : "Recursos insuficientes para ação na frente interna."));
+    saveGame(); renderGame(); return;
+  }
+  g.finance -= cost.finance || 0;
+  g.industry -= cost.industry || 0;
+  g.energy -= cost.energy || 0;
+  g.food -= cost.food || 0;
+  let text = "";
+  if (kind === "address") {
+    s.support = clamp(s.support + randomInt(4, 9), 0, 100);
+    s.legitimacy = clamp(s.legitimacy + randomInt(2, 6), 0, 100);
+    s.media = clamp(s.media + randomInt(1, 4), 0, 100);
+    text = `${t("society.address", "Discurso nacional")}: apoio popular reforçado.`;
+  }
+  if (kind === "aid") {
+    s.support = clamp(s.support + randomInt(5, 11), 0, 100);
+    s.protests = clamp(s.protests - randomInt(4, 9), 0, 100);
+    g.stability = clamp(g.stability + 2, 0, 100);
+    text = `${t("society.aid", "Ajuda civil")}: protestos reduzidos e estabilidade reforçada.`;
+  }
+  if (kind === "press") {
+    s.media = clamp(s.media + randomInt(6, 12), 0, 100);
+    s.legitimacy = clamp(s.legitimacy + randomInt(3, 7), 0, 100);
+    s.warWeariness = clamp(s.warWeariness - randomInt(1, 4), 0, 100);
+    text = `${t("society.press", "Coletiva de imprensa")}: narrativa pública esclarecida.`;
+  }
+  if (kind === "censorship") {
+    s.media = clamp(s.media - randomInt(2, 6), 0, 100);
+    s.protests = clamp(s.protests - randomInt(6, 12), 0, 100);
+    s.legitimacy = clamp(s.legitimacy - randomInt(3, 8), 0, 100);
+    text = `${t("society.censorship", "Controle de crise")}: crise contida, mas legitimidade sofreu.`;
+  }
+  if (kind === "veterans") {
+    s.warWeariness = clamp(s.warWeariness - randomInt(5, 12), 0, 100);
+    s.support = clamp(s.support + randomInt(2, 6), 0, 100);
+    s.perceivedCasualties = Math.max(0, s.perceivedCasualties - randomInt(2, 8));
+    text = `${t("society.veterans", "Apoio a veteranos")}: desgaste social da guerra reduzido.`;
+  }
+  if (kind === "reform") {
+    s.support = clamp(s.support + randomInt(5, 10), 0, 100);
+    s.legitimacy = clamp(s.legitimacy + randomInt(6, 12), 0, 100);
+    s.protests = clamp(s.protests - randomInt(6, 12), 0, 100);
+    g.stability = clamp(g.stability + randomInt(2, 5), 0, 100);
+    text = `${t("society.reform", "Pacote de estabilidade")}: frente interna estabilizada.`;
+  }
+  s.lastAction = kind;
+  recordSocietyHistory(kind, text);
+  g.events.push(eventText("sistema", text));
+  saveGame(); renderGame(); activatePanel("panelSociety");
+}
+
+function progressSocietySystem() {
+  const g = state.game;
+  const s = ensureSocietySystem();
+  if (!s) return;
+  const econ = ensureWarEconomy();
+  const report = latestBattleReport?.();
+  const recentLoss = report ? Math.round((report.ownLosses || 0) / 4) : 0;
+  s.perceivedCasualties += recentLoss;
+  const tensionPressure = Math.round((g.worldTension || 0) / 35);
+  const inflationPressure = Math.round((econ?.inflation || 0) / 22);
+  const protestPressure = Math.round((s.warWeariness + s.perceivedCasualties + inflationPressure * 4) / 28);
+  s.warWeariness = clamp(s.warWeariness + tensionPressure + recentLoss - Math.round(s.legitimacy / 60), 0, 100);
+  s.support = clamp(s.support + Math.round((g.stability || 0) / 70) - Math.round(s.warWeariness / 40) - inflationPressure, 0, 100);
+  s.legitimacy = clamp(s.legitimacy + (g.globalWar?.defcon <= 3 ? 1 : 0) - (s.protests > 60 ? 2 : 0) - (g.stability < 40 ? 1 : 0), 0, 100);
+  s.protests = clamp(s.protests + protestPressure - Math.round((s.support + s.legitimacy) / 70), 0, 100);
+  s.media = clamp(s.media + randomInt(-3, 3) + (s.legitimacy > 65 ? 1 : -1), 0, 100);
+  g.stability = clamp(g.stability + societyStabilityEffect(), 0, 100);
+  if (s.protests > 72 && Math.random() < .35) {
+    g.finance = Math.max(0, g.finance - randomInt(8, 22));
+    g.readiness = clamp(g.readiness - randomInt(1, 4), 0, 100);
+    g.events.push(eventText("warn", currentLang === "en-US" ? "Large protests disrupted logistics and confidence." : currentLang === "es-ES" ? "Grandes protestas afectaron logística y confianza." : "Grandes protestos afetaram logística e confiança."));
+  }
+}
+
+function renderSocietyMapOverlays(player) {
+  const s = ensureSocietySystem();
+  if (!state.map || !state.layers.society || !window.L || !s) return;
+  const hubs = [
+    { key: "capital", icon: "📣", label: t("society.media", "Mídia") },
+    { key: "industrial", icon: "👥", label: t("society.support", "Apoio popular") },
+    { key: "border", icon: "⚠️", label: t("society.protests", "Protestos") }
+  ];
+  hubs.forEach(h => {
+    const r = getRegion(h.key);
+    if (!r) return;
+    const danger = h.key === "border" && s.protests > 45;
+    const icon = L.divIcon({ className: "", html: `<div class="${danger ? "marker-protest" : "marker-society"}">${h.icon}</div>`, iconSize: [38, 38], iconAnchor: [19, 19] });
+    L.marker(jitter(r.coords, .28), { icon }).addTo(state.layers.society).bindPopup(`<strong>${h.label}</strong><br>${t("society.support","Apoio popular")}: ${s.support}<br>${t("society.legitimacy","Legitimidade")}: ${s.legitimacy}<br>${t("society.protests","Protestos")}: ${s.protests}`);
+  });
+  if (s.protests > 45) {
+    const r = getRegion("capital") || getRegion("industrial");
+    if (r) L.circle(r.coords, { radius: 48000 + s.protests * 1200, color: "#ff784f", fillColor: "#ff784f", fillOpacity: .06, opacity: .36, weight: 2, className: "society-protest-ring" }).addTo(state.layers.society);
+  }
+}
+
+function renderSocietyPanel() {
+  const panel = $("#societyPanel");
+  if (!panel || !state.game) return;
+  const s = ensureSocietySystem();
+  panel.innerHTML = `
+    <div class="society-status">
+      <div><small>${t("society.support","Apoio popular")}</small><strong>${s.support}%</strong><i><b style="width:${s.support}%"></b></i></div>
+      <div><small>${t("society.legitimacy","Legitimidade")}</small><strong>${s.legitimacy}%</strong><i><b style="width:${s.legitimacy}%"></b></i></div>
+      <div><small>${t("society.warWeariness","Fadiga de guerra")}</small><strong>${s.warWeariness}%</strong><i><b style="width:${s.warWeariness}%"></b></i></div>
+      <div><small>${t("society.protests","Protestos")}</small><strong>${s.protests}%</strong><i><b style="width:${s.protests}%"></b></i></div>
+      <div><small>${t("society.media","Mídia")}</small><strong>${s.media}%</strong><i><b style="width:${s.media}%"></b></i></div>
+      <div><small>${t("society.casualties","Perdas percebidas")}</small><strong>${s.perceivedCasualties}</strong><span>${currentLang === "en-US" ? "stability effect" : currentLang === "es-ES" ? "efecto estabilidad" : "efeito estabilidade"} ${societyStabilityEffect()}</span></div>
+    </div>
+    <div class="society-actions">
+      <button data-society-action="address">🎙️ ${t("society.address","Discurso nacional")}</button>
+      <button data-society-action="aid">🤲 ${t("society.aid","Ajuda civil")}</button>
+      <button data-society-action="press">📰 ${t("society.press","Coletiva de imprensa")}</button>
+      <button data-society-action="censorship">🛡️ ${t("society.censorship","Controle de crise")}</button>
+      <button data-society-action="veterans">🎖️ ${t("society.veterans","Apoio a veteranos")}</button>
+      <button data-society-action="reform">⚖️ ${t("society.reform","Pacote de estabilidade")}</button>
+    </div>
+    <section class="society-history">
+      <h3>${t("society.history","Histórico social")}</h3>
+      ${s.history.length ? s.history.slice(0,7).map(item => `<article><strong>${item.kind}</strong><span>${item.at} · ${item.text}</span></article>`).join("") : `<p class="muted">${t("society.noHistory","Nenhuma ação social registrada.")}</p>`}
+    </section>`;
+  $$("#societyPanel [data-society-action]").forEach(btn => btn.addEventListener("click", () => societyAction(btn.dataset.societyAction)));
+}
+
 function makeInitialGame(countryId) {
   const country = state.countries.find(c => c.id === countryId) || state.countries[0];
   const regions = makeRegions(country);
@@ -4741,6 +4927,7 @@ function renderGame() {
   ensureTechSystem();
   ensureIndustrySystem();
   ensureTradeSystem();
+  ensureSocietySystem();
   ensureMapSettings();
   renderSummary();
   renderCommanderGuide();
@@ -4766,6 +4953,7 @@ function renderGame() {
   renderTechPanel();
   renderIndustryPanel();
   renderTradePanel();
+  renderSocietyPanel();
   renderMapOpsPanel();
   renderGlobalWar();
   renderAiWorld();
@@ -4844,6 +5032,8 @@ function commanderRecommendation() {
   if (g.month > 1 && (industrial.bottleneck > 58 || industryReadiness() < 45)) return { title: t("rec.industry", "Reduzir gargalo industrial"), text: t("rec.industryText", "A cadeia militar está pressionada."), action: "industry", panel: "panelIndustry" };
   const trade = ensureTradeSystem();
   if (g.month > 1 && (trade.vulnerability > 58 || trade.routeSecurity < 34 || trade.marketAccess < 34)) return { title: t("rec.trade", "Proteger comércio"), text: t("rec.tradeText", "Mercado externo ou rotas comerciais estão pressionados."), action: "trade", panel: "panelTrade" };
+  const society = ensureSocietySystem();
+  if (g.month > 1 && (society.support < 42 || society.legitimacy < 40 || society.protests > 55 || society.warWeariness > 62)) return { title: t("rec.society", "Reforçar frente interna"), text: t("rec.societyText", "A opinião pública ou a legitimidade estão sob pressão."), action: "society", panel: "panelSociety" };
   const cyberOps = ensureCyberOps();
   const mainThreat = topAiThreats(1)[0];
   const enemyOps = ensureEnemyOffensives();
@@ -4920,6 +5110,7 @@ function renderCommanderGuide() {
       <button id="quickTechBtn"><b>🧪 ${t("guide.tech", "Tech")}</b><span>${t("guide.techSub", "P&D militar")}</span></button>
       <button id="quickIndustryBtn"><b>🏭 ${t("guide.industry", "Indústria")}</b><span>${t("guide.industrySub", "fábricas e insumos")}</span></button>
       <button id="quickTradeBtn"><b>💱 ${t("guide.trade", "Comércio")}</b><span>${t("guide.tradeSub", "rotas e sanções")}</span></button>
+      <button id="quickSocietyBtn"><b>📣 ${t("guide.society", "Sociedade")}</b><span>${t("guide.societySub", "apoio e protestos")}</span></button>
       <button id="quickBuildBtn"><b>🏗️ ${t("guide.build", "Construir")}</b><span>${t("guide.buildSub", "base recomendada")}</span></button>
       <button id="quickProduceBtn"><b>🪖 ${t("guide.produce", "Produzir")}</b><span>${t("guide.produceSub", "melhor unidade")}</span></button>
       <button id="quickLogisticsBtn"><b>🚚 ${t("guide.logistics", "Logística")}</b><span>${t("guide.logisticsSub", "suprir tropas")}</span></button>
@@ -5482,6 +5673,7 @@ function initMap() {
   state.layers.tech = L.layerGroup().addTo(state.map);
   state.layers.industry = L.layerGroup().addTo(state.map);
   state.layers.trade = L.layerGroup().addTo(state.map);
+  state.layers.society = L.layerGroup().addTo(state.map);
   state.map.dragging.enable();
   state.map.scrollWheelZoom.enable();
   state.map.doubleClickZoom.enable();
@@ -5559,6 +5751,7 @@ function updateMapLayers() {
   renderTechMapOverlays(player);
   renderIndustryMapOverlays(player);
   renderTradeMapOverlays(player);
+  renderSocietyMapOverlays(player);
   applyMapLayerVisibility();
   if (!state.mapUserMoved && !state.mapAutoCentered) {
     state.map.setView(player.coords, Math.max(state.map.getZoom(), 3), { animate: false });
@@ -5735,6 +5928,7 @@ function advanceMonth() {
   progressTechSystem();
   progressIndustrySystem();
   progressTradeSystem();
+  progressSocietySystem();
   progressConstruction();
   progressProduction();
   progressCyberOps();

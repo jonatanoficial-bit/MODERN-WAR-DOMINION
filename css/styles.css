@@ -1550,3 +1550,40 @@ body:has(#screenWar.screen-active) .nation-confirm-tray{
   .trade-actions{grid-template-columns:repeat(4,1fr);gap:6px}
   .trade-actions button{min-height:40px;font-size:.55rem;padding:6px;border-radius:11px}
 }
+
+
+/* Fase 36 — Opinião pública, mídia e legitimidade */
+.society-panel{display:grid;gap:12px}
+.society-status{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.society-status>div{border:1px solid rgba(255,209,102,.22);border-radius:16px;background:linear-gradient(145deg,rgba(88,64,20,.20),rgba(7,12,20,.48));padding:10px}
+.society-status small{display:block;color:#ffd166;text-transform:uppercase;letter-spacing:.11em;font-size:.58rem;font-weight:900}
+.society-status strong{display:block;font-size:1rem;color:#ffd166;margin:3px 0}
+.society-status span{display:block;color:#d7e6f4;font-size:.64rem}
+.society-status i{display:block;height:7px;border-radius:999px;background:rgba(255,255,255,.08);overflow:hidden}
+.society-status b{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,#ff784f,#ffd166,#67f0d0)}
+.society-actions{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.society-actions button{min-height:54px;text-align:left;border-radius:16px;background:rgba(7,12,20,.58);border:1px solid rgba(255,209,102,.20);padding:10px;color:var(--text);font-weight:900}
+.society-actions button:active{transform:scale(.98)}
+.society-history{display:grid;gap:8px}
+.society-history h3{font-size:.9rem;margin:2px 0}
+.society-history article{border:1px solid rgba(255,255,255,.08);border-radius:14px;background:rgba(255,255,255,.035);padding:9px}
+.society-history strong{display:block;font-size:.8rem}
+.society-history span{display:block;color:#d7e6f4;font-size:.64rem;margin-top:3px}
+.marker-society{display:grid;place-items:center;width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,#4a3811,#ffd166);color:#07101d;border:2px solid rgba(255,255,255,.68);box-shadow:0 0 28px rgba(255,209,102,.70),0 12px 26px rgba(0,0,0,.45);font-size:1.12rem;animation:societyPulse 1.2s ease-in-out infinite alternate}
+.marker-protest{display:grid;place-items:center;width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,#4b120c,#ff784f);color:#fff;border:2px solid rgba(255,255,255,.68);box-shadow:0 0 28px rgba(255,120,79,.70),0 12px 26px rgba(0,0,0,.45);font-size:1.12rem;animation:protestPulse 1s ease-in-out infinite alternate}
+.leaflet-overlay-pane path.society-protest-ring{animation:protestRing 1.8s ease-in-out infinite;filter:drop-shadow(0 0 10px rgba(255,120,79,.48))}
+@keyframes societyPulse{0%{transform:scale(.92)}100%{transform:scale(1.08)}}
+@keyframes protestPulse{0%{transform:scale(.92) rotate(-4deg)}100%{transform:scale(1.08) rotate(4deg)}}
+@keyframes protestRing{0%,100%{opacity:.22}50%{opacity:.55}}
+@media(max-width:980px){
+  .society-status{grid-template-columns:1fr}
+  .society-actions{grid-template-columns:1fr}
+}
+@media(max-height:560px){
+  .society-status{grid-template-columns:repeat(3,1fr);gap:6px}
+  .society-status>div{padding:7px;border-radius:12px}
+  .society-status small{font-size:.48rem}
+  .society-status strong{font-size:.72rem}
+  .society-actions{grid-template-columns:repeat(6,1fr);gap:6px}
+  .society-actions button{min-height:40px;font-size:.55rem;padding:6px;border-radius:11px}
+}

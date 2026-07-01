@@ -1,7 +1,7 @@
 {
   "project": "Modern War Dominion",
-  "version": "3.5.0",
-  "phase": "Fase 35 — Comércio Global, Sanções e Recursos Estratégicos",
+  "version": "3.6.0",
+  "phase": "Fase 36 — Opinião Pública, Mídia e Legitimidade da Guerra",
   "generated_at": "2026-06-24",
   "base": "Fase 5 assets integrados",
   "features": [
@@ -12,13 +12,13 @@
     "mapa real preservado"
   ],
   "notes": [
-    "Novo painel Comércio Global e Sanções",
-    "Sistema de balança comercial, acesso ao mercado, vulnerabilidade e segurança de rotas",
-    "Ações: importar chips, importar terras raras, acordo energético, exportar excedente, aplicar sanção, mercado paralelo e proteger rota",
-    "Acordos comerciais entregam insumos ao longo dos meses",
-    "Sanções afetam rivais e aumentam hostilidade/tensão",
-    "Rotas comerciais aparecem no mapa real com linhas e marcadores",
-    "Integração com indústria, logística, coalizões, naval, IA e economia"
+    "Novo painel Opinião Pública e Frente Interna",
+    "Sistema de apoio popular, legitimidade, fadiga de guerra, mídia, protestos e perdas percebidas",
+    "Ações: discurso nacional, ajuda civil, coletiva de imprensa, controle de crise, apoio a veteranos e pacote de estabilidade",
+    "Fadiga de guerra e protestos afetam estabilidade, prontidão e economia",
+    "Nova camada Sociedade na Sala de Guerra",
+    "Marcadores de mídia/protestos aparecem no mapa real",
+    "Integração com economia, batalhas, estabilidade, governo e guerra longa"
   ],
   "countries_count": 249,
   "countries_available": 249,
@@ -143,6 +143,13 @@
     "importações estratégicas",
     "exportações",
     "mercado paralelo",
-    "rotas comerciais"
+    "rotas comerciais",
+    "opinião pública",
+    "frente interna",
+    "mídia",
+    "legitimidade",
+    "fadiga de guerra",
+    "protestos",
+    "apoio civil"
   ]
 }

@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
   <meta name="theme-color" content="#050914">
   <meta name="description" content="Modern War Dominion — jogo mobile de dominação militar global com mapa real, bases regionais, produção de unidades e escalada de guerra mundial.">
-  <title>Modern War Dominion — Fase 35</title>
+  <title>Modern War Dominion — Fase 36</title>
   <link rel="manifest" href="manifest.json">
   <link rel="icon" href="assets/img/icon.svg" type="image/svg+xml">
   <link rel="preconnect" href="https://unpkg.com">
@@ -42,7 +42,7 @@
         </select>
         <button class="mini-btn" id="fullscreenBtn" data-i18n="top.fullscreen">Tela cheia</button>
         <button class="mini-btn" id="installBtn" hidden data-i18n="top.install">Instalar</button>
-        <div class="build-chip" data-i18n="phase.label">Fase 35 · v3.5.0</div>
+        <div class="build-chip" data-i18n="phase.label">Fase 36 · v3.6.0</div>
       </div>
     </header>
 
@@ -50,7 +50,7 @@
       <section class="screen screen-active" id="screenHome">
         <div class="home-layout">
           <article class="hero-card glass-panel">
-            <p class="eyebrow" data-i18n="home.eyebrow">Fase 35 — Comércio Global, Sanções e Recursos Estratégicos</p>
+            <p class="eyebrow" data-i18n="home.eyebrow">Fase 36 — Opinião Pública, Mídia e Legitimidade da Guerra</p>
             <h1 data-i18n="home.title">Agora a dissuasão estratégica muda o equilíbrio da guerra.</h1>
             <p data-i18n="home.text">A campanha ganha estoque de mísseis, escudo antimíssil, alerta antecipado, ataque convencional de precisão e postura de dissuasão nuclear simulada.</p>
             <div class="hero-actions">
@@ -117,6 +117,7 @@
               <button class="side-tab" data-panel="panelTech" data-i18n="tab.tech">Tecnologia</button>
               <button class="side-tab" data-panel="panelIndustry" data-i18n="tab.industry">Indústria</button>
               <button class="side-tab" data-panel="panelTrade" data-i18n="tab.trade">Comércio</button>
+              <button class="side-tab" data-panel="panelSociety" data-i18n="tab.society">Sociedade</button>
               <button class="side-tab" data-panel="panelMapOps" data-i18n="tab.map">Mapa</button>
               <button class="side-tab" data-panel="panelEnvironment" data-i18n="tab.environment">Ambiente</button>
               <button class="side-tab" data-panel="panelBuild" data-i18n="tab.regions">Regiões</button>
@@ -168,6 +169,12 @@
               <h2 data-i18n="trade.title">Comércio Global e Sanções</h2>
               <p class="muted" data-i18n="trade.text">Negocie importações, exporte excedentes, aplique sanções e proteja rotas comerciais estratégicas.</p>
               <div id="tradePanel" class="trade-panel"></div>
+            </div>
+
+            <div class="side-panel" id="panelSociety">
+              <h2 data-i18n="society.title">Opinião Pública e Frente Interna</h2>
+              <p class="muted" data-i18n="society.text">Gerencie apoio popular, mídia, protestos e legitimidade para manter o país unido durante a guerra.</p>
+              <div id="societyPanel" class="society-panel"></div>
             </div>
 
             <div class="side-panel" id="panelMapOps">
@@ -333,6 +340,7 @@
             <button class="dock-btn" data-panel="panelTech">🧪<span data-i18n="dock.tech">Tech</span></button>
             <button class="dock-btn" data-panel="panelIndustry">🏭<span data-i18n="dock.industry">Indústria</span></button>
             <button class="dock-btn" data-panel="panelTrade">💱<span data-i18n="dock.trade">Comércio</span></button>
+            <button class="dock-btn" data-panel="panelSociety">📣<span data-i18n="dock.society">Sociedade</span></button>
             <button class="dock-btn" data-panel="panelMapOps">🗺️<span data-i18n="dock.map">Mapa</span></button>
             <button class="dock-btn" data-panel="panelEnvironment">🌦️<span data-i18n="dock.environment">Ambiente</span></button>
             <button class="dock-btn" data-panel="panelBuild">🏗️<span data-i18n="dock.bases">Bases</span></button>
@@ -358,7 +366,7 @@
 
       <section class="screen" id="screenRoadmap">
         <div class="roadmap glass-panel">
-          <p class="eyebrow" data-i18n="roadmap.eyebrow">Fase 35 — guerra econômica do mapa</p>
+          <p class="eyebrow" data-i18n="roadmap.eyebrow">Fase 36 — frente interna do mapa</p>
           <h1 data-i18n="roadmap.title">A campanha agora tem controle de camadas, presets visuais e foco rápido para comandar o mapa.</h1>
           <div class="roadmap-grid">
             <article><strong>Fase 9</strong><span>Manutenção, desgaste, baixas, reposição de lotes e custo real de guerra longa.</span></article>

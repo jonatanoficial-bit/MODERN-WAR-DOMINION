@@ -353,3 +353,16 @@ Abra `index.html` ou publique no GitHub Pages. No celular, use tela deitada/full
 - Rotas vulneráveis aumentam gargalos industriais.
 - Integração com indústria, logística, coalizões, naval, IA e economia.
 - Save key mantida para preservar campanhas anteriores.
+
+
+## Fase 36 — Opinião Pública, Mídia e Legitimidade da Guerra
+
+- Novo painel Opinião Pública e Frente Interna.
+- Sistema de apoio popular, legitimidade, fadiga de guerra, mídia, protestos e perdas percebidas.
+- Ações: discurso nacional, ajuda civil, coletiva de imprensa, controle de crise, apoio a veteranos e pacote de estabilidade.
+- Fadiga de guerra e protestos afetam estabilidade, prontidão e economia.
+- A frente interna agora reage à tensão mundial, inflação, perdas e duração da guerra.
+- Nova camada Sociedade na Sala de Guerra.
+- Marcadores de mídia/protestos aparecem no mapa real.
+- Integração com economia, batalhas, estabilidade, governo, comércio e guerra longa.
+- Save key mantida para preservar campanhas anteriores.
