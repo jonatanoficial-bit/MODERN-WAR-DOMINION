@@ -1,5 +1,5 @@
-const VERSION = "4.0.0";
-const PHASE = "Fase 40 — crises humanitárias refugiados e direito internacional";
+const VERSION = "4.1.1";
+const PHASE = "Fase 41.1 — hotfix zip seguro e negociações de paz";
 const SAVE_KEY = "MWD_SAVE_F17";
 
 const $ = (sel, root = document) => root.querySelector(sel);
@@ -14,7 +14,7 @@ const state = {
   map: null,
   mapUserMoved: false,
   mapAutoCentered: false,
-  layers: { countries: null, regions: null, bases: null, threats: null, fronts: null, airOps: null, navalOps: null, missiles: null, logistics: null, tactical: null, battleEffects: null, weather: null, intel: null, tech: null, industry: null, trade: null, society: null, governance: null, special: null, occupation: null, humanitarian: null },
+  layers: { countries: null, regions: null, bases: null, threats: null, fronts: null, airOps: null, navalOps: null, missiles: null, logistics: null, tactical: null, battleEffects: null, weather: null, intel: null, tech: null, industry: null, trade: null, society: null, governance: null, special: null, occupation: null, humanitarian: null, peace: null },
   arsenalFilter: "Todos"
 };
 
@@ -3606,7 +3606,8 @@ function makeMapSettings() {
     governance: true,
     special: true,
     occupation: true,
-    humanitarian: true
+    humanitarian: true,
+    peace: true
   };
 }
 
@@ -3642,7 +3643,8 @@ function mapLayerMeta() {
     ["governance", t("mapops.governance", "Governo"), "🏛️"],
     ["special", t("mapops.special", "Especiais"), "🪂"],
     ["occupation", t("mapops.occupation", "Ocupação"), "🏛️"],
-    ["humanitarian", t("mapops.humanitarian", "Humanitário"), "⛑️"]
+    ["humanitarian", t("mapops.humanitarian", "Humanitário"), "⛑️"],
+    ["peace", t("mapops.peace", "Paz/ONU"), "🕊️"]
   ];
 }
 
@@ -3757,6 +3759,11 @@ function focusMap(kind) {
     if (!coords.length) ["capital","border","industrial"].forEach(id => { const r = getRegion(id); if (r) coords.push(r.coords); });
     if (!coords.length) coords.push(player.coords);
   }
+  if (kind === "peace") {
+    coords.push(player.coords);
+    ensurePeaceSystem()?.negotiations?.forEach(n => { if (n.coords) coords.push(n.coords); });
+    peaceTargets(5).forEach(t => coords.push(t.coords));
+  }
   mapFitCoords(coords.length ? coords : [player.coords], kind === "player" ? 4 : 3);
 }
 
@@ -3792,6 +3799,8 @@ function mapOpsIntelText() {
   if (occupation && zones.length) parts.push(`${t("mapops.occupation", "Ocupação").toLowerCase()} ${zones.length}`);
   const humanitarian = ensureHumanitarianSystem();
   if (humanitarian) parts.push(`${t("mapops.humanitarian", "Humanitário").toLowerCase()} ${humanitarianRiskScore()}`);
+  const peace = ensurePeaceSystem();
+  if (peace) parts.push(`${t("mapops.peace", "Paz/ONU").toLowerCase()} ${peace.momentum}/${peace.unSupport}`);
   return parts.length ? parts.join(" · ") : `${activeLayers} ${t("mapops.activeLayers", "Camadas ativas").toLowerCase()}`;
 }
 
@@ -3831,6 +3840,7 @@ function renderMapOpsPanel() {
         <button data-map-focus="special">🪂 ${t("mapops.special", "Especiais")}</button>
         <button data-map-focus="occupation">🏛️ ${t("mapops.occupation", "Ocupação")}</button>
         <button data-map-focus="humanitarian">⛑️ ${t("mapops.humanitarian", "Humanitário")}</button>
+        <button data-map-focus="peace">🕊️ ${t("mapops.peace", "Paz/ONU")}</button>
       </div>
     </section>
     <section class="mapops-layers">
@@ -5727,6 +5737,307 @@ function renderHumanitarianPanel() {
   $$("#humanitarianPanel [data-humanitarian-action]").forEach(btn => btn.addEventListener("click", () => humanitarianAction(btn.dataset.humanitarianAction)));
 }
 
+
+function makePeaceSystem() {
+  return {
+    credibility: 44,
+    momentum: 18,
+    ceasefire: 0,
+    unSupport: 34,
+    treatyRisk: 16,
+    prisoners: 120,
+    selectedTargetId: null,
+    history: [],
+    treaties: [],
+    negotiations: []
+  };
+}
+
+function ensurePeaceSystem() {
+  if (!state.game) return null;
+  if (!state.game.peaceSystem) state.game.peaceSystem = makePeaceSystem();
+  const ps = state.game.peaceSystem;
+  if (!Array.isArray(ps.history)) ps.history = [];
+  if (!Array.isArray(ps.treaties)) ps.treaties = [];
+  if (!Array.isArray(ps.negotiations)) ps.negotiations = [];
+  ps.credibility = clamp(ps.credibility ?? 44, 0, 100);
+  ps.momentum = clamp(ps.momentum ?? 18, 0, 100);
+  ps.ceasefire = clamp(ps.ceasefire ?? 0, 0, 12);
+  ps.unSupport = clamp(ps.unSupport ?? 34, 0, 100);
+  ps.treatyRisk = clamp(ps.treatyRisk ?? 16, 0, 100);
+  ps.prisoners = Math.max(0, Math.round(ps.prisoners ?? 0));
+  const target = peaceTargets()[0];
+  if (!ps.selectedTargetId || !getCountry(ps.selectedTargetId) || ps.selectedTargetId === state.game.countryId) ps.selectedTargetId = target?.id || null;
+  return ps;
+}
+
+function peaceTargets(limit = 12) {
+  const g = state.game;
+  if (!g) return [];
+  ensureAiWorld();
+  return state.countries
+    .filter(c => c.id !== g.countryId)
+    .map(c => {
+      const ai = g.aiWorld?.find(a => a.id === c.id);
+      const rel = g.relations?.find(r => r.id === c.id);
+      const atWar = (rel?.tension || 0) > 50 || (ai?.hostility || 0) > 55 || ensureGroundWar()?.fronts?.some(f => f.targetId === c.id && f.status !== "withdrawn");
+      const pressure = clamp((rel?.tension || 0) + (ai?.hostility || 0) / 2 + (ai?.readiness || 30) / 3 + (atWar ? 18 : 0), 0, 100);
+      return { ...c, ai, relation: rel, atWar, pressure: Math.round(pressure) };
+    })
+    .sort((a,b) => b.pressure - a.pressure)
+    .slice(0, limit);
+}
+
+function peaceActionLabel(kind) {
+  return {
+    offerCeasefire: t("peace.offerCeasefire", "Propor cessar-fogo"),
+    unSession: t("peace.unSession", "Convocar sessão da ONU"),
+    prisonerSwap: t("peace.prisonerSwap", "Troca de prisioneiros"),
+    humanitarianTruce: t("peace.humanitarianTruce", "Trégua humanitária"),
+    peaceTalks: t("peace.peaceTalks", "Conferência de paz"),
+    peacekeepers: t("peace.peacekeepers", "Mandato de paz")
+  }[kind] || kind;
+}
+
+function peaceCost(kind) {
+  return {
+    offerCeasefire: { finance: 22, industry: 2, energy: 2, food: 0 },
+    unSession: { finance: 34, industry: 3, energy: 3, food: 0 },
+    prisonerSwap: { finance: 28, industry: 4, energy: 4, food: 20 },
+    humanitarianTruce: { finance: 42, industry: 8, energy: 8, food: 35 },
+    peaceTalks: { finance: 76, industry: 12, energy: 8, food: 20 },
+    peacekeepers: { finance: 90, industry: 22, energy: 16, food: 45 }
+  }[kind] || { finance: 20, industry: 0, energy: 0, food: 0 };
+}
+
+function canPayPeace(cost) {
+  const g = state.game;
+  return g.finance >= (cost.finance || 0) && g.industry >= (cost.industry || 0) && g.energy >= (cost.energy || 0) && g.food >= (cost.food || 0);
+}
+
+function payPeace(cost) {
+  const g = state.game;
+  g.finance -= cost.finance || 0;
+  g.industry -= cost.industry || 0;
+  g.energy -= cost.energy || 0;
+  g.food -= cost.food || 0;
+}
+
+function recordPeaceHistory(kind, target, text, success = true, coords = null) {
+  const ps = ensurePeaceSystem();
+  const item = {
+    id: cryptoId(),
+    kind,
+    label: peaceActionLabel(kind),
+    targetId: target?.id,
+    targetName: target?.name || "",
+    targetFlag: target?.flag || "",
+    text,
+    success,
+    coords: coords || target?.coords || null,
+    at: `${monthNames[state.game.month % 12]}/${state.game.year}`
+  };
+  ps.history.unshift(item);
+  ps.history = ps.history.slice(0, 12);
+  if (item.coords) {
+    ps.negotiations.unshift(item);
+    ps.negotiations = ps.negotiations.slice(0, 10);
+  }
+}
+
+function peaceChance(target, kind) {
+  const g = state.game;
+  const ps = ensurePeaceSystem();
+  const ai = g.aiWorld?.find(a => a.id === target?.id);
+  const rel = g.relations?.find(r => r.id === target?.id);
+  const humanitarian = ensureHumanitarianSystem();
+  const society = ensureSocietySystem();
+  const gov = ensureGovernanceSystem();
+  let chance = ps.credibility + ps.momentum + ps.unSupport / 2 + society.legitimacy / 3 + governanceScore() / 3;
+  chance += humanitarian.legalCompliance / 4 - humanitarian.externalPressure / 5;
+  chance -= (ai?.hostility || 35) / 2;
+  chance -= (rel?.tension || 35) / 4;
+  chance += kind === "humanitarianTruce" ? 14 : 0;
+  chance += kind === "prisonerSwap" ? 8 : 0;
+  chance += kind === "peaceTalks" ? -4 : 0;
+  chance += kind === "peacekeepers" ? ps.unSupport / 4 : 0;
+  chance += randomInt(-18, 22);
+  return chance;
+}
+
+function peaceAction(kind) {
+  const g = state.game;
+  const ps = ensurePeaceSystem();
+  const target = getCountry($("#peaceTargetSelect")?.value || ps.selectedTargetId) || peaceTargets()[0];
+  if (!target) return;
+  ps.selectedTargetId = target.id;
+  const cost = peaceCost(kind);
+  if (!canPayPeace(cost)) {
+    g.events.push(eventText("warn", currentLang === "en-US" ? "Insufficient resources for peace action." : currentLang === "es-ES" ? "Recursos insuficientes para acción de paz." : "Recursos insuficientes para ação de paz."));
+    saveGame(); renderGame(); return;
+  }
+  payPeace(cost);
+
+  const ai = g.aiWorld?.find(a => a.id === target.id);
+  const rel = g.relations?.find(r => r.id === target.id);
+  const success = peaceChance(target, kind) > 48;
+  let text = "";
+
+  if (kind === "unSession") {
+    ps.unSupport = clamp(ps.unSupport + randomInt(8, 16), 0, 100);
+    ps.credibility = clamp(ps.credibility + randomInt(2, 6), 0, 100);
+    ensureHumanitarianSystem().externalPressure = clamp(ensureHumanitarianSystem().externalPressure - randomInt(2, 7), 0, 100);
+    text = `${t("peace.unSession", "Convocar sessão da ONU")}: apoio multilateral ampliado.`;
+    recordPeaceHistory(kind, target, text, true);
+  } else if (kind === "prisonerSwap") {
+    const released = Math.min(ps.prisoners, randomInt(18, 46));
+    ps.prisoners = Math.max(0, ps.prisoners - released);
+    ps.credibility = clamp(ps.credibility + randomInt(5, 11), 0, 100);
+    ensureSocietySystem().legitimacy = clamp(ensureSocietySystem().legitimacy + randomInt(2, 6), 0, 100);
+    if (rel) rel.tension = clamp(rel.tension - randomInt(3, 8), 0, 100);
+    text = `${target.name}: ${released} prisioneiros trocados, confiança diplomática cresceu.`;
+    recordPeaceHistory(kind, target, text, true);
+  } else if (success && kind === "offerCeasefire") {
+    ps.ceasefire = Math.max(ps.ceasefire, randomInt(2, 4));
+    ps.momentum = clamp(ps.momentum + randomInt(8, 15), 0, 100);
+    g.worldTension = clamp(g.worldTension - randomInt(3, 8), 0, 100);
+    if (ai) { ai.hostility = clamp(ai.hostility - randomInt(5, 12), 0, 100); ai.readiness = clamp(ai.readiness - randomInt(2, 6), 1, 100); }
+    if (rel) { rel.tension = clamp(rel.tension - randomInt(8, 16), 0, 100); rel.relation = clamp(rel.relation + randomInt(3, 8), 0, 100); }
+    text = `${target.name}: cessar-fogo aceito temporariamente.`;
+    recordPeaceHistory(kind, target, text, true);
+  } else if (success && kind === "humanitarianTruce") {
+    ps.ceasefire = Math.max(ps.ceasefire, randomInt(1, 3));
+    ps.momentum = clamp(ps.momentum + randomInt(5, 12), 0, 100);
+    const hs = ensureHumanitarianSystem();
+    hs.access = clamp(hs.access + randomInt(10, 20), 0, 140);
+    hs.civiliansAffected = Math.max(0, hs.civiliansAffected - randomInt(40, 100));
+    hs.refugees = Math.max(0, hs.refugees - randomInt(20, 70));
+    text = `${target.name}: trégua humanitária abriu passagem segura.`;
+    recordPeaceHistory(kind, target, text, true);
+  } else if (success && kind === "peaceTalks") {
+    ps.momentum = clamp(ps.momentum + randomInt(12, 22), 0, 100);
+    ps.credibility = clamp(ps.credibility + randomInt(4, 9), 0, 100);
+    ps.treaties.unshift({ id: cryptoId(), targetId: target.id, targetName: target.name, targetFlag: target.flag, kind: "framework", remaining: randomInt(5, 9), compliance: randomInt(55, 82) });
+    ps.treaties = ps.treaties.slice(0, 8);
+    if (ai) ai.hostility = clamp(ai.hostility - randomInt(8, 18), 0, 100);
+    if (rel) rel.tension = clamp(rel.tension - randomInt(12, 24), 0, 100);
+    g.worldTension = clamp(g.worldTension - randomInt(5, 12), 0, 100);
+    text = `${target.name}: conferência de paz produziu tratado preliminar.`;
+    recordPeaceHistory(kind, target, text, true);
+  } else if (success && kind === "peacekeepers") {
+    ps.unSupport = clamp(ps.unSupport + randomInt(4, 9), 0, 100);
+    ps.treatyRisk = clamp(ps.treatyRisk - randomInt(6, 14), 0, 100);
+    occupiedFronts().forEach(f => {
+      ensureOccupationFrontFields(f);
+      f.sabotageRisk = clamp(f.sabotageRisk - randomInt(4, 10), 0, 100);
+      f.stability = clamp(f.stability + randomInt(3, 8), 0, 100);
+    });
+    ensureHumanitarianSystem().access = clamp(ensureHumanitarianSystem().access + randomInt(6, 12), 0, 140);
+    text = `${target.name}: mandato de paz reduziu instabilidade nas zonas sensíveis.`;
+    recordPeaceHistory(kind, target, text, true);
+  } else {
+    ps.credibility = clamp(ps.credibility - randomInt(2, 7), 0, 100);
+    ps.treatyRisk = clamp(ps.treatyRisk + randomInt(5, 12), 0, 100);
+    if (rel) rel.tension = clamp(rel.tension + randomInt(2, 7), 0, 100);
+    if (ai) ai.hostility = clamp(ai.hostility + randomInt(2, 6), 0, 100);
+    text = `${target.name}: ${peaceActionLabel(kind)} não avançou e aumentou desconfiança.`;
+    recordPeaceHistory(kind, target, text, false);
+  }
+
+  g.events.push(eventText(success || ["unSession","prisonerSwap"].includes(kind) ? "sistema" : "warn", text));
+  saveGame(); renderGame(); activatePanel("panelPeace");
+}
+
+function progressPeaceSystem() {
+  const g = state.game;
+  const ps = ensurePeaceSystem();
+  if (!ps) return;
+  const hs = ensureHumanitarianSystem();
+  const society = ensureSocietySystem();
+  const activeWar = ensureGroundWar()?.fronts?.filter(f => f.status !== "withdrawn").length || 0;
+  if (ps.ceasefire > 0) {
+    ps.ceasefire -= 1;
+    g.worldTension = clamp(g.worldTension - 2, 0, 100);
+    activeWar && (ps.momentum = clamp(ps.momentum + 1, 0, 100));
+  } else {
+    ps.momentum = clamp(ps.momentum - Math.round(activeWar / 2) + (hs.externalPressure > 60 ? 1 : 0), 0, 100);
+  }
+  ps.credibility = clamp(ps.credibility + Math.round((society.legitimacy + hs.legalCompliance) / 130) - (ps.treatyRisk > 60 ? 1 : 0), 0, 100);
+  ps.unSupport = clamp(ps.unSupport + Math.round((hs.legalCompliance + hs.ngoTrust) / 150) - (humanitarianRiskScore() > 70 ? 1 : 0), 0, 100);
+  ps.treatyRisk = clamp(ps.treatyRisk + (g.worldTension > 70 ? 2 : 0) + (ps.ceasefire <= 0 && activeWar ? 1 : 0) - Math.round(ps.credibility / 70), 0, 100);
+  ps.prisoners += activeWar ? randomInt(1, 7) : randomInt(0, 2);
+
+  ps.treaties.forEach(tr => {
+    tr.remaining -= 1;
+    tr.compliance = clamp(tr.compliance + randomInt(-6, 5) + Math.round(ps.credibility / 60) - (ps.treatyRisk > 65 ? 3 : 0), 0, 100);
+    if (tr.compliance < 30 && Math.random() < .25) {
+      const ai = g.aiWorld?.find(a => a.id === tr.targetId);
+      if (ai) ai.hostility = clamp(ai.hostility + randomInt(3, 8), 0, 100);
+      g.worldTension = clamp(g.worldTension + randomInt(2, 7), 0, 100);
+      g.events.push(eventText("warn", `${tr.targetName}: tratado em risco de ruptura.`));
+    }
+  });
+  ps.treaties = ps.treaties.filter(tr => tr.remaining > 0 && tr.compliance > 12);
+}
+
+function renderPeaceMapOverlays(player) {
+  const ps = ensurePeaceSystem();
+  if (!state.map || !state.layers.peace || !window.L || !ps) return;
+  const origin = getPlayerCountry()?.coords || player.coords;
+  const targets = [
+    ...ps.negotiations.map(n => getCountry(n.targetId)).filter(Boolean),
+    ...ps.treaties.map(t => getCountry(t.targetId)).filter(Boolean),
+    ...peaceTargets(3)
+  ].filter((c, idx, arr) => c && arr.findIndex(x => x.id === c.id) === idx).slice(0, 6);
+  targets.forEach((target, idx) => {
+    const activeTreaty = ps.treaties.find(t => t.targetId === target.id);
+    const color = activeTreaty ? "#67f0d0" : "#ffd166";
+    L.polyline([origin, target.coords], { color, weight: 3, opacity: .58, dashArray: "12 10", className: "peace-route" }).addTo(state.layers.peace)
+      .bindPopup(`<strong>${target.flag} ${target.name}</strong><br>${activeTreaty ? t("peace.treaties","Tratados ativos") : t("peace.mapLayer","Negociações")}`);
+    const point = interpolateCoords(origin, target.coords, .40 + (idx % 3) * .10);
+    const icon = L.divIcon({ className: "", html: `<div class="${activeTreaty ? "marker-peace" : "marker-peace-talk"}">${activeTreaty ? "🕊️" : "🤝"}</div>`, iconSize: [40, 40], iconAnchor: [20, 20] });
+    L.marker(point, { icon }).addTo(state.layers.peace).bindPopup(`${target.name}: ${activeTreaty ? `${activeTreaty.remaining}m · ${activeTreaty.compliance}%` : t("peace.target","Parte negociadora")}`);
+  });
+}
+
+function renderPeacePanel() {
+  const panel = $("#peacePanel");
+  if (!panel || !state.game) return;
+  const ps = ensurePeaceSystem();
+  const targets = peaceTargets(12);
+  panel.innerHTML = `
+    <div class="peace-status">
+      <div><small>${t("peace.credibility","Credibilidade")}</small><strong>${ps.credibility}%</strong><i><b style="width:${ps.credibility}%"></b></i></div>
+      <div><small>${t("peace.momentum","Momento de paz")}</small><strong>${ps.momentum}%</strong><i><b style="width:${ps.momentum}%"></b></i></div>
+      <div><small>${t("peace.ceasefire","Cessar-fogo")}</small><strong>${ps.ceasefire}m</strong><span>${t("peace.treatyRisk","Risco de ruptura")}: ${ps.treatyRisk}%</span></div>
+      <div><small>${t("peace.unSupport","Apoio ONU")}</small><strong>${ps.unSupport}%</strong><i><b style="width:${ps.unSupport}%"></b></i></div>
+      <div><small>${t("peace.prisoners","Prisioneiros")}</small><strong>${ps.prisoners}</strong><span>${t("peace.treaties","Tratados ativos")}: ${ps.treaties.length}</span></div>
+    </div>
+    <label class="peace-target"><span>${t("peace.target","Parte negociadora")}</span>
+      <select id="peaceTargetSelect">
+        ${targets.map(c => `<option value="${c.id}" ${c.id === ps.selectedTargetId ? "selected" : ""}>${c.flag} ${c.name} · pressão ${c.pressure}</option>`).join("")}
+      </select>
+    </label>
+    <div class="peace-actions">
+      <button data-peace-action="offerCeasefire">🕊️ ${t("peace.offerCeasefire","Propor cessar-fogo")}</button>
+      <button data-peace-action="unSession">🌐 ${t("peace.unSession","Convocar sessão da ONU")}</button>
+      <button data-peace-action="prisonerSwap">🎗️ ${t("peace.prisonerSwap","Troca de prisioneiros")}</button>
+      <button data-peace-action="humanitarianTruce">⛑️ ${t("peace.humanitarianTruce","Trégua humanitária")}</button>
+      <button data-peace-action="peaceTalks">🤝 ${t("peace.peaceTalks","Conferência de paz")}</button>
+      <button data-peace-action="peacekeepers">🪖 ${t("peace.peacekeepers","Mandato de paz")}</button>
+    </div>
+    <section class="peace-treaties">
+      <h3>${t("peace.treaties","Tratados ativos")}</h3>
+      ${ps.treaties.length ? ps.treaties.map(tr => `<article><strong>${tr.targetFlag} ${tr.targetName}</strong><span>${tr.remaining}m · compliance ${tr.compliance}%</span></article>`).join("") : `<p class="muted">—</p>`}
+    </section>
+    <section class="peace-history">
+      <h3>${t("peace.history","Histórico diplomático")}</h3>
+      ${ps.history.length ? ps.history.slice(0,7).map(item => `<article class="${item.success ? "success" : "failure"}"><strong>${item.targetFlag || "🕊️"} ${item.label}</strong><span>${item.at} · ${item.targetName}</span><small>${item.text}</small></article>`).join("") : `<p class="muted">${t("peace.noHistory","Nenhuma ação de paz registrada.")}</p>`}
+    </section>`;
+  $("#peaceTargetSelect")?.addEventListener("change", e => { ps.selectedTargetId = e.target.value; saveGame(); renderPeacePanel(); });
+  $$("#peacePanel [data-peace-action]").forEach(btn => btn.addEventListener("click", () => peaceAction(btn.dataset.peaceAction)));
+}
+
 function makeInitialGame(countryId) {
   const country = state.countries.find(c => c.id === countryId) || state.countries[0];
   const regions = makeRegions(country);
@@ -5937,6 +6248,7 @@ function renderGame() {
   ensureSpecialOpsSystem();
   ensureOccupationSystem();
   ensureHumanitarianSystem();
+  ensurePeaceSystem();
   ensureMapSettings();
   renderSummary();
   renderCommanderGuide();
@@ -5967,6 +6279,7 @@ function renderGame() {
   renderSpecialPanel();
   renderOccupationPanel();
   renderHumanitarianPanel();
+  renderPeacePanel();
   renderMapOpsPanel();
   renderGlobalWar();
   renderAiWorld();
@@ -6056,6 +6369,8 @@ function commanderRecommendation() {
   if (g.month > 1 && occRisk) return { title: t("rec.occupation", "Administrar ocupação"), text: t("rec.occupationText", "Zona ocupada com baixa estabilidade ou alto risco de sabotagem."), action: "occupation", panel: "panelOccupation" };
   const humanitarian = ensureHumanitarianSystem();
   if (g.month > 1 && (humanitarianRiskScore() > 55 || humanitarian.legalRisk > 58 || humanitarian.externalPressure > 62 || humanitarian.refugees > 180)) return { title: t("rec.humanitarian", "Reduzir crise humanitária"), text: t("rec.humanitarianText", "Civis, refugiados ou risco jurídico estão altos."), action: "humanitarian", panel: "panelHumanitarian" };
+  const peace = ensurePeaceSystem();
+  if (g.month > 2 && (g.worldTension > 72 || humanitarianRiskScore() > 68 || ensureSocietySystem().warWeariness > 70) && peace.credibility > 25) return { title: t("rec.peace", "Abrir canal de paz"), text: t("rec.peaceText", "Tensão, crise humanitária ou desgaste político indicam que uma negociação pode ser útil."), action: "peace", panel: "panelPeace" };
   const cyberOps = ensureCyberOps();
   const mainThreat = topAiThreats(1)[0];
   const enemyOps = ensureEnemyOffensives();
@@ -6137,6 +6452,7 @@ function renderCommanderGuide() {
       <button id="quickSpecialBtn"><b>🪂 ${t("guide.special", "Especiais")}</b><span>${t("guide.specialSub", "missões sigilosas")}</span></button>
       <button id="quickOccupationBtn"><b>🏛️ ${t("guide.occupation", "Ocupação")}</b><span>${t("guide.occupationSub", "controle territorial")}</span></button>
       <button id="quickHumanitarianBtn"><b>⛑️ ${t("guide.humanitarian", "Humanitário")}</b><span>${t("guide.humanitarianSub", "civis e leis")}</span></button>
+      <button id="quickPeaceBtn"><b>🕊️ ${t("guide.peace", "Paz/ONU")}</b><span>${t("guide.peaceSub", "cessar-fogo e tratados")}</span></button>
       <button id="quickBuildBtn"><b>🏗️ ${t("guide.build", "Construir")}</b><span>${t("guide.buildSub", "base recomendada")}</span></button>
       <button id="quickProduceBtn"><b>🪖 ${t("guide.produce", "Produzir")}</b><span>${t("guide.produceSub", "melhor unidade")}</span></button>
       <button id="quickLogisticsBtn"><b>🚚 ${t("guide.logistics", "Logística")}</b><span>${t("guide.logisticsSub", "suprir tropas")}</span></button>
@@ -6704,6 +7020,7 @@ function initMap() {
   state.layers.special = L.layerGroup().addTo(state.map);
   state.layers.occupation = L.layerGroup().addTo(state.map);
   state.layers.humanitarian = L.layerGroup().addTo(state.map);
+  state.layers.peace = L.layerGroup().addTo(state.map);
   state.map.dragging.enable();
   state.map.scrollWheelZoom.enable();
   state.map.doubleClickZoom.enable();
@@ -6786,6 +7103,7 @@ function updateMapLayers() {
   renderSpecialMapOverlays(player);
   renderOccupationMapOverlays(player);
   renderHumanitarianMapOverlays(player);
+  renderPeaceMapOverlays(player);
   applyMapLayerVisibility();
   if (!state.mapUserMoved && !state.mapAutoCentered) {
     state.map.setView(player.coords, Math.max(state.map.getZoom(), 3), { animate: false });
@@ -6967,6 +7285,7 @@ function advanceMonth() {
   progressSpecialOpsSystem();
   progressOccupationSystem();
   progressHumanitarianSystem();
+  progressPeaceSystem();
   progressConstruction();
   progressProduction();
   progressCyberOps();

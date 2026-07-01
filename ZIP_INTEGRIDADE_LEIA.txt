@@ -1,0 +1,4 @@
+Modern War Dominion v4.1.1 F41.1
+Hotfix de empacotamento ZIP seguro.
+Se o WinRAR mostrar 'final inesperado do arquivo', o download foi interrompido/corrompido.
+Baixe novamente este ZIP e extraia com Extrair para uma pasta vazia.

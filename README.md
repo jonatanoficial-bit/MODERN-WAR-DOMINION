@@ -420,3 +420,17 @@ Abra `index.html` ou publique no GitHub Pages. No celular, use tela deitada/full
 - Marcadores de crise humanitária aparecem no mapa real.
 - Integração com ocupação, logística, comércio, governo, sociedade e guerra longa.
 - Save key mantida para preservar campanhas anteriores.
+
+
+## Fase 41 — ONU, Tratados e Negociações de Paz
+
+- Novo painel ONU, Tratados e Paz.
+- Sistema de credibilidade diplomática, momento de paz, cessar-fogo, apoio ONU, risco de ruptura e prisioneiros.
+- Ações: propor cessar-fogo, convocar sessão da ONU, troca de prisioneiros, trégua humanitária, conferência de paz e mandato de paz.
+- Tratados ativos reduzem tensão, hostilidade, crise humanitária e risco de guerra prolongada.
+- Cessar-fogo reduz tensão mundial e cria janela diplomática.
+- Acordos podem falhar se credibilidade, apoio ONU ou legitimidade estiverem baixos.
+- Nova camada Paz/ONU na Sala de Guerra.
+- Rotas e marcadores diplomáticos aparecem no mapa real.
+- Integração com crise humanitária, sociedade, governo, ocupação, IA rival, guerra terrestre e comércio.
+- Save key mantida para preservar campanhas anteriores.

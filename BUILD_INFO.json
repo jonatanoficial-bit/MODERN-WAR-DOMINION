@@ -1,7 +1,7 @@
 {
   "project": "Modern War Dominion",
-  "version": "4.0.0",
-  "phase": "Fase 40 — Crises Humanitárias, Refugiados e Direito Internacional",
+  "version": "4.1.1",
+  "phase": "Fase 41.1 — Hotfix ZIP Seguro",
   "generated_at": "2026-06-24",
   "base": "Fase 5 assets integrados",
   "features": [
@@ -12,13 +12,14 @@
     "mapa real preservado"
   ],
   "notes": [
-    "Novo painel Humanitário e Direito Internacional",
-    "Sistema de civis afetados, refugiados, acesso humanitário, conformidade legal, risco jurídico, confiança de ONGs e pressão externa",
-    "Ações: abrir corredor humanitário, hospitais de campanha, acolher refugiados, convidar observadores, investigar abusos e apelo à ONU",
-    "Crises humanitárias afetam sociedade, governo, comércio, sanções e legitimidade",
-    "Nova camada Humanitário na Sala de Guerra",
-    "Marcadores de crise humanitária aparecem no mapa real",
-    "Integração com ocupação, guerra terrestre, logística, comércio, governo e sociedade"
+    "Hotfix de empacotamento: ZIP recriado com nome curto/ASCII e validação de integridade.",
+    "Novo painel ONU, Tratados e Paz",
+    "Sistema de credibilidade diplomática, momento de paz, cessar-fogo, apoio ONU, risco de ruptura e prisioneiros",
+    "Ações: propor cessar-fogo, convocar sessão da ONU, troca de prisioneiros, trégua humanitária, conferência de paz e mandato de paz",
+    "Tratados ativos reduzem tensão, hostilidade, crise humanitária e risco de guerra prolongada",
+    "Cessar-fogo reduz tensão mundial e cria janela diplomática",
+    "Nova camada Paz/ONU na Sala de Guerra",
+    "Rotas e marcadores diplomáticos aparecem no mapa real"
   ],
   "countries_count": 249,
   "countries_available": 249,
@@ -177,6 +178,13 @@
     "corredores humanitários",
     "observadores internacionais",
     "risco jurídico",
-    "pressão diplomática"
+    "pressão diplomática",
+    "negociações de paz",
+    "cessar-fogo",
+    "mediação da ONU",
+    "troca de prisioneiros",
+    "trégua humanitária",
+    "tratados",
+    "missões de paz"
   ]
 }

@@ -1757,3 +1757,44 @@ body:has(#screenWar.screen-active) .nation-confirm-tray{
   .humanitarian-actions{grid-template-columns:repeat(6,1fr);gap:6px}
   .humanitarian-actions button{min-height:40px;font-size:.52rem;padding:6px;border-radius:11px}
 }
+
+
+/* Fase 41 — ONU, tratados e negociações de paz */
+.peace-panel{display:grid;gap:12px}
+.peace-status{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.peace-status>div{border:1px solid rgba(143,211,255,.22);border-radius:16px;background:linear-gradient(145deg,rgba(20,70,108,.20),rgba(7,12,20,.48));padding:10px}
+.peace-status small{display:block;color:#8fd3ff;text-transform:uppercase;letter-spacing:.11em;font-size:.58rem;font-weight:900}
+.peace-status strong{display:block;font-size:1rem;color:#8fd3ff;margin:3px 0}
+.peace-status span{display:block;color:#d7e6f4;font-size:.64rem}
+.peace-status i{display:block;height:7px;border-radius:999px;background:rgba(255,255,255,.08);overflow:hidden}
+.peace-status b{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,#ff784f,#ffd166,#67f0d0,#8fd3ff)}
+.peace-target{display:grid;gap:6px;border:1px solid rgba(255,255,255,.09);background:rgba(255,255,255,.035);padding:10px;border-radius:16px}
+.peace-target span{font-size:.66rem;text-transform:uppercase;letter-spacing:.08em;color:#8fd3ff;font-weight:900}
+.peace-target select{width:100%;border:1px solid rgba(143,211,255,.24);background:rgba(4,10,18,.62);color:var(--text);border-radius:12px;padding:10px}
+.peace-actions{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.peace-actions button{min-height:54px;text-align:left;border-radius:16px;background:rgba(7,12,20,.58);border:1px solid rgba(143,211,255,.20);padding:10px;color:var(--text);font-weight:900}
+.peace-actions button:active{transform:scale(.98)}
+.peace-treaties,.peace-history{display:grid;gap:8px}
+.peace-treaties h3,.peace-history h3{font-size:.9rem;margin:2px 0}
+.peace-treaties article,.peace-history article{border:1px solid rgba(255,255,255,.08);border-radius:14px;background:rgba(255,255,255,.035);padding:9px}
+.peace-history article.success{border-color:rgba(103,240,208,.26)}
+.peace-history article.failure{border-color:rgba(255,120,79,.30)}
+.peace-treaties strong,.peace-history strong{display:block;font-size:.8rem}
+.peace-treaties span,.peace-history span,.peace-history small{display:block;color:#d7e6f4;font-size:.64rem;margin-top:3px}
+.marker-peace{display:grid;place-items:center;width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,#0d3d38,#67f0d0);color:#02110e;border:2px solid rgba(255,255,255,.68);box-shadow:0 0 28px rgba(103,240,208,.70),0 12px 26px rgba(0,0,0,.45);font-size:1.15rem;animation:peacePulse 1.15s ease-in-out infinite alternate}
+.marker-peace-talk{display:grid;place-items:center;width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,#122942,#8fd3ff);color:#06101b;border:2px solid rgba(255,255,255,.68);box-shadow:0 0 28px rgba(143,211,255,.70),0 12px 26px rgba(0,0,0,.45);font-size:1.15rem;animation:peaceTalkPulse 1s ease-in-out infinite alternate}
+.leaflet-overlay-pane path.peace-route{animation:tacticalDash 1.2s linear infinite;filter:drop-shadow(0 0 8px rgba(143,211,255,.55))}
+@keyframes peacePulse{0%{transform:scale(.92)}100%{transform:scale(1.08)}}
+@keyframes peaceTalkPulse{0%{transform:scale(.92) rotate(-3deg)}100%{transform:scale(1.08) rotate(3deg)}}
+@media(max-width:980px){
+  .peace-status{grid-template-columns:1fr}
+  .peace-actions{grid-template-columns:1fr}
+}
+@media(max-height:560px){
+  .peace-status{grid-template-columns:repeat(3,1fr);gap:6px}
+  .peace-status>div{padding:7px;border-radius:12px}
+  .peace-status small{font-size:.48rem}
+  .peace-status strong{font-size:.72rem}
+  .peace-actions{grid-template-columns:repeat(6,1fr);gap:6px}
+  .peace-actions button{min-height:40px;font-size:.52rem;padding:6px;border-radius:11px}
+}
