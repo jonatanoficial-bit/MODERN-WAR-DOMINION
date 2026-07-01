@@ -451,3 +451,16 @@
 - Nova camada Nova Ordem na Sala de Guerra.
 - Integração com paz/ONU, humanitário, ocupação, comércio, governo, sociedade e coalizões.
 - Save key mantida para preservar campanhas anteriores.
+
+
+## Fase 43 — Condições de Vitória, Ranking Global e Finais de Campanha
+
+- Novo painel Vitória, Ranking e Finais.
+- Sistema de pontuação global, ranking, risco de derrota e estabilidade final.
+- Quatro caminhos de encerramento: vitória militar, diplomática, econômica e humanitária.
+- Relatório final gerado ao encerrar a campanha.
+- Ranking geopolítico aparece no mapa real.
+- Recomendação automática quando a campanha pode ser encerrada ou quando há risco crítico.
+- A campanha pode continuar mesmo depois de avaliar ou encerrar simbolicamente.
+- Integração com poder militar, paz/ONU, economia, humanitário, governo, sociedade e nova ordem.
+- Save key mantida para preservar campanhas anteriores.

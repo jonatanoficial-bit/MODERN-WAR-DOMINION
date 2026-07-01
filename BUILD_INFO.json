@@ -1,7 +1,7 @@
 {
   "project": "Modern War Dominion",
-  "version": "4.2.0",
-  "phase": "Fase 42 — Pós-Guerra, Reconstrução e Nova Ordem Mundial",
+  "version": "4.3.0",
+  "phase": "Fase 43 — Condições de Vitória, Ranking Global e Finais de Campanha",
   "generated_at": "2026-06-24",
   "base": "Fase 5 assets integrados",
   "features": [
@@ -12,13 +12,13 @@
     "mapa real preservado"
   ],
   "notes": [
-    "Novo painel Pós-Guerra e Nova Ordem Mundial",
-    "Sistema de influência global, reconstrução, estabilidade regional, dívida de guerra, demobilização e instituições",
-    "Ações: plano de reconstrução, demobilizar forças, criar instituição regional, alívio de dívida, cúpula da nova ordem e pacto de segurança",
-    "Esferas de influência aparecem no mapa real",
-    "Reconstrução reduz crise humanitária, melhora ocupações e consolida tratados",
-    "Demobilização reduz fadiga social e custo de guerra",
-    "Integração com paz/ONU, humanitário, ocupação, comércio, governo, sociedade e coalizões"
+    "Novo painel Vitória, Ranking e Finais",
+    "Sistema de pontuação global, ranking, risco de derrota e estabilidade final",
+    "Quatro caminhos de encerramento: vitória militar, diplomática, econômica e humanitária",
+    "Relatório final gerado ao encerrar a campanha",
+    "Ranking geopolítico aparece no mapa real",
+    "Recomendação automática quando a campanha pode ser encerrada ou quando há risco crítico",
+    "Integração com poder militar, paz/ONU, economia, humanitário, governo, sociedade e nova ordem"
   ],
   "countries_count": 249,
   "countries_available": 249,
@@ -191,6 +191,13 @@
     "demobilização",
     "instituições regionais",
     "dívida de guerra",
-    "esferas de influência"
+    "esferas de influência",
+    "condições de vitória",
+    "ranking global",
+    "finais de campanha",
+    "pontuação estratégica",
+    "relatório final",
+    "risco de derrota",
+    "ranking geopolítico"
   ]
 }

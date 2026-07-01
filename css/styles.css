@@ -1836,3 +1836,47 @@ body:has(#screenWar.screen-active) .nation-confirm-tray{
   .world-order-actions{grid-template-columns:repeat(6,1fr);gap:6px}
   .world-order-actions button{min-height:40px;font-size:.51rem;padding:6px;border-radius:11px}
 }
+
+
+/* Fase 43 — Condições de vitória, ranking global e finais de campanha */
+.victory-panel{display:grid;gap:12px}
+.victory-score-card{display:grid;grid-template-columns:1fr 1fr;gap:10px;border:1px solid rgba(255,209,102,.26);border-radius:20px;background:linear-gradient(145deg,rgba(96,70,18,.22),rgba(7,12,20,.55));padding:12px;box-shadow:0 0 24px rgba(255,209,102,.10)}
+.victory-score-card.ended{border-color:rgba(103,240,208,.36);box-shadow:0 0 30px rgba(103,240,208,.18)}
+.victory-score-card small{display:block;color:#ffd166;text-transform:uppercase;letter-spacing:.11em;font-size:.58rem;font-weight:900}
+.victory-score-card strong{display:block;font-size:1.8rem;color:#ffd166;margin:4px 0}
+.victory-score-card span{display:block;color:#d7e6f4;font-size:.7rem}
+.victory-metrics{display:grid;gap:8px;border:1px solid rgba(255,255,255,.08);border-radius:18px;background:rgba(255,255,255,.035);padding:10px}
+.victory-bar{display:grid;gap:4px}
+.victory-bar>div{display:flex;align-items:center;justify-content:space-between;font-size:.64rem;color:#d7e6f4}
+.victory-bar i{display:block;height:7px;border-radius:999px;background:rgba(255,255,255,.08);overflow:hidden}
+.victory-bar b{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,#ff784f,#ffd166,#67f0d0,#8fd3ff)}
+.victory-endings,.victory-history,.victory-report{display:grid;gap:8px}
+.victory-endings h3,.victory-history h3,.victory-report h3{font-size:.9rem;margin:2px 0}
+.victory-endings article{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;border:1px solid rgba(255,255,255,.08);border-radius:15px;background:rgba(255,255,255,.035);padding:9px}
+.victory-endings article.ready{border-color:rgba(103,240,208,.30)}
+.victory-endings article.locked{opacity:.72}
+.victory-endings article strong{font-size:.78rem}
+.victory-endings article span{font-size:.68rem;color:#d7e6f4}
+.victory-endings article button{grid-column:1/-1;border-radius:12px;border:1px solid rgba(255,209,102,.25);background:rgba(255,209,102,.08);color:var(--text);font-weight:900;padding:8px}
+.victory-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.victory-actions button{min-height:48px;text-align:left;border-radius:16px;background:rgba(7,12,20,.58);border:1px solid rgba(255,209,102,.22);padding:10px;color:var(--text);font-weight:900}
+.victory-report{border:1px solid rgba(103,240,208,.26);background:rgba(103,240,208,.06);border-radius:16px;padding:10px}
+.victory-report p{margin:0;color:#eaf6ff;font-size:.72rem;line-height:1.45}
+.victory-history article{border:1px solid rgba(255,255,255,.08);border-radius:14px;background:rgba(255,255,255,.035);padding:9px}
+.victory-history strong{display:block;font-size:.8rem}
+.victory-history span{display:block;color:#d7e6f4;font-size:.64rem;margin-top:3px}
+.marker-victory-player{display:grid;place-items:center;width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,#4a3811,#ffd166);color:#111;border:2px solid rgba(255,255,255,.78);box-shadow:0 0 32px rgba(255,209,102,.78),0 12px 28px rgba(0,0,0,.48);font-size:1.2rem;animation:victoryPulse 1.1s ease-in-out infinite alternate}
+.marker-victory{display:grid;place-items:center;width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#0d3d38,#67f0d0);color:#02110e;border:2px solid rgba(255,255,255,.68);box-shadow:0 0 24px rgba(103,240,208,.60),0 10px 22px rgba(0,0,0,.42);font-weight:900}
+.marker-victory-risk{display:grid;place-items:center;width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#4b120c,#ff784f);color:#fff;border:2px solid rgba(255,255,255,.68);box-shadow:0 0 24px rgba(255,120,79,.68),0 10px 22px rgba(0,0,0,.42);font-weight:900;animation:victoryRiskPulse 1s ease-in-out infinite alternate}
+@keyframes victoryPulse{0%{transform:scale(.92)}100%{transform:scale(1.08)}}
+@keyframes victoryRiskPulse{0%{transform:scale(.92) rotate(-3deg)}100%{transform:scale(1.08) rotate(3deg)}}
+@media(max-width:980px){
+  .victory-score-card{grid-template-columns:1fr}
+  .victory-actions{grid-template-columns:1fr}
+}
+@media(max-height:560px){
+  .victory-score-card{grid-template-columns:repeat(2,1fr);padding:8px}
+  .victory-score-card strong{font-size:1.1rem}
+  .victory-endings article{grid-template-columns:1fr auto;padding:7px}
+  .victory-actions{grid-template-columns:repeat(2,1fr)}
+}

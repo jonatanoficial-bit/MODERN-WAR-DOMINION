@@ -1,6 +1,6 @@
 {
   "name": "modern-war-dominion",
-  "version": "4.2.0",
+  "version": "4.3.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -8,5 +8,5 @@
     "audit": "node tools/audit.mjs",
     "integrity": "node tools/integrity.mjs"
   },
-  "description": "Modern War Dominion Fase 42 — pós-guerra, reconstrução e nova ordem mundial"
+  "description": "Modern War Dominion Fase 43 — condições de vitória, ranking global e finais de campanha"
 }

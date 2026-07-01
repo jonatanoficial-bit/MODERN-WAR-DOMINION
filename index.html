@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
   <meta name="theme-color" content="#050914">
   <meta name="description" content="Modern War Dominion — jogo mobile de dominação militar global com mapa real, bases regionais, produção de unidades e escalada de guerra mundial.">
-  <title>Modern War Dominion — Fase 42</title>
+  <title>Modern War Dominion — Fase 43</title>
   <link rel="manifest" href="manifest.json">
   <link rel="icon" href="assets/img/icon.svg" type="image/svg+xml">
   <link rel="preconnect" href="https://unpkg.com">
@@ -42,7 +42,7 @@
         </select>
         <button class="mini-btn" id="fullscreenBtn" data-i18n="top.fullscreen">Tela cheia</button>
         <button class="mini-btn" id="installBtn" hidden data-i18n="top.install">Instalar</button>
-        <div class="build-chip" data-i18n="phase.label">Fase 42 · v4.2.0</div>
+        <div class="build-chip" data-i18n="phase.label">Fase 43 · v4.3.0</div>
       </div>
     </header>
 
@@ -50,7 +50,7 @@
       <section class="screen screen-active" id="screenHome">
         <div class="home-layout">
           <article class="hero-card glass-panel">
-            <p class="eyebrow" data-i18n="home.eyebrow">Fase 42 — Pós-Guerra, Reconstrução e Nova Ordem Mundial</p>
+            <p class="eyebrow" data-i18n="home.eyebrow">Fase 43 — Condições de Vitória, Ranking Global e Finais de Campanha</p>
             <h1 data-i18n="home.title">Agora a dissuasão estratégica muda o equilíbrio da guerra.</h1>
             <p data-i18n="home.text">A campanha ganha estoque de mísseis, escudo antimíssil, alerta antecipado, ataque convencional de precisão e postura de dissuasão nuclear simulada.</p>
             <div class="hero-actions">
@@ -121,6 +121,7 @@
               <button class="side-tab" data-panel="panelHumanitarian" data-i18n="tab.humanitarian">Humanitário</button>
               <button class="side-tab" data-panel="panelPeace" data-i18n="tab.peace">Paz/ONU</button>
               <button class="side-tab" data-panel="panelWorldOrder" data-i18n="tab.worldOrder">Pós-guerra</button>
+              <button class="side-tab" data-panel="panelVictory" data-i18n="tab.victory">Vitória</button>
               <button class="side-tab" data-panel="panelGovernance" data-i18n="tab.governance">Governo</button>
               <button class="side-tab" data-panel="panelMapOps" data-i18n="tab.map">Mapa</button>
               <button class="side-tab" data-panel="panelEnvironment" data-i18n="tab.environment">Ambiente</button>
@@ -199,6 +200,12 @@
               <h2 data-i18n="worldOrder.title">Pós-Guerra e Nova Ordem Mundial</h2>
               <p class="muted" data-i18n="worldOrder.text">Transforme vitórias, tratados e ocupações em estabilidade, reconstrução e influência internacional.</p>
               <div id="worldOrderPanel" class="world-order-panel"></div>
+            </div>
+
+            <div class="side-panel" id="panelVictory">
+              <h2 data-i18n="victory.title">Vitória, Ranking e Finais</h2>
+              <p class="muted" data-i18n="victory.text">Acompanhe sua pontuação estratégica, riscos de derrota e os caminhos possíveis para encerrar a campanha.</p>
+              <div id="victoryPanel" class="victory-panel"></div>
             </div>
 
             <div class="side-panel" id="panelGovernance">
@@ -386,6 +393,7 @@
             <button class="dock-btn" data-panel="panelHumanitarian">⛑️<span data-i18n="dock.humanitarian">Humanitário</span></button>
             <button class="dock-btn" data-panel="panelPeace">🕊️<span data-i18n="dock.peace">Paz</span></button>
             <button class="dock-btn" data-panel="panelWorldOrder">🌍<span data-i18n="dock.worldOrder">Ordem</span></button>
+            <button class="dock-btn" data-panel="panelVictory">🏆<span data-i18n="dock.victory">Vitória</span></button>
             <button class="dock-btn" data-panel="panelGovernance">🏛️<span data-i18n="dock.governance">Governo</span></button>
             <button class="dock-btn" data-panel="panelMapOps">🗺️<span data-i18n="dock.map">Mapa</span></button>
             <button class="dock-btn" data-panel="panelEnvironment">🌦️<span data-i18n="dock.environment">Ambiente</span></button>
@@ -414,7 +422,7 @@
 
       <section class="screen" id="screenRoadmap">
         <div class="roadmap glass-panel">
-          <p class="eyebrow" data-i18n="roadmap.eyebrow">Fase 42 — nova ordem mundial do mapa</p>
+          <p class="eyebrow" data-i18n="roadmap.eyebrow">Fase 43 — finais de campanha do mapa</p>
           <h1 data-i18n="roadmap.title">A campanha agora tem controle de camadas, presets visuais e foco rápido para comandar o mapa.</h1>
           <div class="roadmap-grid">
             <article><strong>Fase 9</strong><span>Manutenção, desgaste, baixas, reposição de lotes e custo real de guerra longa.</span></article>

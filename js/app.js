@@ -1,5 +1,5 @@
-const VERSION = "4.2.0";
-const PHASE = "Fase 42 — pós-guerra reconstrução e nova ordem mundial";
+const VERSION = "4.3.0";
+const PHASE = "Fase 43 — condições de vitória ranking global e finais";
 const SAVE_KEY = "MWD_SAVE_F17";
 
 const $ = (sel, root = document) => root.querySelector(sel);
@@ -14,7 +14,7 @@ const state = {
   map: null,
   mapUserMoved: false,
   mapAutoCentered: false,
-  layers: { countries: null, regions: null, bases: null, threats: null, fronts: null, airOps: null, navalOps: null, missiles: null, logistics: null, tactical: null, battleEffects: null, weather: null, intel: null, tech: null, industry: null, trade: null, society: null, governance: null, special: null, occupation: null, humanitarian: null, peace: null, worldOrder: null },
+  layers: { countries: null, regions: null, bases: null, threats: null, fronts: null, airOps: null, navalOps: null, missiles: null, logistics: null, tactical: null, battleEffects: null, weather: null, intel: null, tech: null, industry: null, trade: null, society: null, governance: null, special: null, occupation: null, humanitarian: null, peace: null, worldOrder: null, victory: null },
   arsenalFilter: "Todos"
 };
 
@@ -3608,7 +3608,8 @@ function makeMapSettings() {
     occupation: true,
     humanitarian: true,
     peace: true,
-    worldOrder: true
+    worldOrder: true,
+    victory: true
   };
 }
 
@@ -3646,7 +3647,8 @@ function mapLayerMeta() {
     ["occupation", t("mapops.occupation", "Ocupação"), "🏛️"],
     ["humanitarian", t("mapops.humanitarian", "Humanitário"), "⛑️"],
     ["peace", t("mapops.peace", "Paz/ONU"), "🕊️"],
-    ["worldOrder", t("mapops.worldOrder", "Nova ordem"), "🌍"]
+    ["worldOrder", t("mapops.worldOrder", "Nova ordem"), "🌍"],
+    ["victory", t("mapops.victory", "Vitória"), "🏆"]
   ];
 }
 
@@ -3771,6 +3773,10 @@ function focusMap(kind) {
     ensureWorldOrderSystem()?.spheres?.forEach(s => { if (s.coords) coords.push(s.coords); });
     if (coords.length < 2) peaceTargets(5).forEach(t => coords.push(t.coords));
   }
+  if (kind === "victory") {
+    coords.push(player.coords);
+    topAiThreats(6).forEach(ai => { const c = getCountry(ai.id); if (c) coords.push(c.coords); });
+  }
   mapFitCoords(coords.length ? coords : [player.coords], kind === "player" ? 4 : 3);
 }
 
@@ -3810,6 +3816,8 @@ function mapOpsIntelText() {
   if (peace) parts.push(`${t("mapops.peace", "Paz/ONU").toLowerCase()} ${peace.momentum}/${peace.unSupport}`);
   const worldOrder = ensureWorldOrderSystem();
   if (worldOrder) parts.push(`${t("mapops.worldOrder", "Nova ordem").toLowerCase()} ${worldOrderScore()}`);
+  const victory = updateVictorySystem();
+  if (victory) parts.push(`${t("mapops.victory", "Vitória").toLowerCase()} ${victory.score}/${victory.rank}`);
   return parts.length ? parts.join(" · ") : `${activeLayers} ${t("mapops.activeLayers", "Camadas ativas").toLowerCase()}`;
 }
 
@@ -3851,6 +3859,7 @@ function renderMapOpsPanel() {
         <button data-map-focus="humanitarian">⛑️ ${t("mapops.humanitarian", "Humanitário")}</button>
         <button data-map-focus="peace">🕊️ ${t("mapops.peace", "Paz/ONU")}</button>
         <button data-map-focus="worldOrder">🌍 ${t("mapops.worldOrder", "Nova ordem")}</button>
+        <button data-map-focus="victory">🏆 ${t("mapops.victory", "Vitória")}</button>
       </div>
     </section>
     <section class="mapops-layers">
@@ -6298,6 +6307,207 @@ function renderWorldOrderPanel() {
   $$("#worldOrderPanel [data-world-order-action]").forEach(btn => btn.addEventListener("click", () => worldOrderAction(btn.dataset.worldOrderAction)));
 }
 
+
+function makeVictorySystem() {
+  return {
+    score: 0,
+    rank: "—",
+    defeatRisk: 0,
+    finalStability: 0,
+    ended: false,
+    ending: null,
+    finalReport: null,
+    history: []
+  };
+}
+
+function ensureVictorySystem() {
+  if (!state.game) return null;
+  if (!state.game.victorySystem) state.game.victorySystem = makeVictorySystem();
+  const vs = state.game.victorySystem;
+  if (!Array.isArray(vs.history)) vs.history = [];
+  vs.score = Math.round(vs.score || 0);
+  vs.defeatRisk = clamp(vs.defeatRisk || 0, 0, 100);
+  vs.finalStability = clamp(vs.finalStability || 0, 0, 100);
+  vs.rank = vs.rank || "—";
+  return vs;
+}
+
+function victoryMetrics() {
+  const g = state.game;
+  const military = clamp(Math.round(powerIndex() / 3.2 + (g.globalWar?.warScore || 0) + occupiedFronts().length * 8 + ensureEnemyOffensives().defenseReadiness / 4), 0, 100);
+  const diplomatic = clamp(Math.round((ensurePeaceSystem().credibility + ensurePeaceSystem().unSupport + ensurePeaceSystem().momentum) / 3 + ensurePeaceSystem().treaties.length * 8 + ensureCoalition().cohesion / 5), 0, 100);
+  const economic = clamp(Math.round((g.finance / 5) + (g.industry / 4) + industryReadiness() / 2 + ensureTradeSystem().marketAccess / 3 - ensureWorldOrderSystem().warDebt / 3), 0, 100);
+  const humanitarian = clamp(Math.round(ensureHumanitarianSystem().legalCompliance * .38 + ensureHumanitarianSystem().access * .28 + ensureHumanitarianSystem().ngoTrust * .22 + ensureWorldOrderSystem().reconstruction * .18 - humanitarianRiskScore() * .42), 0, 100);
+  const stability = clamp(Math.round((g.stability + ensureSocietySystem().support + ensureGovernanceSystem().authority + ensureWorldOrderSystem().regionalStability) / 4), 0, 100);
+  const order = clamp(Math.round(worldOrderScore() + ensureWorldOrderSystem().influence / 5 + ensureWorldOrderSystem().institutions / 5), 0, 100);
+  const defeatRisk = clamp(Math.round(
+    (100 - g.stability) * .22 +
+    ensureSocietySystem().protests * .18 +
+    ensureGovernanceSystem().legalRisk * .14 +
+    humanitarianRiskScore() * .18 +
+    Math.max(0, 70 - powerIndex() / 2.2) * .16 +
+    (g.globalWar?.defcon <= 2 ? 10 : 0) +
+    (g.finance < 30 ? 8 : 0)
+  ), 0, 100);
+  const score = clamp(Math.round(military * .22 + diplomatic * .20 + economic * .18 + humanitarian * .14 + stability * .14 + order * .12 - defeatRisk * .25), 0, 100);
+  return { military, diplomatic, economic, humanitarian, stability, order, defeatRisk, score };
+}
+
+function victoryRank(score) {
+  if (score >= 92) return "S+";
+  if (score >= 84) return "S";
+  if (score >= 74) return "A";
+  if (score >= 62) return "B";
+  if (score >= 48) return "C";
+  if (score >= 32) return "D";
+  return "E";
+}
+
+function availableEndings() {
+  const m = victoryMetrics();
+  return [
+    { id: "military", label: t("victory.military", "Vitória militar"), ready: m.military >= 78 && m.defeatRisk < 70, value: m.military, action: "militaryEnd" },
+    { id: "diplomatic", label: t("victory.diplomatic", "Vitória diplomática"), ready: m.diplomatic >= 72 && ensurePeaceSystem().treaties.length > 0, value: m.diplomatic, action: "diplomaticEnd" },
+    { id: "economic", label: t("victory.economic", "Vitória econômica"), ready: m.economic >= 74 && ensureTradeSystem().marketAccess > 55, value: m.economic, action: "economicEnd" },
+    { id: "humanitarian", label: t("victory.humanitarian", "Vitória humanitária"), ready: m.humanitarian >= 72 && humanitarianRiskScore() < 46, value: m.humanitarian, action: "humanitarianEnd" }
+  ];
+}
+
+function recordVictoryHistory(kind, text) {
+  const vs = ensureVictorySystem();
+  vs.history.unshift({ id: cryptoId(), kind, text, at: `${monthNames[state.game.month % 12]}/${state.game.year}` });
+  vs.history = vs.history.slice(0, 12);
+}
+
+function updateVictorySystem() {
+  const vs = ensureVictorySystem();
+  if (!vs || !state.game) return vs;
+  const m = victoryMetrics();
+  vs.score = m.score;
+  vs.rank = victoryRank(m.score);
+  vs.defeatRisk = m.defeatRisk;
+  vs.finalStability = m.stability;
+  return vs;
+}
+
+function finalReportText(type) {
+  const g = state.game;
+  const c = getPlayerCountry();
+  const m = victoryMetrics();
+  const endingLabel = {
+    militaryEnd: t("victory.military", "Vitória militar"),
+    diplomaticEnd: t("victory.diplomatic", "Vitória diplomática"),
+    economicEnd: t("victory.economic", "Vitória econômica"),
+    humanitarianEnd: t("victory.humanitarian", "Vitória humanitária")
+  }[type] || t("victory.finalReport", "Relatório final");
+  return `${endingLabel} — ${c?.name || ""} · Score ${m.score} · Rank ${victoryRank(m.score)} · ${t("victory.stability","Estabilidade final")} ${m.stability}% · ${t("victory.defeatRisk","Risco de derrota")} ${m.defeatRisk}% · ${t("worldOrder.influence","Influência global")} ${ensureWorldOrderSystem().influence} · ${t("peace.treaties","Tratados ativos")} ${ensurePeaceSystem().treaties.length}`;
+}
+
+function victoryAction(kind) {
+  const g = state.game;
+  const vs = updateVictorySystem();
+  const endings = availableEndings();
+  if (kind === "audit") {
+    const txt = `${t("victory.audit", "Auditar campanha")}: score ${vs.score}, rank ${vs.rank}, risco ${vs.defeatRisk}%.`;
+    recordVictoryHistory(kind, txt);
+    g.events.push(eventText("sistema", txt));
+    saveGame(); renderGame(); activatePanel("panelVictory");
+    return;
+  }
+  if (kind === "continue") {
+    vs.ended = false;
+    vs.ending = null;
+    const txt = t("victory.continue", "Continuar campanha");
+    recordVictoryHistory(kind, txt);
+    g.events.push(eventText("sistema", txt));
+    saveGame(); renderGame(); activatePanel("panelVictory");
+    return;
+  }
+  const ending = endings.find(e => e.action === kind);
+  if (!ending || !ending.ready) {
+    const txt = currentLang === "en-US" ? "Ending conditions are not ready yet." : currentLang === "es-ES" ? "Las condiciones de final aún no están listas." : "As condições desse final ainda não estão prontas.";
+    g.events.push(eventText("warn", txt));
+    recordVictoryHistory(kind, txt);
+    saveGame(); renderGame(); activatePanel("panelVictory");
+    return;
+  }
+  vs.ended = true;
+  vs.ending = ending.id;
+  vs.finalReport = finalReportText(kind);
+  recordVictoryHistory(kind, vs.finalReport);
+  g.events.push(eventText("sistema", vs.finalReport));
+  saveGame(); renderGame(); activatePanel("panelVictory");
+}
+
+function progressVictorySystem() {
+  const vs = updateVictorySystem();
+  if (!vs || !state.game) return;
+  const ready = availableEndings().filter(e => e.ready);
+  if (ready.length && !vs.history.find(h => h.kind === "ready" && h.text.includes(ready[0].id))) {
+    recordVictoryHistory("ready", `${t("rec.victory", "Avaliar vitória")}: ${ready.map(e => e.label).join(", ")}.`);
+  }
+  if (vs.defeatRisk > 88 && !vs.ended) {
+    state.game.stability = clamp(state.game.stability - 2, 0, 100);
+    state.game.events.push(eventText("danger", currentLang === "en-US" ? "Defeat risk is critical. Stabilize the country or end the campaign." : currentLang === "es-ES" ? "Riesgo de derrota crítico. Estabiliza el país o termina la campaña." : "Risco de derrota crítico. Estabilize o país ou encerre a campanha."));
+  }
+}
+
+function renderVictoryMapOverlays(player) {
+  const vs = updateVictorySystem();
+  if (!state.map || !state.layers.victory || !window.L || !vs) return;
+  const origin = getPlayerCountry()?.coords || player.coords;
+  const competitors = topAiThreats(6).map(ai => {
+    const c = getCountry(ai.id);
+    return c ? { ...c, score: clamp(Math.round(ai.power + ai.readiness / 2 + ai.hostility / 3), 0, 100), ai } : null;
+  }).filter(Boolean);
+  const playerIcon = L.divIcon({ className: "", html: `<div class="marker-victory-player">🏆</div>`, iconSize: [44, 44], iconAnchor: [22, 22] });
+  L.marker(origin, { icon: playerIcon }).addTo(state.layers.victory).bindPopup(`<strong>${getPlayerCountry()?.flag || ""} ${getPlayerCountry()?.name || ""}</strong><br>${t("victory.score","Pontuação global")}: ${vs.score}<br>${t("victory.rank","Ranking")}: ${vs.rank}`);
+  competitors.forEach((c, idx) => {
+    const icon = L.divIcon({ className: "", html: `<div class="${c.score > vs.score ? "marker-victory-risk" : "marker-victory"}">${idx + 2}</div>`, iconSize: [36, 36], iconAnchor: [18, 18] });
+    L.marker(c.coords, { icon }).addTo(state.layers.victory).bindPopup(`<strong>${c.flag} ${c.name}</strong><br>${t("victory.score","Pontuação global")}: ${c.score}`);
+  });
+}
+
+function victoryBar(label, value, extra = "") {
+  return `<div class="victory-bar"><div><span>${label}</span><strong>${value}${extra}</strong></div><i><b style="width:${clamp(value,0,100)}%"></b></i></div>`;
+}
+
+function renderVictoryPanel() {
+  const panel = $("#victoryPanel");
+  if (!panel || !state.game) return;
+  const vs = updateVictorySystem();
+  const m = victoryMetrics();
+  const endings = availableEndings();
+  panel.innerHTML = `
+    <div class="victory-score-card ${vs.ended ? "ended" : ""}">
+      <div><small>${t("victory.score","Pontuação global")}</small><strong>${vs.score}</strong><span>${t("victory.rank","Ranking")}: ${vs.rank}</span></div>
+      <div><small>${t("victory.defeatRisk","Risco de derrota")}</small><strong>${vs.defeatRisk}%</strong><span>${vs.ended ? t("victory.finalReport","Relatório final") : t("victory.endings","Finais possíveis")}</span></div>
+    </div>
+    <section class="victory-metrics">
+      ${victoryBar(t("victory.military","Vitória militar"), m.military, "%")}
+      ${victoryBar(t("victory.diplomatic","Vitória diplomática"), m.diplomatic, "%")}
+      ${victoryBar(t("victory.economic","Vitória econômica"), m.economic, "%")}
+      ${victoryBar(t("victory.humanitarian","Vitória humanitária"), m.humanitarian, "%")}
+      ${victoryBar(t("victory.stability","Estabilidade final"), m.stability, "%")}
+      ${victoryBar(t("worldOrder.title","Pós-Guerra e Nova Ordem Mundial"), m.order, "%")}
+    </section>
+    <section class="victory-endings">
+      <h3>${t("victory.endings","Finais possíveis")}</h3>
+      ${endings.map(e => `<article class="${e.ready ? "ready" : "locked"}"><strong>${e.ready ? "✅" : "🔒"} ${e.label}</strong><span>${e.value}%</span><button data-victory-action="${e.action}">${e.label}</button></article>`).join("")}
+    </section>
+    <div class="victory-actions">
+      <button data-victory-action="audit">📊 ${t("victory.audit","Auditar campanha")}</button>
+      <button data-victory-action="continue">▶️ ${t("victory.continue","Continuar campanha")}</button>
+    </div>
+    ${vs.finalReport ? `<section class="victory-report"><h3>${t("victory.finalReport","Relatório final")}</h3><p>${vs.finalReport}</p></section>` : ""}
+    <section class="victory-history">
+      <h3>${t("victory.history","Histórico da campanha")}</h3>
+      ${vs.history.length ? vs.history.slice(0,7).map(item => `<article><strong>${item.kind}</strong><span>${item.at} · ${item.text}</span></article>`).join("") : `<p class="muted">${t("victory.noHistory","Nenhum marco final registrado.")}</p>`}
+    </section>`;
+  $$("#victoryPanel [data-victory-action]").forEach(btn => btn.addEventListener("click", () => victoryAction(btn.dataset.victoryAction)));
+}
+
 function makeInitialGame(countryId) {
   const country = state.countries.find(c => c.id === countryId) || state.countries[0];
   const regions = makeRegions(country);
@@ -6510,6 +6720,7 @@ function renderGame() {
   ensureHumanitarianSystem();
   ensurePeaceSystem();
   ensureWorldOrderSystem();
+  ensureVictorySystem();
   ensureMapSettings();
   renderSummary();
   renderCommanderGuide();
@@ -6542,6 +6753,7 @@ function renderGame() {
   renderHumanitarianPanel();
   renderPeacePanel();
   renderWorldOrderPanel();
+  renderVictoryPanel();
   renderMapOpsPanel();
   renderGlobalWar();
   renderAiWorld();
@@ -6635,6 +6847,8 @@ function commanderRecommendation() {
   if (g.month > 2 && (g.worldTension > 72 || humanitarianRiskScore() > 68 || ensureSocietySystem().warWeariness > 70) && peace.credibility > 25) return { title: t("rec.peace", "Abrir canal de paz"), text: t("rec.peaceText", "Tensão, crise humanitária ou desgaste político indicam que uma negociação pode ser útil."), action: "peace", panel: "panelPeace" };
   const worldOrder = ensureWorldOrderSystem();
   if (g.month > 3 && ((peace.treaties?.length || 0) > 0 || occupiedFronts().length > 0) && (worldOrderScore() < 46 || worldOrder.warDebt > 70 || worldOrder.regionalStability < 42)) return { title: t("rec.worldOrder", "Consolidar pós-guerra"), text: t("rec.worldOrderText", "Tratados, ocupações ou crise humanitária indicam necessidade de reconstrução e nova ordem."), action: "worldOrder", panel: "panelWorldOrder" };
+  const victory = updateVictorySystem();
+  if (g.month > 4 && (availableEndings().some(e => e.ready) || victory.score > 76 || victory.defeatRisk > 82)) return { title: t("rec.victory", "Avaliar vitória"), text: t("rec.victoryText", "Sua campanha já possui condições fortes de encerramento."), action: "victory", panel: "panelVictory" };
   const cyberOps = ensureCyberOps();
   const mainThreat = topAiThreats(1)[0];
   const enemyOps = ensureEnemyOffensives();
@@ -6718,6 +6932,7 @@ function renderCommanderGuide() {
       <button id="quickHumanitarianBtn"><b>⛑️ ${t("guide.humanitarian", "Humanitário")}</b><span>${t("guide.humanitarianSub", "civis e leis")}</span></button>
       <button id="quickPeaceBtn"><b>🕊️ ${t("guide.peace", "Paz/ONU")}</b><span>${t("guide.peaceSub", "cessar-fogo e tratados")}</span></button>
       <button id="quickWorldOrderBtn"><b>🌍 ${t("guide.worldOrder", "Pós-guerra")}</b><span>${t("guide.worldOrderSub", "reconstrução e influência")}</span></button>
+      <button id="quickVictoryBtn"><b>🏆 ${t("guide.victory", "Vitória")}</b><span>${t("guide.victorySub", "ranking e finais")}</span></button>
       <button id="quickBuildBtn"><b>🏗️ ${t("guide.build", "Construir")}</b><span>${t("guide.buildSub", "base recomendada")}</span></button>
       <button id="quickProduceBtn"><b>🪖 ${t("guide.produce", "Produzir")}</b><span>${t("guide.produceSub", "melhor unidade")}</span></button>
       <button id="quickLogisticsBtn"><b>🚚 ${t("guide.logistics", "Logística")}</b><span>${t("guide.logisticsSub", "suprir tropas")}</span></button>
@@ -7287,6 +7502,7 @@ function initMap() {
   state.layers.humanitarian = L.layerGroup().addTo(state.map);
   state.layers.peace = L.layerGroup().addTo(state.map);
   state.layers.worldOrder = L.layerGroup().addTo(state.map);
+  state.layers.victory = L.layerGroup().addTo(state.map);
   state.map.dragging.enable();
   state.map.scrollWheelZoom.enable();
   state.map.doubleClickZoom.enable();
@@ -7371,6 +7587,7 @@ function updateMapLayers() {
   renderHumanitarianMapOverlays(player);
   renderPeaceMapOverlays(player);
   renderWorldOrderMapOverlays(player);
+  renderVictoryMapOverlays(player);
   applyMapLayerVisibility();
   if (!state.mapUserMoved && !state.mapAutoCentered) {
     state.map.setView(player.coords, Math.max(state.map.getZoom(), 3), { animate: false });
@@ -7554,6 +7771,7 @@ function advanceMonth() {
   progressHumanitarianSystem();
   progressPeaceSystem();
   progressWorldOrderSystem();
+  progressVictorySystem();
   progressConstruction();
   progressProduction();
   progressCyberOps();

@@ -1,3 +1,3 @@
-Modern War Dominion v4.2.0 F42
+Modern War Dominion v4.3.0 F43
 Pacote ZIP com nome curto/ASCII e validação de integridade.
 Se o WinRAR mostrar 'final inesperado do arquivo', o download foi interrompido/corrompido. Baixe novamente.
