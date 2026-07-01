@@ -1587,3 +1587,46 @@ body:has(#screenWar.screen-active) .nation-confirm-tray{
   .society-actions{grid-template-columns:repeat(6,1fr);gap:6px}
   .society-actions button{min-height:40px;font-size:.55rem;padding:6px;border-radius:11px}
 }
+
+
+/* Fase 37 — Governo, gabinete e leis de emergência */
+.governance-panel{display:grid;gap:12px}
+.governance-status{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.governance-status>div{border:1px solid rgba(143,211,255,.22);border-radius:16px;background:linear-gradient(145deg,rgba(20,70,108,.20),rgba(7,12,20,.48));padding:10px}
+.governance-status small{display:block;color:#8fd3ff;text-transform:uppercase;letter-spacing:.11em;font-size:.58rem;font-weight:900}
+.governance-status strong{display:block;font-size:1rem;color:#8fd3ff;margin:3px 0}
+.governance-status span{display:block;color:#d7e6f4;font-size:.64rem}
+.governance-status i{display:block;height:7px;border-radius:999px;background:rgba(255,255,255,.08);overflow:hidden}
+.governance-status b{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,#ff784f,#ffd166,#8fd3ff)}
+.governance-actions{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.governance-actions button{min-height:54px;text-align:left;border-radius:16px;background:rgba(7,12,20,.58);border:1px solid rgba(143,211,255,.20);padding:10px;color:var(--text);font-weight:900}
+.governance-actions button:active{transform:scale(.98)}
+.governance-cabinet,.governance-history{display:grid;gap:8px}
+.governance-cabinet h3,.governance-history h3{font-size:.9rem;margin:2px 0}
+.governance-cabinet article{display:grid;grid-template-columns:42px 1fr;gap:10px;align-items:center;border:1px solid rgba(255,255,255,.08);border-radius:15px;background:rgba(255,255,255,.035);padding:10px}
+.governance-cabinet article>b{display:grid;place-items:center;width:40px;height:40px;border-radius:50%;background:rgba(143,211,255,.12);border:1px solid rgba(143,211,255,.25);box-shadow:0 0 18px rgba(143,211,255,.16)}
+.governance-cabinet strong,.governance-history strong{display:block;font-size:.82rem}
+.governance-cabinet span,.governance-history span{display:block;color:#d7e6f4;font-size:.66rem;margin-top:2px}
+.governance-cabinet i{display:block;height:7px;margin-top:6px;border-radius:999px;background:rgba(255,255,255,.08);overflow:hidden}
+.governance-cabinet em{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,#8fd3ff,#67f0d0,#ffd166)}
+.governance-history article{border:1px solid rgba(255,255,255,.08);border-radius:14px;background:rgba(255,255,255,.035);padding:9px}
+.marker-governance{display:grid;place-items:center;width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,#122942,#8fd3ff);color:#06101b;border:2px solid rgba(255,255,255,.68);box-shadow:0 0 28px rgba(143,211,255,.70),0 12px 26px rgba(0,0,0,.45);font-size:1.12rem;animation:governancePulse 1.2s ease-in-out infinite alternate}
+.marker-governance-risk{display:grid;place-items:center;width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,#4b120c,#ffd166);color:#111;border:2px solid rgba(255,255,255,.68);box-shadow:0 0 28px rgba(255,209,102,.72),0 12px 26px rgba(0,0,0,.45);font-size:1.12rem;animation:governanceRiskPulse 1s ease-in-out infinite alternate}
+.leaflet-overlay-pane path.governance-ring{animation:governanceRing 1.8s ease-in-out infinite;filter:drop-shadow(0 0 10px rgba(255,209,102,.48))}
+@keyframes governancePulse{0%{transform:scale(.92)}100%{transform:scale(1.08)}}
+@keyframes governanceRiskPulse{0%{transform:scale(.92) rotate(-3deg)}100%{transform:scale(1.08) rotate(3deg)}}
+@keyframes governanceRing{0%,100%{opacity:.22}50%{opacity:.55}}
+@media(max-width:980px){
+  .governance-status{grid-template-columns:1fr}
+  .governance-actions{grid-template-columns:1fr}
+}
+@media(max-height:560px){
+  .governance-status{grid-template-columns:repeat(3,1fr);gap:6px}
+  .governance-status>div{padding:7px;border-radius:12px}
+  .governance-status small{font-size:.48rem}
+  .governance-status strong{font-size:.72rem}
+  .governance-actions{grid-template-columns:repeat(6,1fr);gap:6px}
+  .governance-actions button{min-height:40px;font-size:.53rem;padding:6px;border-radius:11px}
+  .governance-cabinet article{grid-template-columns:34px 1fr;padding:8px}
+  .governance-cabinet article>b{width:32px;height:32px}
+}

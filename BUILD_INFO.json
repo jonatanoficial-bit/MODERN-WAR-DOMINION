@@ -1,7 +1,7 @@
 {
   "project": "Modern War Dominion",
-  "version": "3.6.0",
-  "phase": "Fase 36 — Opinião Pública, Mídia e Legitimidade da Guerra",
+  "version": "3.7.0",
+  "phase": "Fase 37 — Governo, Gabinete e Leis de Emergência",
   "generated_at": "2026-06-24",
   "base": "Fase 5 assets integrados",
   "features": [
@@ -12,13 +12,13 @@
     "mapa real preservado"
   ],
   "notes": [
-    "Novo painel Opinião Pública e Frente Interna",
-    "Sistema de apoio popular, legitimidade, fadiga de guerra, mídia, protestos e perdas percebidas",
-    "Ações: discurso nacional, ajuda civil, coletiva de imprensa, controle de crise, apoio a veteranos e pacote de estabilidade",
-    "Fadiga de guerra e protestos afetam estabilidade, prontidão e economia",
-    "Nova camada Sociedade na Sala de Guerra",
-    "Marcadores de mídia/protestos aparecem no mapa real",
-    "Integração com economia, batalhas, estabilidade, governo e guerra longa"
+    "Novo painel Governo e Gabinete",
+    "Sistema de autoridade, parlamento, oposição, corrupção, risco legal e nível de emergência",
+    "Gabinete com ministros de Defesa, Economia, Relações Exteriores, Interior e Indústria",
+    "Ações: lei de emergência, reunião de gabinete, operação anticorrupção, votação de orçamento, briefing diplomático e conselho de segurança",
+    "Governo afeta estabilidade, economia, indústria, defesa, comércio e sociedade",
+    "Nova camada Governo na Sala de Guerra",
+    "Instituições aparecem no mapa real com marcadores de risco político"
   ],
   "countries_count": 249,
   "countries_available": 249,
@@ -150,6 +150,13 @@
     "legitimidade",
     "fadiga de guerra",
     "protestos",
-    "apoio civil"
+    "apoio civil",
+    "governo de guerra",
+    "gabinete ministerial",
+    "parlamento",
+    "oposição",
+    "corrupção",
+    "risco legal",
+    "leis de emergência"
   ]
 }

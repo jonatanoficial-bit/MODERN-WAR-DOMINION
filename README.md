@@ -366,3 +366,17 @@ Abra `index.html` ou publique no GitHub Pages. No celular, use tela deitada/full
 - Marcadores de mídia/protestos aparecem no mapa real.
 - Integração com economia, batalhas, estabilidade, governo, comércio e guerra longa.
 - Save key mantida para preservar campanhas anteriores.
+
+
+## Fase 37 — Governo, Gabinete e Leis de Emergência
+
+- Novo painel Governo e Gabinete.
+- Sistema de autoridade política, parlamento, oposição, corrupção, risco legal e nível de emergência.
+- Gabinete com ministros de Defesa, Economia, Relações Exteriores, Interior e Indústria.
+- Ações: lei de emergência, reunião de gabinete, operação anticorrupção, votação de orçamento, briefing diplomático e conselho de segurança.
+- Governo afeta estabilidade, economia, indústria, defesa, comércio e sociedade.
+- Leis de emergência aumentam autoridade e prontidão, mas também aumentam risco legal e oposição.
+- Corrupção e crise parlamentar podem gerar protestos e perda de estabilidade.
+- Nova camada Governo na Sala de Guerra.
+- Instituições aparecem no mapa real com marcadores de risco político.
+- Save key mantida para preservar campanhas anteriores.

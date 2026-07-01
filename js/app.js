@@ -1,5 +1,5 @@
-const VERSION = "3.6.0";
-const PHASE = "Fase 36 — opinião pública mídia e legitimidade";
+const VERSION = "3.7.0";
+const PHASE = "Fase 37 — governo gabinete e leis de emergência";
 const SAVE_KEY = "MWD_SAVE_F17";
 
 const $ = (sel, root = document) => root.querySelector(sel);
@@ -14,7 +14,7 @@ const state = {
   map: null,
   mapUserMoved: false,
   mapAutoCentered: false,
-  layers: { countries: null, regions: null, bases: null, threats: null, fronts: null, airOps: null, navalOps: null, missiles: null, logistics: null, tactical: null, battleEffects: null, weather: null, intel: null, tech: null, industry: null, trade: null, society: null },
+  layers: { countries: null, regions: null, bases: null, threats: null, fronts: null, airOps: null, navalOps: null, missiles: null, logistics: null, tactical: null, battleEffects: null, weather: null, intel: null, tech: null, industry: null, trade: null, society: null, governance: null },
   arsenalFilter: "Todos"
 };
 
@@ -3602,7 +3602,8 @@ function makeMapSettings() {
     tech: true,
     industry: true,
     trade: true,
-    society: true
+    society: true,
+    governance: true
   };
 }
 
@@ -3634,7 +3635,8 @@ function mapLayerMeta() {
     ["tech", t("mapops.tech", "Tecnologia"), "🧪"],
     ["industry", t("mapops.industry", "Indústria"), "🏭"],
     ["trade", t("mapops.trade", "Comércio"), "💱"],
-    ["society", t("mapops.society", "Sociedade"), "📣"]
+    ["society", t("mapops.society", "Sociedade"), "📣"],
+    ["governance", t("mapops.governance", "Governo"), "🏛️"]
   ];
 }
 
@@ -3729,6 +3731,11 @@ function focusMap(kind) {
     ["capital","industrial","border"].forEach(id => { const r = getRegion(id); if (r) coords.push(r.coords); });
     if (!coords.length) coords.push(player.coords);
   }
+  if (kind === "governance") {
+    const r = getRegion("capital");
+    if (r) coords.push(r.coords);
+    if (!coords.length) coords.push(player.coords);
+  }
   mapFitCoords(coords.length ? coords : [player.coords], kind === "player" ? 4 : 3);
 }
 
@@ -3755,6 +3762,8 @@ function mapOpsIntelText() {
   if (trade) parts.push(`${t("mapops.trade", "Comércio").toLowerCase()} ${trade.marketAccess}/${trade.routeSecurity}`);
   const society = ensureSocietySystem();
   if (society) parts.push(`${t("mapops.society", "Sociedade").toLowerCase()} ${society.support}/${society.protests}`);
+  const governance = ensureGovernanceSystem();
+  if (governance) parts.push(`${t("mapops.governance", "Governo").toLowerCase()} ${governanceScore()}`);
   return parts.length ? parts.join(" · ") : `${activeLayers} ${t("mapops.activeLayers", "Camadas ativas").toLowerCase()}`;
 }
 
@@ -3790,6 +3799,7 @@ function renderMapOpsPanel() {
         <button data-map-focus="industry">🏭 ${t("mapops.industry", "Indústria")}</button>
         <button data-map-focus="trade">💱 ${t("mapops.trade", "Comércio")}</button>
         <button data-map-focus="society">📣 ${t("mapops.society", "Sociedade")}</button>
+        <button data-map-focus="governance">🏛️ ${t("mapops.governance", "Governo")}</button>
       </div>
     </section>
     <section class="mapops-layers">
@@ -4722,6 +4732,239 @@ function renderSocietyPanel() {
   $$("#societyPanel [data-society-action]").forEach(btn => btn.addEventListener("click", () => societyAction(btn.dataset.societyAction)));
 }
 
+
+function governanceRoleLabel(role) {
+  const labels = {
+    defense: t("governance.role.defense", "Defesa"),
+    economy: t("governance.role.economy", "Economia"),
+    foreign: t("governance.role.foreign", "Relações exteriores"),
+    interior: t("governance.role.interior", "Interior"),
+    industry: t("governance.role.industry", "Indústria")
+  };
+  return labels[role] || role;
+}
+
+function makeGovernanceSystem(country = null) {
+  const names = [
+    ["defense", "Min. Defesa", "🛡️"],
+    ["economy", "Min. Economia", "💰"],
+    ["foreign", "Chanceler", "🌐"],
+    ["interior", "Min. Interior", "🏛️"],
+    ["industry", "Min. Indústria", "🏭"]
+  ];
+  return {
+    authority: clamp(54 + Math.round((country?.stability || 50) / 8), 25, 90),
+    parliament: 56,
+    opposition: 28,
+    corruption: 14,
+    legalRisk: 8,
+    emergencyLevel: 0,
+    history: [],
+    cabinet: names.map(([role, name, icon], idx) => ({
+      id: `${country?.id || "mwd"}-${role}-${idx}`,
+      role,
+      name,
+      icon,
+      competence: randomInt(48, 82),
+      loyalty: randomInt(46, 84),
+      stress: randomInt(4, 18)
+    }))
+  };
+}
+
+function ensureGovernanceSystem() {
+  if (!state.game) return null;
+  if (!state.game.governanceSystem) state.game.governanceSystem = makeGovernanceSystem(getPlayerCountry());
+  const gov = state.game.governanceSystem;
+  if (!Array.isArray(gov.history)) gov.history = [];
+  if (!Array.isArray(gov.cabinet)) gov.cabinet = makeGovernanceSystem(getPlayerCountry()).cabinet;
+  gov.authority = clamp(gov.authority ?? 55, 0, 100);
+  gov.parliament = clamp(gov.parliament ?? 55, 0, 100);
+  gov.opposition = clamp(gov.opposition ?? 30, 0, 100);
+  gov.corruption = clamp(gov.corruption ?? 10, 0, 100);
+  gov.legalRisk = clamp(gov.legalRisk ?? 8, 0, 100);
+  gov.emergencyLevel = clamp(gov.emergencyLevel ?? 0, 0, 5);
+  gov.cabinet.forEach(m => {
+    m.competence = clamp(m.competence ?? 55, 0, 100);
+    m.loyalty = clamp(m.loyalty ?? 55, 0, 100);
+    m.stress = clamp(m.stress ?? 10, 0, 100);
+  });
+  return gov;
+}
+
+function governanceScore() {
+  const gov = ensureGovernanceSystem();
+  if (!gov) return 0;
+  const cabinet = Math.round(gov.cabinet.reduce((s,m)=>s + m.competence + m.loyalty - m.stress, 0) / Math.max(1, gov.cabinet.length * 2));
+  return clamp(Math.round((gov.authority + gov.parliament + cabinet - gov.opposition - gov.corruption - gov.legalRisk) / 2.4), 0, 100);
+}
+
+function cabinetBonus(role) {
+  const gov = ensureGovernanceSystem();
+  const m = gov?.cabinet?.find(x => x.role === role);
+  if (!m) return 0;
+  return clamp(Math.round((m.competence + m.loyalty - m.stress - gov.corruption / 2) / 22), -4, 9);
+}
+
+function recordGovernanceHistory(kind, text) {
+  const gov = ensureGovernanceSystem();
+  gov.history.unshift({ id: cryptoId(), kind, text, at: `${monthNames[state.game.month % 12]}/${state.game.year}` });
+  gov.history = gov.history.slice(0, 12);
+}
+
+function governanceAction(kind) {
+  const g = state.game;
+  const gov = ensureGovernanceSystem();
+  const society = ensureSocietySystem();
+  const costs = {
+    emergencyLaw: { finance: 22, industry: 3, energy: 3 },
+    cabinetMeeting: { finance: 18, industry: 2, energy: 2 },
+    antiCorruption: { finance: 44, industry: 8, energy: 6 },
+    budgetVote: { finance: 28, industry: 6, energy: 4 },
+    foreignBriefing: { finance: 26, industry: 4, energy: 4 },
+    securityCouncil: { finance: 36, industry: 10, energy: 8 }
+  };
+  const cost = costs[kind] || costs.cabinetMeeting;
+  if (g.finance < cost.finance || g.industry < cost.industry || g.energy < cost.energy) {
+    g.events.push(eventText("warn", currentLang === "en-US" ? "Insufficient resources for government action." : currentLang === "es-ES" ? "Recursos insuficientes para acción de gobierno." : "Recursos insuficientes para ação de governo."));
+    saveGame(); renderGame(); return;
+  }
+  g.finance -= cost.finance;
+  g.industry -= cost.industry;
+  g.energy -= cost.energy;
+  let text = "";
+  if (kind === "emergencyLaw") {
+    gov.emergencyLevel = clamp(gov.emergencyLevel + 1, 0, 5);
+    gov.authority = clamp(gov.authority + randomInt(6, 12), 0, 100);
+    gov.legalRisk = clamp(gov.legalRisk + randomInt(5, 11), 0, 100);
+    gov.opposition = clamp(gov.opposition + randomInt(3, 8), 0, 100);
+    g.readiness = clamp(g.readiness + 3, 0, 100);
+    society.legitimacy = clamp(society.legitimacy - randomInt(1, 5), 0, 100);
+    text = `${t("governance.emergencyLaw", "Lei de emergência")}: autoridade ampliada com risco legal maior.`;
+  }
+  if (kind === "cabinetMeeting") {
+    gov.authority = clamp(gov.authority + randomInt(3, 7), 0, 100);
+    gov.cabinet.forEach(m => m.stress = clamp(m.stress - randomInt(2, 6), 0, 100));
+    society.legitimacy = clamp(society.legitimacy + 1, 0, 100);
+    text = `${t("governance.cabinetMeeting", "Reunião de gabinete")}: cadeia decisória alinhada.`;
+  }
+  if (kind === "antiCorruption") {
+    gov.corruption = clamp(gov.corruption - randomInt(7, 16), 0, 100);
+    gov.legalRisk = clamp(gov.legalRisk - randomInt(2, 6), 0, 100);
+    gov.opposition = clamp(gov.opposition + randomInt(1, 4), 0, 100);
+    society.legitimacy = clamp(society.legitimacy + randomInt(3, 8), 0, 100);
+    text = `${t("governance.antiCorruption", "Operação anticorrupção")}: legitimidade e confiança institucional cresceram.`;
+  }
+  if (kind === "budgetVote") {
+    const chance = gov.parliament + gov.authority - gov.opposition + randomInt(-20, 20);
+    if (chance > 45) {
+      gov.parliament = clamp(gov.parliament + randomInt(2, 6), 0, 100);
+      g.finance += randomInt(50, 95);
+      g.industry += randomInt(12, 26);
+      text = `${t("governance.budgetVote", "Votação de orçamento")}: orçamento extraordinário aprovado.`;
+    } else {
+      gov.parliament = clamp(gov.parliament - randomInt(4, 10), 0, 100);
+      gov.opposition = clamp(gov.opposition + randomInt(4, 9), 0, 100);
+      society.support = clamp(society.support - randomInt(1, 4), 0, 100);
+      text = `${t("governance.budgetVote", "Votação de orçamento")}: derrota parlamentar gerou desgaste.`;
+    }
+  }
+  if (kind === "foreignBriefing") {
+    gov.authority = clamp(gov.authority + randomInt(1, 4), 0, 100);
+    const trade = ensureTradeSystem();
+    trade.marketAccess = clamp(trade.marketAccess + randomInt(3, 8), 0, 180);
+    g.worldTension = clamp(g.worldTension - randomInt(1, 4), 0, 100);
+    text = `${t("governance.foreignBriefing", "Briefing diplomático")}: coordenação externa melhorou acesso ao mercado.`;
+  }
+  if (kind === "securityCouncil") {
+    gov.authority = clamp(gov.authority + randomInt(3, 8), 0, 100);
+    gov.cabinet.forEach(m => m.stress = clamp(m.stress + 1, 0, 100));
+    g.defense = clamp(g.defense + randomInt(1, 4), 0, 999);
+    ensureEnemyOffensives().defenseReadiness = clamp(ensureEnemyOffensives().defenseReadiness + randomInt(4, 10), 0, 160);
+    text = `${t("governance.securityCouncil", "Conselho de segurança")}: defesa nacional e resposta a crises foram coordenadas.`;
+  }
+  recordGovernanceHistory(kind, text);
+  g.events.push(eventText("sistema", text));
+  saveGame(); renderGame(); activatePanel("panelGovernance");
+}
+
+function progressGovernanceSystem() {
+  const g = state.game;
+  const gov = ensureGovernanceSystem();
+  const society = ensureSocietySystem();
+  if (!gov || !society) return;
+  const pressure = Math.round((g.worldTension || 0) / 40) + Math.round((society.protests || 0) / 35) + Math.round((society.warWeariness || 0) / 45);
+  gov.authority = clamp(gov.authority + Math.round((society.legitimacy - gov.opposition) / 70) - (gov.legalRisk > 55 ? 1 : 0), 0, 100);
+  gov.parliament = clamp(gov.parliament + Math.round((society.support - gov.opposition) / 75) - (gov.emergencyLevel > 2 ? 1 : 0), 0, 100);
+  gov.opposition = clamp(gov.opposition + pressure - Math.round(gov.authority / 65) - Math.round(society.support / 70), 0, 100);
+  gov.corruption = clamp(gov.corruption + (g.finance > 280 ? 1 : 0) - (governanceScore() > 70 ? 1 : 0), 0, 100);
+  gov.legalRisk = clamp(gov.legalRisk + (gov.emergencyLevel > 0 ? 1 : 0) + (society.media < 35 ? 1 : 0) - (society.legitimacy > 70 ? 1 : 0), 0, 100);
+  gov.cabinet.forEach(m => {
+    m.stress = clamp(m.stress + pressure + (g.globalWar?.defcon <= 3 ? 1 : 0) - (gov.authority > 70 ? 1 : 0), 0, 100);
+    if (m.stress > 75 && Math.random() < .18) {
+      m.loyalty = clamp(m.loyalty - randomInt(1, 5), 0, 100);
+      gov.opposition = clamp(gov.opposition + 2, 0, 100);
+    }
+  });
+  g.stability = clamp(g.stability + Math.round((governanceScore() - 45) / 18), 0, 100);
+  if ((gov.opposition > 72 || gov.legalRisk > 72) && Math.random() < .28) {
+    society.protests = clamp(society.protests + randomInt(3, 8), 0, 100);
+    g.events.push(eventText("warn", currentLang === "en-US" ? "Government crisis increased protests and slowed decisions." : currentLang === "es-ES" ? "Crisis de gobierno aumentó protestas y frenó decisiones." : "Crise de governo aumentou protestos e travou decisões."));
+  }
+}
+
+function renderGovernanceMapOverlays(player) {
+  const gov = ensureGovernanceSystem();
+  if (!state.map || !state.layers.governance || !window.L || !gov) return;
+  const capital = getRegion("capital");
+  if (!capital) return;
+  const institutions = [
+    { icon: "🏛️", label: t("governance.parliament", "Parlamento"), value: gov.parliament, offset: .08 },
+    { icon: "⚖️", label: t("governance.legalRisk", "Risco legal"), value: gov.legalRisk, offset: .18 },
+    { icon: "🛡️", label: t("governance.securityCouncil", "Conselho de segurança"), value: gov.authority, offset: -.16 }
+  ];
+  institutions.forEach((item, idx) => {
+    const coords = jitter(capital.coords, .25 + idx * .08);
+    const icon = L.divIcon({ className: "", html: `<div class="${item.value > 65 && item.label !== t("governance.authority", "Autoridade") ? "marker-governance-risk" : "marker-governance"}">${item.icon}</div>`, iconSize: [38, 38], iconAnchor: [19, 19] });
+    L.marker(coords, { icon }).addTo(state.layers.governance).bindPopup(`<strong>${item.label}</strong><br>${t("governance.authority", "Autoridade")}: ${gov.authority}<br>${t("governance.opposition", "Oposição")}: ${gov.opposition}<br>${t("governance.legalRisk", "Risco legal")}: ${gov.legalRisk}`);
+  });
+  if (gov.opposition > 55 || gov.legalRisk > 55) {
+    L.circle(capital.coords, { radius: 52000 + Math.max(gov.opposition, gov.legalRisk) * 1100, color: "#ffd166", fillColor: "#ffd166", fillOpacity: .055, opacity: .34, weight: 2, className: "governance-ring" }).addTo(state.layers.governance);
+  }
+}
+
+function renderGovernancePanel() {
+  const panel = $("#governancePanel");
+  if (!panel || !state.game) return;
+  const gov = ensureGovernanceSystem();
+  panel.innerHTML = `
+    <div class="governance-status">
+      <div><small>${t("governance.authority","Autoridade")}</small><strong>${gov.authority}%</strong><i><b style="width:${gov.authority}%"></b></i></div>
+      <div><small>${t("governance.parliament","Parlamento")}</small><strong>${gov.parliament}%</strong><i><b style="width:${gov.parliament}%"></b></i></div>
+      <div><small>${t("governance.opposition","Oposição")}</small><strong>${gov.opposition}%</strong><i><b style="width:${gov.opposition}%"></b></i></div>
+      <div><small>${t("governance.corruption","Corrupção")}</small><strong>${gov.corruption}%</strong><i><b style="width:${gov.corruption}%"></b></i></div>
+      <div><small>${t("governance.legalRisk","Risco legal")}</small><strong>${gov.legalRisk}%</strong><i><b style="width:${gov.legalRisk}%"></b></i></div>
+      <div><small>${t("governance.emergency","Emergência")}</small><strong>${gov.emergencyLevel}</strong><span>score ${governanceScore()}</span></div>
+    </div>
+    <div class="governance-actions">
+      <button data-governance-action="emergencyLaw">📜 ${t("governance.emergencyLaw","Lei de emergência")}</button>
+      <button data-governance-action="cabinetMeeting">🤝 ${t("governance.cabinetMeeting","Reunião de gabinete")}</button>
+      <button data-governance-action="antiCorruption">🔎 ${t("governance.antiCorruption","Operação anticorrupção")}</button>
+      <button data-governance-action="budgetVote">💼 ${t("governance.budgetVote","Votação de orçamento")}</button>
+      <button data-governance-action="foreignBriefing">🌐 ${t("governance.foreignBriefing","Briefing diplomático")}</button>
+      <button data-governance-action="securityCouncil">🛡️ ${t("governance.securityCouncil","Conselho de segurança")}</button>
+    </div>
+    <section class="governance-cabinet">
+      <h3>${t("governance.cabinet","Gabinete")}</h3>
+      ${gov.cabinet.map(m => `<article><b>${m.icon}</b><div><strong>${m.name}</strong><span>${governanceRoleLabel(m.role)} · comp ${m.competence} · lealdade ${m.loyalty} · stress ${m.stress}</span><i><em style="width:${clamp((m.competence + m.loyalty - m.stress) / 2,0,100)}%"></em></i></div></article>`).join("")}
+    </section>
+    <section class="governance-history">
+      <h3>${t("governance.history","Histórico de governo")}</h3>
+      ${gov.history.length ? gov.history.slice(0,7).map(item => `<article><strong>${item.kind}</strong><span>${item.at} · ${item.text}</span></article>`).join("") : `<p class="muted">${t("governance.noHistory","Nenhuma decisão de governo registrada.")}</p>`}
+    </section>`;
+  $$("#governancePanel [data-governance-action]").forEach(btn => btn.addEventListener("click", () => governanceAction(btn.dataset.governanceAction)));
+}
+
 function makeInitialGame(countryId) {
   const country = state.countries.find(c => c.id === countryId) || state.countries[0];
   const regions = makeRegions(country);
@@ -4928,6 +5171,7 @@ function renderGame() {
   ensureIndustrySystem();
   ensureTradeSystem();
   ensureSocietySystem();
+  ensureGovernanceSystem();
   ensureMapSettings();
   renderSummary();
   renderCommanderGuide();
@@ -4954,6 +5198,7 @@ function renderGame() {
   renderIndustryPanel();
   renderTradePanel();
   renderSocietyPanel();
+  renderGovernancePanel();
   renderMapOpsPanel();
   renderGlobalWar();
   renderAiWorld();
@@ -5034,6 +5279,8 @@ function commanderRecommendation() {
   if (g.month > 1 && (trade.vulnerability > 58 || trade.routeSecurity < 34 || trade.marketAccess < 34)) return { title: t("rec.trade", "Proteger comércio"), text: t("rec.tradeText", "Mercado externo ou rotas comerciais estão pressionados."), action: "trade", panel: "panelTrade" };
   const society = ensureSocietySystem();
   if (g.month > 1 && (society.support < 42 || society.legitimacy < 40 || society.protests > 55 || society.warWeariness > 62)) return { title: t("rec.society", "Reforçar frente interna"), text: t("rec.societyText", "A opinião pública ou a legitimidade estão sob pressão."), action: "society", panel: "panelSociety" };
+  const governance = ensureGovernanceSystem();
+  if (g.month > 1 && (governanceScore() < 38 || governance.opposition > 62 || governance.legalRisk > 60 || governance.parliament < 34)) return { title: t("rec.governance", "Estabilizar governo"), text: t("rec.governanceText", "O governo está sob pressão política, legal ou parlamentar."), action: "governance", panel: "panelGovernance" };
   const cyberOps = ensureCyberOps();
   const mainThreat = topAiThreats(1)[0];
   const enemyOps = ensureEnemyOffensives();
@@ -5111,6 +5358,7 @@ function renderCommanderGuide() {
       <button id="quickIndustryBtn"><b>🏭 ${t("guide.industry", "Indústria")}</b><span>${t("guide.industrySub", "fábricas e insumos")}</span></button>
       <button id="quickTradeBtn"><b>💱 ${t("guide.trade", "Comércio")}</b><span>${t("guide.tradeSub", "rotas e sanções")}</span></button>
       <button id="quickSocietyBtn"><b>📣 ${t("guide.society", "Sociedade")}</b><span>${t("guide.societySub", "apoio e protestos")}</span></button>
+      <button id="quickGovernanceBtn"><b>🏛️ ${t("guide.governance", "Governo")}</b><span>${t("guide.governanceSub", "leis e gabinete")}</span></button>
       <button id="quickBuildBtn"><b>🏗️ ${t("guide.build", "Construir")}</b><span>${t("guide.buildSub", "base recomendada")}</span></button>
       <button id="quickProduceBtn"><b>🪖 ${t("guide.produce", "Produzir")}</b><span>${t("guide.produceSub", "melhor unidade")}</span></button>
       <button id="quickLogisticsBtn"><b>🚚 ${t("guide.logistics", "Logística")}</b><span>${t("guide.logisticsSub", "suprir tropas")}</span></button>
@@ -5674,6 +5922,7 @@ function initMap() {
   state.layers.industry = L.layerGroup().addTo(state.map);
   state.layers.trade = L.layerGroup().addTo(state.map);
   state.layers.society = L.layerGroup().addTo(state.map);
+  state.layers.governance = L.layerGroup().addTo(state.map);
   state.map.dragging.enable();
   state.map.scrollWheelZoom.enable();
   state.map.doubleClickZoom.enable();
@@ -5752,6 +6001,7 @@ function updateMapLayers() {
   renderIndustryMapOverlays(player);
   renderTradeMapOverlays(player);
   renderSocietyMapOverlays(player);
+  renderGovernanceMapOverlays(player);
   applyMapLayerVisibility();
   if (!state.mapUserMoved && !state.mapAutoCentered) {
     state.map.setView(player.coords, Math.max(state.map.getZoom(), 3), { animate: false });
@@ -5915,8 +6165,8 @@ function advanceMonth() {
   if (g.month % 12 === 0) g.year += 1;
   const upkeep = monthlyUpkeep();
   const economyMods = progressWarEconomy(upkeep);
-  g.finance = Math.max(0, g.finance + Math.round(45 + c.economy * 1.2 + g.stability / 3 + economyMods.finance) - upkeep.finance);
-  g.industry = Math.max(0, g.industry + Math.round(24 + c.industry * .65 - g.bases.length + economyMods.industry) - upkeep.industry);
+  g.finance = Math.max(0, g.finance + Math.round(45 + c.economy * 1.2 + g.stability / 3 + economyMods.finance + cabinetBonus("economy")) - upkeep.finance);
+  g.industry = Math.max(0, g.industry + Math.round(24 + c.industry * .65 - g.bases.length + economyMods.industry + cabinetBonus("industry")) - upkeep.industry);
   g.energy = Math.max(0, g.energy + Math.round(22 + c.oil * .55 - g.bases.length * 2 + economyMods.energy) - upkeep.energy);
   g.food += Math.round(15 + c.food * .4 + (ensureWarEconomy().rationing ? 12 : 0));
   applyMonthlyWear(upkeep);
@@ -5929,6 +6179,7 @@ function advanceMonth() {
   progressIndustrySystem();
   progressTradeSystem();
   progressSocietySystem();
+  progressGovernanceSystem();
   progressConstruction();
   progressProduction();
   progressCyberOps();
