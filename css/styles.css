@@ -1798,3 +1798,41 @@ body:has(#screenWar.screen-active) .nation-confirm-tray{
   .peace-actions{grid-template-columns:repeat(6,1fr);gap:6px}
   .peace-actions button{min-height:40px;font-size:.52rem;padding:6px;border-radius:11px}
 }
+
+
+/* Fase 42 — Pós-guerra, reconstrução e nova ordem mundial */
+.world-order-panel{display:grid;gap:12px}
+.world-order-status{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.world-order-status>div{border:1px solid rgba(103,240,208,.22);border-radius:16px;background:linear-gradient(145deg,rgba(18,82,76,.20),rgba(7,12,20,.48));padding:10px}
+.world-order-status small{display:block;color:#67f0d0;text-transform:uppercase;letter-spacing:.11em;font-size:.58rem;font-weight:900}
+.world-order-status strong{display:block;font-size:1rem;color:#67f0d0;margin:3px 0}
+.world-order-status span{display:block;color:#d7e6f4;font-size:.64rem}
+.world-order-status i{display:block;height:7px;border-radius:999px;background:rgba(255,255,255,.08);overflow:hidden}
+.world-order-status b{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,#ff784f,#ffd166,#67f0d0,#8fd3ff)}
+.world-order-actions{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.world-order-actions button{min-height:54px;text-align:left;border-radius:16px;background:rgba(7,12,20,.58);border:1px solid rgba(103,240,208,.20);padding:10px;color:var(--text);font-weight:900}
+.world-order-actions button:active{transform:scale(.98)}
+.world-order-spheres,.world-order-history{display:grid;gap:8px}
+.world-order-spheres h3,.world-order-history h3{font-size:.9rem;margin:2px 0}
+.world-order-spheres article,.world-order-history article{border:1px solid rgba(255,255,255,.08);border-radius:14px;background:rgba(255,255,255,.035);padding:9px}
+.world-order-spheres strong,.world-order-history strong{display:block;font-size:.8rem}
+.world-order-spheres span,.world-order-history span{display:block;color:#d7e6f4;font-size:.64rem;margin-top:3px}
+.marker-world-order{display:grid;place-items:center;width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,#0d3d38,#67f0d0);color:#02110e;border:2px solid rgba(255,255,255,.68);box-shadow:0 0 28px rgba(103,240,208,.70),0 12px 26px rgba(0,0,0,.45);font-size:1.15rem;animation:worldOrderPulse 1.15s ease-in-out infinite alternate}
+.marker-world-order-risk{display:grid;place-items:center;width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,#4a3811,#ffd166);color:#111;border:2px solid rgba(255,255,255,.68);box-shadow:0 0 28px rgba(255,209,102,.70),0 12px 26px rgba(0,0,0,.45);font-size:1.15rem;animation:worldOrderRiskPulse 1s ease-in-out infinite alternate}
+.leaflet-overlay-pane path.world-order-route{animation:tacticalDash 1.2s linear infinite;filter:drop-shadow(0 0 8px rgba(103,240,208,.55))}
+.leaflet-overlay-pane path.world-order-ring{animation:worldOrderRing 1.8s ease-in-out infinite;filter:drop-shadow(0 0 10px rgba(103,240,208,.48))}
+@keyframes worldOrderPulse{0%{transform:scale(.92)}100%{transform:scale(1.08)}}
+@keyframes worldOrderRiskPulse{0%{transform:scale(.92) rotate(-3deg)}100%{transform:scale(1.08) rotate(3deg)}}
+@keyframes worldOrderRing{0%,100%{opacity:.22}50%{opacity:.55}}
+@media(max-width:980px){
+  .world-order-status{grid-template-columns:1fr}
+  .world-order-actions{grid-template-columns:1fr}
+}
+@media(max-height:560px){
+  .world-order-status{grid-template-columns:repeat(3,1fr);gap:6px}
+  .world-order-status>div{padding:7px;border-radius:12px}
+  .world-order-status small{font-size:.48rem}
+  .world-order-status strong{font-size:.72rem}
+  .world-order-actions{grid-template-columns:repeat(6,1fr);gap:6px}
+  .world-order-actions button{min-height:40px;font-size:.51rem;padding:6px;border-radius:11px}
+}

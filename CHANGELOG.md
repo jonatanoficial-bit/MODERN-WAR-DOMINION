@@ -437,3 +437,17 @@
 - Rotas e marcadores diplomáticos aparecem no mapa real.
 - Integração com crise humanitária, sociedade, governo, ocupação, IA rival, guerra terrestre e comércio.
 - Save key mantida para preservar campanhas anteriores.
+
+
+## Fase 42 — Pós-Guerra, Reconstrução e Nova Ordem Mundial
+
+- Novo painel Pós-Guerra e Nova Ordem Mundial.
+- Sistema de influência global, reconstrução, estabilidade regional, dívida de guerra, demobilização e instituições.
+- Ações: plano de reconstrução, demobilizar forças, criar instituição regional, alívio de dívida, cúpula da nova ordem e pacto de segurança.
+- Esferas de influência aparecem no mapa real.
+- Reconstrução reduz crise humanitária, melhora ocupações e consolida tratados.
+- Demobilização reduz fadiga social e custo de guerra.
+- Dívida de guerra e instabilidade podem prejudicar a ordem pós-conflito.
+- Nova camada Nova Ordem na Sala de Guerra.
+- Integração com paz/ONU, humanitário, ocupação, comércio, governo, sociedade e coalizões.
+- Save key mantida para preservar campanhas anteriores.

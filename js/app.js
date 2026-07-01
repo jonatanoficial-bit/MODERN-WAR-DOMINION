@@ -1,5 +1,5 @@
-const VERSION = "4.1.1";
-const PHASE = "Fase 41.1 — hotfix zip seguro e negociações de paz";
+const VERSION = "4.2.0";
+const PHASE = "Fase 42 — pós-guerra reconstrução e nova ordem mundial";
 const SAVE_KEY = "MWD_SAVE_F17";
 
 const $ = (sel, root = document) => root.querySelector(sel);
@@ -14,7 +14,7 @@ const state = {
   map: null,
   mapUserMoved: false,
   mapAutoCentered: false,
-  layers: { countries: null, regions: null, bases: null, threats: null, fronts: null, airOps: null, navalOps: null, missiles: null, logistics: null, tactical: null, battleEffects: null, weather: null, intel: null, tech: null, industry: null, trade: null, society: null, governance: null, special: null, occupation: null, humanitarian: null, peace: null },
+  layers: { countries: null, regions: null, bases: null, threats: null, fronts: null, airOps: null, navalOps: null, missiles: null, logistics: null, tactical: null, battleEffects: null, weather: null, intel: null, tech: null, industry: null, trade: null, society: null, governance: null, special: null, occupation: null, humanitarian: null, peace: null, worldOrder: null },
   arsenalFilter: "Todos"
 };
 
@@ -3607,7 +3607,8 @@ function makeMapSettings() {
     special: true,
     occupation: true,
     humanitarian: true,
-    peace: true
+    peace: true,
+    worldOrder: true
   };
 }
 
@@ -3644,7 +3645,8 @@ function mapLayerMeta() {
     ["special", t("mapops.special", "Especiais"), "🪂"],
     ["occupation", t("mapops.occupation", "Ocupação"), "🏛️"],
     ["humanitarian", t("mapops.humanitarian", "Humanitário"), "⛑️"],
-    ["peace", t("mapops.peace", "Paz/ONU"), "🕊️"]
+    ["peace", t("mapops.peace", "Paz/ONU"), "🕊️"],
+    ["worldOrder", t("mapops.worldOrder", "Nova ordem"), "🌍"]
   ];
 }
 
@@ -3764,6 +3766,11 @@ function focusMap(kind) {
     ensurePeaceSystem()?.negotiations?.forEach(n => { if (n.coords) coords.push(n.coords); });
     peaceTargets(5).forEach(t => coords.push(t.coords));
   }
+  if (kind === "worldOrder") {
+    coords.push(player.coords);
+    ensureWorldOrderSystem()?.spheres?.forEach(s => { if (s.coords) coords.push(s.coords); });
+    if (coords.length < 2) peaceTargets(5).forEach(t => coords.push(t.coords));
+  }
   mapFitCoords(coords.length ? coords : [player.coords], kind === "player" ? 4 : 3);
 }
 
@@ -3801,6 +3808,8 @@ function mapOpsIntelText() {
   if (humanitarian) parts.push(`${t("mapops.humanitarian", "Humanitário").toLowerCase()} ${humanitarianRiskScore()}`);
   const peace = ensurePeaceSystem();
   if (peace) parts.push(`${t("mapops.peace", "Paz/ONU").toLowerCase()} ${peace.momentum}/${peace.unSupport}`);
+  const worldOrder = ensureWorldOrderSystem();
+  if (worldOrder) parts.push(`${t("mapops.worldOrder", "Nova ordem").toLowerCase()} ${worldOrderScore()}`);
   return parts.length ? parts.join(" · ") : `${activeLayers} ${t("mapops.activeLayers", "Camadas ativas").toLowerCase()}`;
 }
 
@@ -3841,6 +3850,7 @@ function renderMapOpsPanel() {
         <button data-map-focus="occupation">🏛️ ${t("mapops.occupation", "Ocupação")}</button>
         <button data-map-focus="humanitarian">⛑️ ${t("mapops.humanitarian", "Humanitário")}</button>
         <button data-map-focus="peace">🕊️ ${t("mapops.peace", "Paz/ONU")}</button>
+        <button data-map-focus="worldOrder">🌍 ${t("mapops.worldOrder", "Nova ordem")}</button>
       </div>
     </section>
     <section class="mapops-layers">
@@ -6038,6 +6048,256 @@ function renderPeacePanel() {
   $$("#peacePanel [data-peace-action]").forEach(btn => btn.addEventListener("click", () => peaceAction(btn.dataset.peaceAction)));
 }
 
+
+function makeWorldOrderSystem() {
+  return {
+    influence: 32,
+    reconstruction: 18,
+    regionalStability: 42,
+    warDebt: 34,
+    demobilization: 8,
+    institutions: 12,
+    history: [],
+    spheres: []
+  };
+}
+
+function ensureWorldOrderSystem() {
+  if (!state.game) return null;
+  if (!state.game.worldOrderSystem) state.game.worldOrderSystem = makeWorldOrderSystem();
+  const wo = state.game.worldOrderSystem;
+  if (!Array.isArray(wo.history)) wo.history = [];
+  if (!Array.isArray(wo.spheres)) wo.spheres = [];
+  wo.influence = clamp(wo.influence ?? 32, 0, 160);
+  wo.reconstruction = clamp(wo.reconstruction ?? 18, 0, 160);
+  wo.regionalStability = clamp(wo.regionalStability ?? 42, 0, 100);
+  wo.warDebt = clamp(wo.warDebt ?? 34, 0, 160);
+  wo.demobilization = clamp(wo.demobilization ?? 8, 0, 100);
+  wo.institutions = clamp(wo.institutions ?? 12, 0, 160);
+  return wo;
+}
+
+function worldOrderScore() {
+  const wo = ensureWorldOrderSystem();
+  if (!wo) return 0;
+  return clamp(Math.round(wo.influence * .25 + wo.reconstruction * .23 + wo.regionalStability * .24 + wo.institutions * .20 + wo.demobilization * .10 - wo.warDebt * .20), 0, 100);
+}
+
+function recordWorldOrderHistory(kind, text, coords = null) {
+  const wo = ensureWorldOrderSystem();
+  wo.history.unshift({ id: cryptoId(), kind, text, coords, at: `${monthNames[state.game.month % 12]}/${state.game.year}` });
+  wo.history = wo.history.slice(0, 12);
+}
+
+function worldOrderCost(kind) {
+  return {
+    plan: { finance: 86, industry: 36, energy: 18, food: 45 },
+    demobilize: { finance: 44, industry: 8, energy: 6, food: 12 },
+    institution: { finance: 74, industry: 20, energy: 12, food: 20 },
+    debtRelief: { finance: 120, industry: 10, energy: 6, food: 8 },
+    summit: { finance: 92, industry: 18, energy: 14, food: 25 },
+    securityPact: { finance: 78, industry: 24, energy: 16, food: 15 }
+  }[kind] || { finance: 40, industry: 8, energy: 6, food: 0 };
+}
+
+function canPayWorldOrder(cost) {
+  const g = state.game;
+  return g.finance >= (cost.finance || 0) && g.industry >= (cost.industry || 0) && g.energy >= (cost.energy || 0) && g.food >= (cost.food || 0);
+}
+
+function payWorldOrder(cost) {
+  const g = state.game;
+  g.finance -= cost.finance || 0;
+  g.industry -= cost.industry || 0;
+  g.energy -= cost.energy || 0;
+  g.food -= cost.food || 0;
+}
+
+function addInfluenceSphere(kind = "regional") {
+  const wo = ensureWorldOrderSystem();
+  const candidates = [
+    ...ensurePeaceSystem().treaties.map(t => getCountry(t.targetId)).filter(Boolean),
+    ...occupiedFronts().map(f => getCountry(f.targetId)).filter(Boolean),
+    ...peaceTargets(5)
+  ].filter((c, idx, arr) => c && arr.findIndex(x => x.id === c.id) === idx);
+  const target = candidates[randomInt(0, Math.max(0, candidates.length - 1))];
+  if (!target) return null;
+  const existing = wo.spheres.find(s => s.countryId === target.id);
+  if (existing) {
+    existing.influence = clamp(existing.influence + randomInt(6, 14), 0, 100);
+    existing.stability = clamp(existing.stability + randomInt(2, 8), 0, 100);
+    existing.remaining = Math.max(existing.remaining || 4, randomInt(5, 10));
+    return existing;
+  }
+  const sphere = {
+    id: cryptoId(),
+    countryId: target.id,
+    name: target.name,
+    flag: target.flag,
+    coords: target.coords,
+    kind,
+    influence: randomInt(42, 68),
+    stability: randomInt(38, 66),
+    remaining: randomInt(5, 10)
+  };
+  wo.spheres.unshift(sphere);
+  wo.spheres = wo.spheres.slice(0, 10);
+  return sphere;
+}
+
+function worldOrderAction(kind) {
+  const g = state.game;
+  const wo = ensureWorldOrderSystem();
+  const cost = worldOrderCost(kind);
+  if (!canPayWorldOrder(cost)) {
+    g.events.push(eventText("warn", currentLang === "en-US" ? "Insufficient resources for postwar action." : currentLang === "es-ES" ? "Recursos insuficientes para acción posguerra." : "Recursos insuficientes para ação pós-guerra."));
+    saveGame(); renderGame(); return;
+  }
+  payWorldOrder(cost);
+  let text = "";
+  const hs = ensureHumanitarianSystem();
+  const ps = ensurePeaceSystem();
+  const society = ensureSocietySystem();
+  const gov = ensureGovernanceSystem();
+  const trade = ensureTradeSystem();
+
+  if (kind === "plan") {
+    wo.reconstruction = clamp(wo.reconstruction + randomInt(12, 24), 0, 160);
+    wo.regionalStability = clamp(wo.regionalStability + randomInt(5, 12), 0, 100);
+    hs.civiliansAffected = Math.max(0, hs.civiliansAffected - randomInt(50, 130));
+    hs.refugees = Math.max(0, hs.refugees - randomInt(30, 100));
+    occupiedFronts().forEach(f => {
+      ensureOccupationFrontFields(f);
+      f.infrastructure = clamp(f.infrastructure + randomInt(5, 12), 0, 100);
+      f.stability = clamp(f.stability + randomInt(3, 8), 0, 100);
+    });
+    text = `${t("worldOrder.plan", "Plano de reconstrução")}: infraestrutura civil e estabilidade regional avançaram.`;
+  }
+  if (kind === "demobilize") {
+    wo.demobilization = clamp(wo.demobilization + randomInt(10, 20), 0, 100);
+    wo.warDebt = clamp(wo.warDebt - randomInt(3, 9), 0, 160);
+    g.readiness = clamp(g.readiness - randomInt(2, 5), 0, 100);
+    g.finance += randomInt(16, 38);
+    society.warWeariness = clamp(society.warWeariness - randomInt(6, 14), 0, 100);
+    society.support = clamp(society.support + randomInt(2, 6), 0, 100);
+    text = `${t("worldOrder.demobilize", "Demobilizar forças")}: custo de guerra e fadiga social foram reduzidos.`;
+  }
+  if (kind === "institution") {
+    wo.institutions = clamp(wo.institutions + randomInt(10, 20), 0, 160);
+    wo.influence = clamp(wo.influence + randomInt(4, 10), 0, 160);
+    ps.unSupport = clamp(ps.unSupport + randomInt(3, 8), 0, 100);
+    gov.legalRisk = clamp(gov.legalRisk - randomInt(1, 5), 0, 100);
+    addInfluenceSphere("institution");
+    text = `${t("worldOrder.institution", "Criar instituição regional")}: cooperação regional e legitimidade aumentaram.`;
+  }
+  if (kind === "debtRelief") {
+    wo.warDebt = clamp(wo.warDebt - randomInt(12, 26), 0, 160);
+    trade.marketAccess = clamp(trade.marketAccess + randomInt(4, 10), 0, 180);
+    society.protests = clamp(society.protests - randomInt(2, 7), 0, 100);
+    text = `${t("worldOrder.debtRelief", "Alívio de dívida")}: dívida de guerra e pressão econômica caíram.`;
+  }
+  if (kind === "summit") {
+    wo.influence = clamp(wo.influence + randomInt(10, 22), 0, 160);
+    wo.regionalStability = clamp(wo.regionalStability + randomInt(4, 10), 0, 100);
+    ps.credibility = clamp(ps.credibility + randomInt(5, 12), 0, 100);
+    ps.momentum = clamp(ps.momentum + randomInt(4, 10), 0, 100);
+    g.worldTension = clamp(g.worldTension - randomInt(3, 8), 0, 100);
+    addInfluenceSphere("summit");
+    text = `${t("worldOrder.summit", "Cúpula da nova ordem")}: influência global e estabilidade diplomática cresceram.`;
+  }
+  if (kind === "securityPact") {
+    wo.influence = clamp(wo.influence + randomInt(5, 12), 0, 160);
+    wo.institutions = clamp(wo.institutions + randomInt(4, 10), 0, 160);
+    ensureCoalition().cohesion = clamp((ensureCoalition().cohesion || 0) + randomInt(4, 10), 0, 160);
+    occupiedFronts().forEach(f => { ensureOccupationFrontFields(f); f.sabotageRisk = clamp(f.sabotageRisk - randomInt(2, 7), 0, 100); });
+    addInfluenceSphere("security");
+    text = `${t("worldOrder.securityPact", "Pacto de segurança")}: garantias regionais reduziram sabotagem e risco de ruptura.`;
+  }
+
+  recordWorldOrderHistory(kind, text);
+  g.events.push(eventText("sistema", text));
+  saveGame(); renderGame(); activatePanel("panelWorldOrder");
+}
+
+function progressWorldOrderSystem() {
+  const g = state.game;
+  const wo = ensureWorldOrderSystem();
+  if (!wo) return;
+  const ps = ensurePeaceSystem();
+  const hs = ensureHumanitarianSystem();
+  const activeWars = ensureGroundWar()?.fronts?.filter(f => f.status !== "withdrawn" && f.status !== "occupied").length || 0;
+  const treaties = ps.treaties?.length || 0;
+  const occupied = occupiedFronts().length;
+
+  wo.reconstruction = clamp(wo.reconstruction + treaties + Math.round(ps.unSupport / 70) - activeWars - Math.round(humanitarianRiskScore() / 70), 0, 160);
+  wo.regionalStability = clamp(wo.regionalStability + Math.round((wo.reconstruction + ps.credibility) / 95) - Math.round(g.worldTension / 55) - activeWars, 0, 100);
+  wo.influence = clamp(wo.influence + Math.round((wo.institutions + treaties * 6 + governanceScore()) / 95) - Math.round(wo.warDebt / 80), 0, 160);
+  wo.institutions = clamp(wo.institutions + (treaties ? 1 : 0) - (ps.treatyRisk > 70 ? 1 : 0), 0, 160);
+  wo.warDebt = clamp(wo.warDebt + activeWars * 2 + Math.round(g.worldTension / 65) - Math.round(wo.demobilization / 70), 0, 160);
+  wo.demobilization = clamp(wo.demobilization + (ps.ceasefire > 0 ? 1 : 0) + (activeWars ? -1 : 0), 0, 100);
+
+  wo.spheres.forEach(s => {
+    s.remaining -= 1;
+    s.influence = clamp(s.influence + Math.round(wo.influence / 85) - (g.worldTension > 70 ? 2 : 0), 0, 100);
+    s.stability = clamp(s.stability + Math.round(wo.reconstruction / 75) - Math.round(hs.externalPressure / 70), 0, 100);
+    if (s.stability < 25 && Math.random() < .25) {
+      g.worldTension = clamp(g.worldTension + randomInt(1, 5), 0, 100);
+      g.events.push(eventText("warn", `${s.flag} ${s.name}: esfera de influência instável gerou tensão regional.`));
+    }
+  });
+  wo.spheres = wo.spheres.filter(s => s.remaining > 0 && s.influence > 10);
+}
+
+function renderWorldOrderMapOverlays(player) {
+  const wo = ensureWorldOrderSystem();
+  if (!state.map || !state.layers.worldOrder || !window.L || !wo) return;
+  const origin = getPlayerCountry()?.coords || player.coords;
+  const spheres = wo.spheres.length ? wo.spheres : [
+    ...ensurePeaceSystem().treaties.map(t => getCountry(t.targetId)).filter(Boolean).map(c => ({ id: c.id, name: c.name, flag: c.flag, coords: c.coords, influence: 42, stability: 44, remaining: 4 })),
+    ...occupiedFronts().map(f => getCountry(f.targetId)).filter(Boolean).map(c => ({ id: c.id, name: c.name, flag: c.flag, coords: c.coords, influence: 35, stability: 35, remaining: 3 }))
+  ];
+  spheres.slice(0, 8).forEach(s => {
+    const risk = s.stability < 35 || s.influence < 32;
+    L.polyline([origin, s.coords], { color: risk ? "#ffd166" : "#67f0d0", weight: 3, opacity: .56, dashArray: "16 10", className: "world-order-route" }).addTo(state.layers.worldOrder)
+      .bindPopup(`<strong>${s.flag || ""} ${s.name}</strong><br>${t("worldOrder.influence","Influência global")}: ${s.influence}<br>${t("worldOrder.stability","Estabilidade regional")}: ${s.stability}`);
+    const icon = L.divIcon({ className: "", html: `<div class="${risk ? "marker-world-order-risk" : "marker-world-order"}">🌍</div>`, iconSize: [40, 40], iconAnchor: [20, 20] });
+    L.marker(s.coords, { icon }).addTo(state.layers.worldOrder).bindPopup(`${s.flag || ""} ${s.name}: ${t("worldOrder.spheres","Esferas de influência")}`);
+    L.circle(s.coords, { radius: 52000 + (s.influence || 35) * 900, color: risk ? "#ffd166" : "#67f0d0", fillColor: risk ? "#ffd166" : "#67f0d0", fillOpacity: .045, opacity: .30, weight: 2, className: "world-order-ring" }).addTo(state.layers.worldOrder);
+  });
+}
+
+function renderWorldOrderPanel() {
+  const panel = $("#worldOrderPanel");
+  if (!panel || !state.game) return;
+  const wo = ensureWorldOrderSystem();
+  panel.innerHTML = `
+    <div class="world-order-status">
+      <div><small>${t("worldOrder.influence","Influência global")}</small><strong>${wo.influence}</strong><i><b style="width:${clamp(wo.influence,0,100)}%"></b></i></div>
+      <div><small>${t("worldOrder.reconstruction","Reconstrução")}</small><strong>${wo.reconstruction}</strong><i><b style="width:${clamp(wo.reconstruction,0,100)}%"></b></i></div>
+      <div><small>${t("worldOrder.stability","Estabilidade regional")}</small><strong>${wo.regionalStability}%</strong><i><b style="width:${wo.regionalStability}%"></b></i></div>
+      <div><small>${t("worldOrder.debt","Dívida de guerra")}</small><strong>${wo.warDebt}</strong><i><b style="width:${clamp(wo.warDebt,0,100)}%"></b></i></div>
+      <div><small>${t("worldOrder.demobilization","Demobilização")}</small><strong>${wo.demobilization}%</strong><i><b style="width:${wo.demobilization}%"></b></i></div>
+      <div><small>${t("worldOrder.institutions","Instituições")}</small><strong>${wo.institutions}</strong><span>score ${worldOrderScore()}</span></div>
+    </div>
+    <div class="world-order-actions">
+      <button data-world-order-action="plan">🏗️ ${t("worldOrder.plan","Plano de reconstrução")}</button>
+      <button data-world-order-action="demobilize">🎖️ ${t("worldOrder.demobilize","Demobilizar forças")}</button>
+      <button data-world-order-action="institution">🏛️ ${t("worldOrder.institution","Criar instituição regional")}</button>
+      <button data-world-order-action="debtRelief">💳 ${t("worldOrder.debtRelief","Alívio de dívida")}</button>
+      <button data-world-order-action="summit">🌐 ${t("worldOrder.summit","Cúpula da nova ordem")}</button>
+      <button data-world-order-action="securityPact">🛡️ ${t("worldOrder.securityPact","Pacto de segurança")}</button>
+    </div>
+    <section class="world-order-spheres">
+      <h3>${t("worldOrder.spheres","Esferas de influência")}</h3>
+      ${wo.spheres.length ? wo.spheres.slice(0,7).map(s => `<article><strong>${s.flag} ${s.name}</strong><span>${s.kind} · influência ${s.influence} · estabilidade ${s.stability} · ${s.remaining}m</span></article>`).join("") : `<p class="muted">—</p>`}
+    </section>
+    <section class="world-order-history">
+      <h3>${t("worldOrder.history","Histórico pós-guerra")}</h3>
+      ${wo.history.length ? wo.history.slice(0,7).map(item => `<article><strong>${item.kind}</strong><span>${item.at} · ${item.text}</span></article>`).join("") : `<p class="muted">${t("worldOrder.noHistory","Nenhuma ação pós-guerra registrada.")}</p>`}
+    </section>`;
+  $$("#worldOrderPanel [data-world-order-action]").forEach(btn => btn.addEventListener("click", () => worldOrderAction(btn.dataset.worldOrderAction)));
+}
+
 function makeInitialGame(countryId) {
   const country = state.countries.find(c => c.id === countryId) || state.countries[0];
   const regions = makeRegions(country);
@@ -6249,6 +6509,7 @@ function renderGame() {
   ensureOccupationSystem();
   ensureHumanitarianSystem();
   ensurePeaceSystem();
+  ensureWorldOrderSystem();
   ensureMapSettings();
   renderSummary();
   renderCommanderGuide();
@@ -6280,6 +6541,7 @@ function renderGame() {
   renderOccupationPanel();
   renderHumanitarianPanel();
   renderPeacePanel();
+  renderWorldOrderPanel();
   renderMapOpsPanel();
   renderGlobalWar();
   renderAiWorld();
@@ -6371,6 +6633,8 @@ function commanderRecommendation() {
   if (g.month > 1 && (humanitarianRiskScore() > 55 || humanitarian.legalRisk > 58 || humanitarian.externalPressure > 62 || humanitarian.refugees > 180)) return { title: t("rec.humanitarian", "Reduzir crise humanitária"), text: t("rec.humanitarianText", "Civis, refugiados ou risco jurídico estão altos."), action: "humanitarian", panel: "panelHumanitarian" };
   const peace = ensurePeaceSystem();
   if (g.month > 2 && (g.worldTension > 72 || humanitarianRiskScore() > 68 || ensureSocietySystem().warWeariness > 70) && peace.credibility > 25) return { title: t("rec.peace", "Abrir canal de paz"), text: t("rec.peaceText", "Tensão, crise humanitária ou desgaste político indicam que uma negociação pode ser útil."), action: "peace", panel: "panelPeace" };
+  const worldOrder = ensureWorldOrderSystem();
+  if (g.month > 3 && ((peace.treaties?.length || 0) > 0 || occupiedFronts().length > 0) && (worldOrderScore() < 46 || worldOrder.warDebt > 70 || worldOrder.regionalStability < 42)) return { title: t("rec.worldOrder", "Consolidar pós-guerra"), text: t("rec.worldOrderText", "Tratados, ocupações ou crise humanitária indicam necessidade de reconstrução e nova ordem."), action: "worldOrder", panel: "panelWorldOrder" };
   const cyberOps = ensureCyberOps();
   const mainThreat = topAiThreats(1)[0];
   const enemyOps = ensureEnemyOffensives();
@@ -6453,6 +6717,7 @@ function renderCommanderGuide() {
       <button id="quickOccupationBtn"><b>🏛️ ${t("guide.occupation", "Ocupação")}</b><span>${t("guide.occupationSub", "controle territorial")}</span></button>
       <button id="quickHumanitarianBtn"><b>⛑️ ${t("guide.humanitarian", "Humanitário")}</b><span>${t("guide.humanitarianSub", "civis e leis")}</span></button>
       <button id="quickPeaceBtn"><b>🕊️ ${t("guide.peace", "Paz/ONU")}</b><span>${t("guide.peaceSub", "cessar-fogo e tratados")}</span></button>
+      <button id="quickWorldOrderBtn"><b>🌍 ${t("guide.worldOrder", "Pós-guerra")}</b><span>${t("guide.worldOrderSub", "reconstrução e influência")}</span></button>
       <button id="quickBuildBtn"><b>🏗️ ${t("guide.build", "Construir")}</b><span>${t("guide.buildSub", "base recomendada")}</span></button>
       <button id="quickProduceBtn"><b>🪖 ${t("guide.produce", "Produzir")}</b><span>${t("guide.produceSub", "melhor unidade")}</span></button>
       <button id="quickLogisticsBtn"><b>🚚 ${t("guide.logistics", "Logística")}</b><span>${t("guide.logisticsSub", "suprir tropas")}</span></button>
@@ -7021,6 +7286,7 @@ function initMap() {
   state.layers.occupation = L.layerGroup().addTo(state.map);
   state.layers.humanitarian = L.layerGroup().addTo(state.map);
   state.layers.peace = L.layerGroup().addTo(state.map);
+  state.layers.worldOrder = L.layerGroup().addTo(state.map);
   state.map.dragging.enable();
   state.map.scrollWheelZoom.enable();
   state.map.doubleClickZoom.enable();
@@ -7104,6 +7370,7 @@ function updateMapLayers() {
   renderOccupationMapOverlays(player);
   renderHumanitarianMapOverlays(player);
   renderPeaceMapOverlays(player);
+  renderWorldOrderMapOverlays(player);
   applyMapLayerVisibility();
   if (!state.mapUserMoved && !state.mapAutoCentered) {
     state.map.setView(player.coords, Math.max(state.map.getZoom(), 3), { animate: false });
@@ -7286,6 +7553,7 @@ function advanceMonth() {
   progressOccupationSystem();
   progressHumanitarianSystem();
   progressPeaceSystem();
+  progressWorldOrderSystem();
   progressConstruction();
   progressProduction();
   progressCyberOps();
