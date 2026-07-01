@@ -1,6 +1,6 @@
 {
   "name": "modern-war-dominion",
-  "version": "3.7.0",
+  "version": "3.8.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -8,5 +8,5 @@
     "audit": "node tools/audit.mjs",
     "integrity": "node tools/integrity.mjs"
   },
-  "description": "Modern War Dominion Fase 37 — governo, gabinete e leis de emergência"
+  "description": "Modern War Dominion Fase 38 — operações especiais e forças de elite"
 }

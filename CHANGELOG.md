@@ -383,3 +383,16 @@
 - Nova camada Governo na Sala de Guerra.
 - Instituições aparecem no mapa real com marcadores de risco político.
 - Save key mantida para preservar campanhas anteriores.
+
+
+## Fase 38 — Operações Especiais e Forças de Elite
+
+- Novo painel Operações Especiais.
+- Sistema de prontidão SOF, furtividade, exposição e equipes de forças especiais.
+- Ações: treinar forças especiais, reconhecimento infiltrado, sabotagem estratégica, resgate/extração, captura de alvo-chave e operação negável.
+- Missões especiais podem reduzir poder/prontidão de rivais, melhorar inteligência, elevar moral social ou gerar crise política.
+- Falhas aumentam tensão, risco legal e exposição.
+- Nova camada Especiais na Sala de Guerra.
+- Rotas e marcadores de operações especiais aparecem no mapa real.
+- Integração com inteligência, Estado-Maior, governo, sociedade, batalha visual e IA.
+- Save key mantida para preservar campanhas anteriores.

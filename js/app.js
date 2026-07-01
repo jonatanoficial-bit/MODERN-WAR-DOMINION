@@ -1,5 +1,5 @@
-const VERSION = "3.7.0";
-const PHASE = "Fase 37 — governo gabinete e leis de emergência";
+const VERSION = "3.8.0";
+const PHASE = "Fase 38 — operações especiais e forças de elite";
 const SAVE_KEY = "MWD_SAVE_F17";
 
 const $ = (sel, root = document) => root.querySelector(sel);
@@ -14,7 +14,7 @@ const state = {
   map: null,
   mapUserMoved: false,
   mapAutoCentered: false,
-  layers: { countries: null, regions: null, bases: null, threats: null, fronts: null, airOps: null, navalOps: null, missiles: null, logistics: null, tactical: null, battleEffects: null, weather: null, intel: null, tech: null, industry: null, trade: null, society: null, governance: null },
+  layers: { countries: null, regions: null, bases: null, threats: null, fronts: null, airOps: null, navalOps: null, missiles: null, logistics: null, tactical: null, battleEffects: null, weather: null, intel: null, tech: null, industry: null, trade: null, society: null, governance: null, special: null },
   arsenalFilter: "Todos"
 };
 
@@ -3603,7 +3603,8 @@ function makeMapSettings() {
     industry: true,
     trade: true,
     society: true,
-    governance: true
+    governance: true,
+    special: true
   };
 }
 
@@ -3636,7 +3637,8 @@ function mapLayerMeta() {
     ["industry", t("mapops.industry", "Indústria"), "🏭"],
     ["trade", t("mapops.trade", "Comércio"), "💱"],
     ["society", t("mapops.society", "Sociedade"), "📣"],
-    ["governance", t("mapops.governance", "Governo"), "🏛️"]
+    ["governance", t("mapops.governance", "Governo"), "🏛️"],
+    ["special", t("mapops.special", "Especiais"), "🪂"]
   ];
 }
 
@@ -3736,6 +3738,11 @@ function focusMap(kind) {
     if (r) coords.push(r.coords);
     if (!coords.length) coords.push(player.coords);
   }
+  if (kind === "special") {
+    coords.push(player.coords);
+    ensureSpecialOpsSystem()?.operations?.forEach(op => { if (op.coords) coords.push(op.coords); });
+    if (coords.length < 2) specialTargets(4).forEach(t => coords.push(t.coords));
+  }
   mapFitCoords(coords.length ? coords : [player.coords], kind === "player" ? 4 : 3);
 }
 
@@ -3764,6 +3771,8 @@ function mapOpsIntelText() {
   if (society) parts.push(`${t("mapops.society", "Sociedade").toLowerCase()} ${society.support}/${society.protests}`);
   const governance = ensureGovernanceSystem();
   if (governance) parts.push(`${t("mapops.governance", "Governo").toLowerCase()} ${governanceScore()}`);
+  const special = ensureSpecialOpsSystem();
+  if (special) parts.push(`${t("mapops.special", "Especiais").toLowerCase()} ${special.readiness}/${special.exposure}`);
   return parts.length ? parts.join(" · ") : `${activeLayers} ${t("mapops.activeLayers", "Camadas ativas").toLowerCase()}`;
 }
 
@@ -3800,6 +3809,7 @@ function renderMapOpsPanel() {
         <button data-map-focus="trade">💱 ${t("mapops.trade", "Comércio")}</button>
         <button data-map-focus="society">📣 ${t("mapops.society", "Sociedade")}</button>
         <button data-map-focus="governance">🏛️ ${t("mapops.governance", "Governo")}</button>
+        <button data-map-focus="special">🪂 ${t("mapops.special", "Especiais")}</button>
       </div>
     </section>
     <section class="mapops-layers">
@@ -4965,6 +4975,240 @@ function renderGovernancePanel() {
   $$("#governancePanel [data-governance-action]").forEach(btn => btn.addEventListener("click", () => governanceAction(btn.dataset.governanceAction)));
 }
 
+
+function makeSpecialOpsSystem(country = null) {
+  return {
+    readiness: clamp(34 + Math.round((country?.military || 45) / 3), 25, 95),
+    stealth: clamp(32 + Math.round((country?.intel || 40) / 3), 20, 95),
+    exposure: 8,
+    teams: 2,
+    selectedTargetId: null,
+    operations: [],
+    history: []
+  };
+}
+
+function ensureSpecialOpsSystem() {
+  if (!state.game) return null;
+  if (!state.game.specialOpsSystem) state.game.specialOpsSystem = makeSpecialOpsSystem(getPlayerCountry());
+  const so = state.game.specialOpsSystem;
+  if (!Array.isArray(so.operations)) so.operations = [];
+  if (!Array.isArray(so.history)) so.history = [];
+  so.readiness = clamp(so.readiness ?? 45, 0, 120);
+  so.stealth = clamp(so.stealth ?? 45, 0, 120);
+  so.exposure = clamp(so.exposure ?? 8, 0, 100);
+  so.teams = clamp(so.teams ?? 2, 0, 20);
+  const target = specialTargets()[0];
+  if (!so.selectedTargetId || !getCountry(so.selectedTargetId) || so.selectedTargetId === state.game.countryId) so.selectedTargetId = target?.id;
+  return so;
+}
+
+function specialTargets(limit = 12) {
+  const g = state.game;
+  if (!g) return [];
+  ensureAiWorld();
+  return state.countries
+    .filter(c => c.id !== g.countryId)
+    .map(c => {
+      const ai = g.aiWorld?.find(a => a.id === c.id);
+      const rel = g.relations?.find(r => r.id === c.id);
+      const score = clamp((ai?.hostility || 25) + (ai?.power || c.military || 40) / 2 + (rel?.tension || 0) / 2 + (c.nuclear ? 8 : 0), 0, 100);
+      return { ...c, ai, relation: rel, threatScore: Math.round(score) };
+    })
+    .sort((a,b) => b.threatScore - a.threatScore)
+    .slice(0, limit);
+}
+
+function specialMissionLabel(kind) {
+  return {
+    train: t("special.train", "Treinar forças especiais"),
+    recon: t("special.recon", "Reconhecimento infiltrado"),
+    sabotage: t("special.sabotage", "Sabotagem estratégica"),
+    rescue: t("special.rescue", "Resgate/extração"),
+    capture: t("special.capture", "Capturar alvo-chave"),
+    falseFlag: t("special.falseFlag", "Operação negável")
+  }[kind] || kind;
+}
+
+function specialCost(kind) {
+  return {
+    train: { finance: 42, industry: 10, energy: 8 },
+    recon: { finance: 28, industry: 4, energy: 10 },
+    sabotage: { finance: 54, industry: 12, energy: 18 },
+    rescue: { finance: 48, industry: 10, energy: 14 },
+    capture: { finance: 70, industry: 18, energy: 22 },
+    falseFlag: { finance: 82, industry: 12, energy: 20 }
+  }[kind] || { finance: 20, industry: 4, energy: 6 };
+}
+
+function recordSpecialHistory(kind, target, text, success = true, exposureDelta = 0) {
+  const so = ensureSpecialOpsSystem();
+  const item = {
+    id: cryptoId(),
+    kind,
+    label: specialMissionLabel(kind),
+    targetId: target?.id,
+    targetName: target?.name || "",
+    targetFlag: target?.flag || "",
+    text,
+    success,
+    exposureDelta,
+    coords: target?.coords ? jitter(target.coords, .48) : null,
+    at: `${monthNames[state.game.month % 12]}/${state.game.year}`
+  };
+  so.history.unshift(item);
+  so.history = so.history.slice(0, 12);
+  if (item.coords) {
+    so.operations.unshift(item);
+    so.operations = so.operations.slice(0, 8);
+  }
+}
+
+function specialAction(kind) {
+  const g = state.game;
+  const so = ensureSpecialOpsSystem();
+  const target = getCountry($("#specialTargetSelect")?.value || so.selectedTargetId) || specialTargets()[0];
+  if (!target) return;
+  so.selectedTargetId = target.id;
+  const cost = specialCost(kind);
+  if (g.finance < cost.finance || g.industry < cost.industry || g.energy < cost.energy) {
+    g.events.push(eventText("warn", currentLang === "en-US" ? "Insufficient resources for special operation." : currentLang === "es-ES" ? "Recursos insuficientes para operación especial." : "Recursos insuficientes para operação especial."));
+    saveGame(); renderGame(); return;
+  }
+  if (kind !== "train" && so.teams < 1) {
+    g.events.push(eventText("warn", currentLang === "en-US" ? "No SOF teams available." : currentLang === "es-ES" ? "No hay equipos SOF disponibles." : "Sem equipes de forças especiais disponíveis."));
+    saveGame(); renderGame(); return;
+  }
+  g.finance -= cost.finance;
+  g.industry -= cost.industry;
+  g.energy -= cost.energy;
+
+  if (kind === "train") {
+    so.teams = clamp(so.teams + 1, 0, 20);
+    so.readiness = clamp(so.readiness + randomInt(8, 16), 0, 120);
+    so.stealth = clamp(so.stealth + randomInt(4, 10), 0, 120);
+    so.exposure = clamp(so.exposure - randomInt(1, 4), 0, 100);
+    const text = `${t("special.train", "Treinar forças especiais")}: +1 equipe SOF, prontidão e furtividade melhoradas.`;
+    recordSpecialHistory(kind, null, text, true, -2);
+    g.events.push(eventText("sistema", text));
+    saveGame(); renderGame(); activatePanel("panelSpecial"); return;
+  }
+
+  so.teams = Math.max(0, so.teams - 1);
+  const intel = ensureIntelSystem();
+  const gov = ensureGovernanceSystem();
+  const staff = ensureStaffSystem();
+  const ai = g.aiWorld?.find(a => a.id === target.id);
+  const rel = g.relations?.find(r => r.id === target.id);
+  const basePower = so.readiness + so.stealth + (intel.confidence || 0) / 2 + staffBonus("intel") + cabinetBonus("defense") + randomInt(-18, 22);
+  const difficulty = (target.military || 40) + (ai?.readiness || 40) / 2 + (target.intel || 30) / 3 + (kind === "capture" ? 22 : kind === "falseFlag" ? 18 : kind === "rescue" ? 12 : 0);
+  const success = basePower >= difficulty;
+  const exposureDelta = success ? randomInt(2, 8) : randomInt(10, 24);
+  so.exposure = clamp(so.exposure + exposureDelta - Math.round(so.stealth / 55), 0, 100);
+  so.readiness = clamp(so.readiness - randomInt(3, 9), 0, 120);
+  so.stealth = clamp(so.stealth - (success ? randomInt(0, 3) : randomInt(2, 7)), 0, 120);
+
+  let text = "";
+  if (success && kind === "recon") {
+    intel.confidence = clamp(intel.confidence + randomInt(6, 14), 0, 160);
+    intel.fog = clamp(intel.fog - randomInt(8, 16), 0, 100);
+    if (ai) ai.readiness = clamp(ai.readiness - randomInt(1, 4), 1, 100);
+    text = `${target.name}: reconhecimento infiltrado revelou alvos e rotas sensíveis.`;
+  } else if (success && kind === "sabotage") {
+    if (ai) { ai.power = clamp(ai.power - randomInt(4, 10), 1, 100); ai.readiness = clamp(ai.readiness - randomInt(3, 8), 1, 100); }
+    g.globalWar.warScore = clamp((g.globalWar.warScore || 0) + 2, 0, 100);
+    text = `${target.name}: sabotagem estratégica reduziu prontidão e capacidade inimiga.`;
+  } else if (success && kind === "rescue") {
+    ensureSocietySystem().support = clamp(ensureSocietySystem().support + randomInt(4, 9), 0, 100);
+    ensureSocietySystem().legitimacy = clamp(ensureSocietySystem().legitimacy + randomInt(2, 6), 0, 100);
+    so.teams = clamp(so.teams + 1, 0, 20);
+    text = `${target.name}: resgate bem-sucedido elevou moral e legitimidade.`;
+  } else if (success && kind === "capture") {
+    if (ai) { ai.hostility = clamp(ai.hostility - randomInt(6, 14), 0, 100); ai.power = clamp(ai.power - randomInt(3, 8), 1, 100); }
+    if (rel) rel.tension = clamp(rel.tension - randomInt(2, 6), 0, 100);
+    text = `${target.name}: alvo-chave capturado, cadeia adversária enfraquecida.`;
+  } else if (success && kind === "falseFlag") {
+    if (ai) ai.hostility = clamp(ai.hostility + randomInt(2, 7), 0, 100);
+    g.worldTension = clamp(g.worldTension + randomInt(1, 4), 0, 100);
+    gov.legalRisk = clamp(gov.legalRisk + randomInt(2, 6), 0, 100);
+    text = `${target.name}: operação negável alterou o ambiente sem guerra aberta.`;
+  } else {
+    so.teams = Math.max(0, so.teams - (Math.random() < .35 ? 1 : 0));
+    g.worldTension = clamp(g.worldTension + randomInt(2, 7), 0, 100);
+    gov.legalRisk = clamp(gov.legalRisk + randomInt(4, 10), 0, 100);
+    ensureSocietySystem().legitimacy = clamp(ensureSocietySystem().legitimacy - randomInt(1, 5), 0, 100);
+    if (rel) rel.tension = clamp(rel.tension + randomInt(3, 8), 0, 100);
+    text = `${target.name}: ${specialMissionLabel(kind)} falhou e gerou risco político.`;
+  }
+
+  recordSpecialHistory(kind, target, text, success, exposureDelta);
+  g.events.push(eventText(success ? "sistema" : "danger", text));
+  if (success) recordBattleScene("recon", target, true, Math.round(basePower), specialMissionLabel(kind), `${Math.round(basePower)}/${Math.round(difficulty)}`);
+  saveGame(); renderGame(); activatePanel("panelSpecial");
+}
+
+function progressSpecialOpsSystem() {
+  const so = ensureSpecialOpsSystem();
+  if (!so) return;
+  const gov = ensureGovernanceSystem();
+  const intel = ensureIntelSystem();
+  so.readiness = clamp(so.readiness + Math.round(gov.authority / 70) + Math.round(staffBonus("ground") / 5) - (so.exposure > 70 ? 2 : 0), 0, 120);
+  so.stealth = clamp(so.stealth + Math.round((intel.confidence || 0) / 90) - (so.exposure > 55 ? 1 : 0), 0, 120);
+  so.exposure = clamp(so.exposure - randomInt(1, 4) + (state.game.worldTension > 70 ? 1 : 0), 0, 100);
+  if (so.exposure > 82 && Math.random() < .25) {
+    ensureGovernanceSystem().legalRisk = clamp(ensureGovernanceSystem().legalRisk + randomInt(2, 6), 0, 100);
+    state.game.events.push(eventText("warn", currentLang === "en-US" ? "Special operations exposure increased legal risk." : currentLang === "es-ES" ? "La exposición de operaciones especiales elevó el riesgo legal." : "Exposição de operações especiais elevou risco legal."));
+  }
+}
+
+function renderSpecialMapOverlays(player) {
+  const so = ensureSpecialOpsSystem();
+  if (!state.map || !state.layers.special || !window.L || !so) return;
+  const origin = getPlayerCountry()?.coords || player.coords;
+  so.operations.slice(0, 8).forEach((op, index) => {
+    if (!op.coords) return;
+    const color = op.success ? "#67f0d0" : "#ff784f";
+    L.polyline([origin, op.coords], { color, weight: 3, opacity: .58, dashArray: "3 10", className: "special-route" }).addTo(state.layers.special)
+      .bindPopup(`<strong>${op.targetFlag || ""} ${op.targetName}</strong><br>${op.label}<br>${op.text}`);
+    const point = interpolateCoords(origin, op.coords, .35 + (index % 3) * .12);
+    const marker = L.divIcon({ className: "", html: `<div class="${op.success ? "marker-special" : "marker-special-risk"}">🪂</div>`, iconSize: [38, 38], iconAnchor: [19, 19] });
+    L.marker(point, { icon: marker }).addTo(state.layers.special).bindPopup(`${op.label}: ${op.success ? t("special.success","Sucesso") : t("special.failure","Falha")}`);
+  });
+}
+
+function renderSpecialPanel() {
+  const panel = $("#specialPanel");
+  if (!panel || !state.game) return;
+  const so = ensureSpecialOpsSystem();
+  const targets = specialTargets(12);
+  panel.innerHTML = `
+    <div class="special-status">
+      <div><small>${t("special.readiness","Prontidão SOF")}</small><strong>${so.readiness}</strong><i><b style="width:${clamp(so.readiness,0,100)}%"></b></i></div>
+      <div><small>${t("special.stealth","Furtividade")}</small><strong>${so.stealth}</strong><i><b style="width:${clamp(so.stealth,0,100)}%"></b></i></div>
+      <div><small>${t("special.exposure","Exposição")}</small><strong>${so.exposure}%</strong><i><b style="width:${clamp(so.exposure,0,100)}%"></b></i></div>
+      <div><small>${t("special.teams","Equipes")}</small><strong>${so.teams}</strong><span>${t("special.mapLayer","Operações especiais")}</span></div>
+    </div>
+    <label class="special-target"><span>${t("special.target","Alvo da missão")}</span>
+      <select id="specialTargetSelect">
+        ${targets.map(c => `<option value="${c.id}" ${c.id === so.selectedTargetId ? "selected" : ""}>${c.flag} ${c.name} · ameaça ${c.threatScore}</option>`).join("")}
+      </select>
+    </label>
+    <div class="special-actions">
+      <button data-special-action="train">🧗 ${t("special.train","Treinar forças especiais")}</button>
+      <button data-special-action="recon">🔭 ${t("special.recon","Reconhecimento infiltrado")}</button>
+      <button data-special-action="sabotage">💣 ${t("special.sabotage","Sabotagem estratégica")}</button>
+      <button data-special-action="rescue">🚁 ${t("special.rescue","Resgate/extração")}</button>
+      <button data-special-action="capture">🎯 ${t("special.capture","Capturar alvo-chave")}</button>
+      <button data-special-action="falseFlag">🕶️ ${t("special.falseFlag","Operação negável")}</button>
+    </div>
+    <section class="special-history">
+      <h3>${t("special.history","Histórico de operações especiais")}</h3>
+      ${so.history.length ? so.history.slice(0,7).map(item => `<article class="${item.success ? "success" : "failure"}"><strong>${item.targetFlag || "🪂"} ${item.label}</strong><span>${item.at} · ${item.targetName || t("special.teams","Equipes")}</span><small>${item.text}</small></article>`).join("") : `<p class="muted">${t("special.noHistory","Nenhuma operação especial registrada.")}</p>`}
+    </section>`;
+  $("#specialTargetSelect")?.addEventListener("change", e => { so.selectedTargetId = e.target.value; saveGame(); renderSpecialPanel(); });
+  $$("#specialPanel [data-special-action]").forEach(btn => btn.addEventListener("click", () => specialAction(btn.dataset.specialAction)));
+}
+
 function makeInitialGame(countryId) {
   const country = state.countries.find(c => c.id === countryId) || state.countries[0];
   const regions = makeRegions(country);
@@ -5172,6 +5416,7 @@ function renderGame() {
   ensureTradeSystem();
   ensureSocietySystem();
   ensureGovernanceSystem();
+  ensureSpecialOpsSystem();
   ensureMapSettings();
   renderSummary();
   renderCommanderGuide();
@@ -5199,6 +5444,7 @@ function renderGame() {
   renderTradePanel();
   renderSocietyPanel();
   renderGovernancePanel();
+  renderSpecialPanel();
   renderMapOpsPanel();
   renderGlobalWar();
   renderAiWorld();
@@ -5281,6 +5527,9 @@ function commanderRecommendation() {
   if (g.month > 1 && (society.support < 42 || society.legitimacy < 40 || society.protests > 55 || society.warWeariness > 62)) return { title: t("rec.society", "Reforçar frente interna"), text: t("rec.societyText", "A opinião pública ou a legitimidade estão sob pressão."), action: "society", panel: "panelSociety" };
   const governance = ensureGovernanceSystem();
   if (g.month > 1 && (governanceScore() < 38 || governance.opposition > 62 || governance.legalRisk > 60 || governance.parliament < 34)) return { title: t("rec.governance", "Estabilizar governo"), text: t("rec.governanceText", "O governo está sob pressão política, legal ou parlamentar."), action: "governance", panel: "panelGovernance" };
+  const specialOps = ensureSpecialOpsSystem();
+  const highThreat = topAiThreats(1)[0];
+  if (g.month > 2 && highThreat && highThreat.hostility > 72 && g.worldTension > 50 && specialOps.teams > 0 && specialOps.exposure < 70) return { title: t("rec.special", "Usar forças especiais"), text: t("rec.specialText", "Há ameaça alta, mas uma operação aberta pode escalar demais."), action: "special", panel: "panelSpecial" };
   const cyberOps = ensureCyberOps();
   const mainThreat = topAiThreats(1)[0];
   const enemyOps = ensureEnemyOffensives();
@@ -5359,6 +5608,7 @@ function renderCommanderGuide() {
       <button id="quickTradeBtn"><b>💱 ${t("guide.trade", "Comércio")}</b><span>${t("guide.tradeSub", "rotas e sanções")}</span></button>
       <button id="quickSocietyBtn"><b>📣 ${t("guide.society", "Sociedade")}</b><span>${t("guide.societySub", "apoio e protestos")}</span></button>
       <button id="quickGovernanceBtn"><b>🏛️ ${t("guide.governance", "Governo")}</b><span>${t("guide.governanceSub", "leis e gabinete")}</span></button>
+      <button id="quickSpecialBtn"><b>🪂 ${t("guide.special", "Especiais")}</b><span>${t("guide.specialSub", "missões sigilosas")}</span></button>
       <button id="quickBuildBtn"><b>🏗️ ${t("guide.build", "Construir")}</b><span>${t("guide.buildSub", "base recomendada")}</span></button>
       <button id="quickProduceBtn"><b>🪖 ${t("guide.produce", "Produzir")}</b><span>${t("guide.produceSub", "melhor unidade")}</span></button>
       <button id="quickLogisticsBtn"><b>🚚 ${t("guide.logistics", "Logística")}</b><span>${t("guide.logisticsSub", "suprir tropas")}</span></button>
@@ -5923,6 +6173,7 @@ function initMap() {
   state.layers.trade = L.layerGroup().addTo(state.map);
   state.layers.society = L.layerGroup().addTo(state.map);
   state.layers.governance = L.layerGroup().addTo(state.map);
+  state.layers.special = L.layerGroup().addTo(state.map);
   state.map.dragging.enable();
   state.map.scrollWheelZoom.enable();
   state.map.doubleClickZoom.enable();
@@ -6002,6 +6253,7 @@ function updateMapLayers() {
   renderTradeMapOverlays(player);
   renderSocietyMapOverlays(player);
   renderGovernanceMapOverlays(player);
+  renderSpecialMapOverlays(player);
   applyMapLayerVisibility();
   if (!state.mapUserMoved && !state.mapAutoCentered) {
     state.map.setView(player.coords, Math.max(state.map.getZoom(), 3), { animate: false });
@@ -6180,6 +6432,7 @@ function advanceMonth() {
   progressTradeSystem();
   progressSocietySystem();
   progressGovernanceSystem();
+  progressSpecialOpsSystem();
   progressConstruction();
   progressProduction();
   progressCyberOps();

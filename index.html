@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
   <meta name="theme-color" content="#050914">
   <meta name="description" content="Modern War Dominion — jogo mobile de dominação militar global com mapa real, bases regionais, produção de unidades e escalada de guerra mundial.">
-  <title>Modern War Dominion — Fase 37</title>
+  <title>Modern War Dominion — Fase 38</title>
   <link rel="manifest" href="manifest.json">
   <link rel="icon" href="assets/img/icon.svg" type="image/svg+xml">
   <link rel="preconnect" href="https://unpkg.com">
@@ -42,7 +42,7 @@
         </select>
         <button class="mini-btn" id="fullscreenBtn" data-i18n="top.fullscreen">Tela cheia</button>
         <button class="mini-btn" id="installBtn" hidden data-i18n="top.install">Instalar</button>
-        <div class="build-chip" data-i18n="phase.label">Fase 37 · v3.7.0</div>
+        <div class="build-chip" data-i18n="phase.label">Fase 38 · v3.8.0</div>
       </div>
     </header>
 
@@ -50,7 +50,7 @@
       <section class="screen screen-active" id="screenHome">
         <div class="home-layout">
           <article class="hero-card glass-panel">
-            <p class="eyebrow" data-i18n="home.eyebrow">Fase 37 — Governo, Gabinete e Leis de Emergência</p>
+            <p class="eyebrow" data-i18n="home.eyebrow">Fase 38 — Operações Especiais e Forças de Elite</p>
             <h1 data-i18n="home.title">Agora a dissuasão estratégica muda o equilíbrio da guerra.</h1>
             <p data-i18n="home.text">A campanha ganha estoque de mísseis, escudo antimíssil, alerta antecipado, ataque convencional de precisão e postura de dissuasão nuclear simulada.</p>
             <div class="hero-actions">
@@ -140,6 +140,7 @@
               <button class="side-tab" data-panel="panelGround" data-i18n="tab.ground">Frente</button>
               <button class="side-tab" data-panel="panelBattle" data-i18n="tab.battle">Batalha</button>
               <button class="side-tab" data-panel="panelIntel" data-i18n="tab.intel">Intel</button>
+              <button class="side-tab" data-panel="panelSpecial" data-i18n="tab.special">Especiais</button>
             </div>
 
             <div class="side-panel is-active" id="panelGuide">
@@ -329,6 +330,12 @@
               <div id="battleReportPanel" class="battle-report-panel"></div>
             </div>
 
+            <div class="side-panel" id="panelSpecial">
+              <h2 data-i18n="special.title">Operações Especiais</h2>
+              <p class="muted" data-i18n="special.text">Treine forças de elite, escolha alvos e execute missões de alto risco com impacto direto em inteligência, guerra e política.</p>
+              <div id="specialPanel" class="special-panel"></div>
+            </div>
+
             <div class="side-panel" id="panelIntel">
               <h2 data-i18n="intel.title">Inteligência Avançada</h2>
               <p class="muted" data-i18n="intel.text">Monitore ameaças, reduza névoa de guerra, melhore confiança de dados e antecipe ofensivas inimigas.</p>
@@ -365,6 +372,7 @@
             <button class="dock-btn" data-panel="panelBattle">📊<span data-i18n="dock.battle">Batalha</span></button>
             <button class="dock-btn" data-panel="panelCyber">🛰️<span data-i18n="dock.cyber">Cyber</span></button>
             <button class="dock-btn" data-panel="panelIntel">🛰️<span data-i18n="dock.intel">Intel</span></button>
+            <button class="dock-btn" data-panel="panelSpecial">🪂<span data-i18n="dock.special">Especiais</span></button>
             <button class="dock-btn" data-panel="panelEconomy">🏭<span data-i18n="dock.economy">Economia</span></button>
             <button class="dock-btn" data-panel="panelGlobal">🌐<span data-i18n="dock.world">Mundo</span></button>
             <button class="dock-btn dock-next" id="dockNextMonthBtn" type="button">⏭️<span data-i18n="dock.month">Mês</span></button>
@@ -374,7 +382,7 @@
 
       <section class="screen" id="screenRoadmap">
         <div class="roadmap glass-panel">
-          <p class="eyebrow" data-i18n="roadmap.eyebrow">Fase 37 — governo de guerra do mapa</p>
+          <p class="eyebrow" data-i18n="roadmap.eyebrow">Fase 38 — forças especiais do mapa</p>
           <h1 data-i18n="roadmap.title">A campanha agora tem controle de camadas, presets visuais e foco rápido para comandar o mapa.</h1>
           <div class="roadmap-grid">
             <article><strong>Fase 9</strong><span>Manutenção, desgaste, baixas, reposição de lotes e custo real de guerra longa.</span></article>

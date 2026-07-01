@@ -1,7 +1,7 @@
 {
   "project": "Modern War Dominion",
-  "version": "3.7.0",
-  "phase": "Fase 37 — Governo, Gabinete e Leis de Emergência",
+  "version": "3.8.0",
+  "phase": "Fase 38 — Operações Especiais e Forças de Elite",
   "generated_at": "2026-06-24",
   "base": "Fase 5 assets integrados",
   "features": [
@@ -12,13 +12,13 @@
     "mapa real preservado"
   ],
   "notes": [
-    "Novo painel Governo e Gabinete",
-    "Sistema de autoridade, parlamento, oposição, corrupção, risco legal e nível de emergência",
-    "Gabinete com ministros de Defesa, Economia, Relações Exteriores, Interior e Indústria",
-    "Ações: lei de emergência, reunião de gabinete, operação anticorrupção, votação de orçamento, briefing diplomático e conselho de segurança",
-    "Governo afeta estabilidade, economia, indústria, defesa, comércio e sociedade",
-    "Nova camada Governo na Sala de Guerra",
-    "Instituições aparecem no mapa real com marcadores de risco político"
+    "Novo painel Operações Especiais",
+    "Sistema de prontidão SOF, furtividade, exposição e equipes de forças especiais",
+    "Ações: treinar forças especiais, reconhecimento infiltrado, sabotagem estratégica, resgate/extração, captura de alvo-chave e operação negável",
+    "Missões especiais afetam IA inimiga, inteligência, sociedade, governo, tensão mundial e risco legal",
+    "Nova camada Especiais na Sala de Guerra",
+    "Rotas e marcadores de operações especiais aparecem no mapa real",
+    "Integração com inteligência, Estado-Maior, governo, sociedade, batalha visual e IA"
   ],
   "countries_count": 249,
   "countries_available": 249,
@@ -157,6 +157,13 @@
     "oposição",
     "corrupção",
     "risco legal",
-    "leis de emergência"
+    "leis de emergência",
+    "operações especiais",
+    "forças de elite",
+    "missões sigilosas",
+    "sabotagem estratégica",
+    "resgate e extração",
+    "captura de alvos",
+    "risco de exposição"
   ]
 }

@@ -1630,3 +1630,44 @@ body:has(#screenWar.screen-active) .nation-confirm-tray{
   .governance-cabinet article{grid-template-columns:34px 1fr;padding:8px}
   .governance-cabinet article>b{width:32px;height:32px}
 }
+
+
+/* Fase 38 — Operações especiais e forças de elite */
+.special-panel{display:grid;gap:12px}
+.special-status{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.special-status>div{border:1px solid rgba(155,124,255,.24);border-radius:16px;background:linear-gradient(145deg,rgba(45,32,94,.22),rgba(7,12,20,.48));padding:10px}
+.special-status small{display:block;color:#cbbcff;text-transform:uppercase;letter-spacing:.11em;font-size:.58rem;font-weight:900}
+.special-status strong{display:block;font-size:1rem;color:#cbbcff;margin:3px 0}
+.special-status span{display:block;color:#d7e6f4;font-size:.64rem}
+.special-status i{display:block;height:7px;border-radius:999px;background:rgba(255,255,255,.08);overflow:hidden}
+.special-status b{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,#9b7cff,#67f0d0,#ffd166)}
+.special-target{display:grid;gap:6px;border:1px solid rgba(255,255,255,.09);background:rgba(255,255,255,.035);padding:10px;border-radius:16px}
+.special-target span{font-size:.66rem;text-transform:uppercase;letter-spacing:.08em;color:#cbbcff;font-weight:900}
+.special-target select{width:100%;border:1px solid rgba(155,124,255,.26);background:rgba(4,10,18,.62);color:var(--text);border-radius:12px;padding:10px}
+.special-actions{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.special-actions button{min-height:54px;text-align:left;border-radius:16px;background:rgba(7,12,20,.58);border:1px solid rgba(155,124,255,.22);padding:10px;color:var(--text);font-weight:900}
+.special-actions button:active{transform:scale(.98)}
+.special-history{display:grid;gap:8px}
+.special-history h3{font-size:.9rem;margin:2px 0}
+.special-history article{border:1px solid rgba(255,255,255,.08);border-radius:14px;background:rgba(255,255,255,.035);padding:9px}
+.special-history article.success{border-color:rgba(103,240,208,.28)}
+.special-history article.failure{border-color:rgba(255,120,79,.30)}
+.special-history strong{display:block;font-size:.8rem}
+.special-history span,.special-history small{display:block;color:#d7e6f4;font-size:.64rem;margin-top:3px}
+.marker-special{display:grid;place-items:center;width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,#271f54,#9b7cff);color:#fff;border:2px solid rgba(255,255,255,.68);box-shadow:0 0 28px rgba(155,124,255,.70),0 12px 26px rgba(0,0,0,.45);font-size:1.12rem;animation:specialPulse 1.15s ease-in-out infinite alternate}
+.marker-special-risk{display:grid;place-items:center;width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,#4b120c,#ff784f);color:#fff;border:2px solid rgba(255,255,255,.68);box-shadow:0 0 28px rgba(255,120,79,.70),0 12px 26px rgba(0,0,0,.45);font-size:1.12rem;animation:specialRiskPulse 1s ease-in-out infinite alternate}
+.leaflet-overlay-pane path.special-route{animation:tacticalDash 1s linear infinite;filter:drop-shadow(0 0 8px rgba(155,124,255,.55))}
+@keyframes specialPulse{0%{transform:scale(.92)}100%{transform:scale(1.08)}}
+@keyframes specialRiskPulse{0%{transform:scale(.92) rotate(-4deg)}100%{transform:scale(1.08) rotate(4deg)}}
+@media(max-width:980px){
+  .special-status{grid-template-columns:1fr}
+  .special-actions{grid-template-columns:1fr}
+}
+@media(max-height:560px){
+  .special-status{grid-template-columns:repeat(4,1fr);gap:6px}
+  .special-status>div{padding:7px;border-radius:12px}
+  .special-status small{font-size:.48rem}
+  .special-status strong{font-size:.72rem}
+  .special-actions{grid-template-columns:repeat(6,1fr);gap:6px}
+  .special-actions button{min-height:40px;font-size:.53rem;padding:6px;border-radius:11px}
+}
