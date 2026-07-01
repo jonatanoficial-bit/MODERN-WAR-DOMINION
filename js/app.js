@@ -1,5 +1,5 @@
-const VERSION = "3.8.0";
-const PHASE = "Fase 38 — operações especiais e forças de elite";
+const VERSION = "4.0.0";
+const PHASE = "Fase 40 — crises humanitárias refugiados e direito internacional";
 const SAVE_KEY = "MWD_SAVE_F17";
 
 const $ = (sel, root = document) => root.querySelector(sel);
@@ -14,7 +14,7 @@ const state = {
   map: null,
   mapUserMoved: false,
   mapAutoCentered: false,
-  layers: { countries: null, regions: null, bases: null, threats: null, fronts: null, airOps: null, navalOps: null, missiles: null, logistics: null, tactical: null, battleEffects: null, weather: null, intel: null, tech: null, industry: null, trade: null, society: null, governance: null, special: null },
+  layers: { countries: null, regions: null, bases: null, threats: null, fronts: null, airOps: null, navalOps: null, missiles: null, logistics: null, tactical: null, battleEffects: null, weather: null, intel: null, tech: null, industry: null, trade: null, society: null, governance: null, special: null, occupation: null, humanitarian: null },
   arsenalFilter: "Todos"
 };
 
@@ -3604,7 +3604,9 @@ function makeMapSettings() {
     trade: true,
     society: true,
     governance: true,
-    special: true
+    special: true,
+    occupation: true,
+    humanitarian: true
   };
 }
 
@@ -3638,7 +3640,9 @@ function mapLayerMeta() {
     ["trade", t("mapops.trade", "Comércio"), "💱"],
     ["society", t("mapops.society", "Sociedade"), "📣"],
     ["governance", t("mapops.governance", "Governo"), "🏛️"],
-    ["special", t("mapops.special", "Especiais"), "🪂"]
+    ["special", t("mapops.special", "Especiais"), "🪂"],
+    ["occupation", t("mapops.occupation", "Ocupação"), "🏛️"],
+    ["humanitarian", t("mapops.humanitarian", "Humanitário"), "⛑️"]
   ];
 }
 
@@ -3743,6 +3747,16 @@ function focusMap(kind) {
     ensureSpecialOpsSystem()?.operations?.forEach(op => { if (op.coords) coords.push(op.coords); });
     if (coords.length < 2) specialTargets(4).forEach(t => coords.push(t.coords));
   }
+  if (kind === "occupation") {
+    occupiedFronts().forEach(f => { if (f.coords) coords.push(f.coords); else { const c = getCountry(f.targetId); if (c) coords.push(c.coords); } });
+    if (!coords.length) coords.push(player.coords);
+  }
+  if (kind === "humanitarian") {
+    ensureHumanitarianSystem()?.incidents?.forEach(i => { if (i.coords) coords.push(i.coords); });
+    occupiedFronts().slice(0,4).forEach(f => { if (f.coords) coords.push(f.coords); });
+    if (!coords.length) ["capital","border","industrial"].forEach(id => { const r = getRegion(id); if (r) coords.push(r.coords); });
+    if (!coords.length) coords.push(player.coords);
+  }
   mapFitCoords(coords.length ? coords : [player.coords], kind === "player" ? 4 : 3);
 }
 
@@ -3773,6 +3787,11 @@ function mapOpsIntelText() {
   if (governance) parts.push(`${t("mapops.governance", "Governo").toLowerCase()} ${governanceScore()}`);
   const special = ensureSpecialOpsSystem();
   if (special) parts.push(`${t("mapops.special", "Especiais").toLowerCase()} ${special.readiness}/${special.exposure}`);
+  const occupation = ensureOccupationSystem();
+  const zones = occupiedFronts();
+  if (occupation && zones.length) parts.push(`${t("mapops.occupation", "Ocupação").toLowerCase()} ${zones.length}`);
+  const humanitarian = ensureHumanitarianSystem();
+  if (humanitarian) parts.push(`${t("mapops.humanitarian", "Humanitário").toLowerCase()} ${humanitarianRiskScore()}`);
   return parts.length ? parts.join(" · ") : `${activeLayers} ${t("mapops.activeLayers", "Camadas ativas").toLowerCase()}`;
 }
 
@@ -3810,6 +3829,8 @@ function renderMapOpsPanel() {
         <button data-map-focus="society">📣 ${t("mapops.society", "Sociedade")}</button>
         <button data-map-focus="governance">🏛️ ${t("mapops.governance", "Governo")}</button>
         <button data-map-focus="special">🪂 ${t("mapops.special", "Especiais")}</button>
+        <button data-map-focus="occupation">🏛️ ${t("mapops.occupation", "Ocupação")}</button>
+        <button data-map-focus="humanitarian">⛑️ ${t("mapops.humanitarian", "Humanitário")}</button>
       </div>
     </section>
     <section class="mapops-layers">
@@ -5209,6 +5230,503 @@ function renderSpecialPanel() {
   $$("#specialPanel [data-special-action]").forEach(btn => btn.addEventListener("click", () => specialAction(btn.dataset.specialAction)));
 }
 
+
+function makeOccupationSystem() {
+  return {
+    selectedFrontId: null,
+    administration: 22,
+    legitimacy: 34,
+    history: []
+  };
+}
+
+function ensureOccupationSystem() {
+  if (!state.game) return null;
+  if (!state.game.occupationSystem) state.game.occupationSystem = makeOccupationSystem();
+  const os = state.game.occupationSystem;
+  if (!Array.isArray(os.history)) os.history = [];
+  os.administration = clamp(os.administration ?? 22, 0, 160);
+  os.legitimacy = clamp(os.legitimacy ?? 34, 0, 100);
+  occupiedFronts().forEach(ensureOccupationFrontFields);
+  if (!os.selectedFrontId || !occupiedFronts().find(f => f.id === os.selectedFrontId)) {
+    os.selectedFrontId = occupiedFronts()[0]?.id || null;
+  }
+  return os;
+}
+
+function occupiedFronts() {
+  const gw = ensureGroundWar();
+  return (gw?.fronts || []).filter(f => f.status === "occupied" || f.progress >= 100);
+}
+
+function ensureOccupationFrontFields(front) {
+  if (!front) return null;
+  front.control = clamp(front.control ?? randomInt(34, 58), 0, 100);
+  front.stability = clamp(front.stability ?? randomInt(28, 52), 0, 100);
+  front.infrastructure = clamp(front.infrastructure ?? randomInt(35, 70), 0, 100);
+  front.garrison = clamp(front.garrison ?? 15, 0, 140);
+  front.localSupport = clamp(front.localSupport ?? 30, 0, 100);
+  front.sabotageRisk = clamp(front.sabotageRisk ?? Math.max(12, front.resistance ?? 35), 0, 100);
+  front.resourceYield = clamp(front.resourceYield ?? 12, 0, 100);
+  front.occupationMonths = Math.max(0, front.occupationMonths || 0);
+  front.status = "occupied";
+  front.progress = 100;
+  return front;
+}
+
+function occupationLevelLabel(front) {
+  if (!front) return "—";
+  if (front.control > 78 && front.stability > 65 && front.sabotageRisk < 35) return currentLang === "en-US" ? "secured" : currentLang === "es-ES" ? "asegurada" : "segura";
+  if (front.sabotageRisk > 65 || front.stability < 32) return currentLang === "en-US" ? "unstable" : currentLang === "es-ES" ? "inestable" : "instável";
+  if (front.control < 45) return currentLang === "en-US" ? "fragile" : currentLang === "es-ES" ? "frágil" : "frágil";
+  return currentLang === "en-US" ? "controlled" : currentLang === "es-ES" ? "controlada" : "controlada";
+}
+
+function selectedOccupiedFront() {
+  const os = ensureOccupationSystem();
+  const fronts = occupiedFronts();
+  return fronts.find(f => f.id === os.selectedFrontId) || fronts[0] || null;
+}
+
+function occupationCost(kind) {
+  return {
+    administration: { finance: 42, industry: 8, energy: 6, food: 0 },
+    garrison: { finance: 56, industry: 18, energy: 12, soldiers: 600 },
+    aid: { finance: 62, industry: 10, energy: 6, food: 55 },
+    intel: { finance: 38, industry: 6, energy: 10, intel: 0 },
+    repair: { finance: 70, industry: 42, energy: 22, food: 0 },
+    negotiate: { finance: 34, industry: 4, energy: 4, food: 18 }
+  }[kind] || { finance: 30, industry: 4, energy: 4, food: 0 };
+}
+
+function canPayOccupation(cost) {
+  const g = state.game;
+  return g.finance >= (cost.finance || 0) && g.industry >= (cost.industry || 0) && g.energy >= (cost.energy || 0) && g.food >= (cost.food || 0) && g.soldiers >= (cost.soldiers || 0);
+}
+
+function payOccupation(cost) {
+  const g = state.game;
+  g.finance -= cost.finance || 0;
+  g.industry -= cost.industry || 0;
+  g.energy -= cost.energy || 0;
+  g.food -= cost.food || 0;
+  g.soldiers -= cost.soldiers || 0;
+}
+
+function recordOccupationHistory(kind, front, text) {
+  const os = ensureOccupationSystem();
+  os.history.unshift({
+    id: cryptoId(),
+    kind,
+    targetId: front?.targetId,
+    targetName: front?.targetName || "",
+    text,
+    control: front?.control ?? 0,
+    stability: front?.stability ?? 0,
+    sabotageRisk: front?.sabotageRisk ?? 0,
+    at: `${monthNames[state.game.month % 12]}/${state.game.year}`
+  });
+  os.history = os.history.slice(0, 12);
+}
+
+function occupationAction(kind, frontId = null) {
+  const g = state.game;
+  const os = ensureOccupationSystem();
+  const front = occupiedFronts().find(f => f.id === (frontId || $("#occupationFrontSelect")?.value || os.selectedFrontId)) || selectedOccupiedFront();
+  if (!front) {
+    g.events.push(eventText("warn", t("occupation.noZones", "Nenhuma zona ocupada ainda.")));
+    renderOccupationPanel();
+    return;
+  }
+  os.selectedFrontId = front.id;
+  ensureOccupationFrontFields(front);
+  const cost = occupationCost(kind);
+  if (!canPayOccupation(cost)) {
+    g.events.push(eventText("warn", currentLang === "en-US" ? "Insufficient resources for occupation action." : currentLang === "es-ES" ? "Recursos insuficientes para acción de ocupación." : "Recursos insuficientes para ação de ocupação."));
+    saveGame(); renderGame(); return;
+  }
+  payOccupation(cost);
+  let text = "";
+
+  if (kind === "administration") {
+    front.control = clamp(front.control + randomInt(6, 12) + Math.round(governanceScore() / 45), 0, 100);
+    front.stability = clamp(front.stability + randomInt(3, 8), 0, 100);
+    front.sabotageRisk = clamp(front.sabotageRisk - randomInt(2, 6), 0, 100);
+    os.administration = clamp(os.administration + randomInt(4, 9), 0, 160);
+    text = `${front.targetName}: ${t("occupation.administration", "Administração civil")} ampliou controle territorial.`;
+  }
+  if (kind === "garrison") {
+    front.garrison = clamp(front.garrison + randomInt(10, 20), 0, 140);
+    front.control = clamp(front.control + randomInt(4, 9), 0, 100);
+    front.sabotageRisk = clamp(front.sabotageRisk - randomInt(6, 13), 0, 100);
+    front.resistance = clamp(front.resistance - randomInt(3, 7), 0, 100);
+    text = `${front.targetName}: ${t("occupation.garrisonAction", "Reforçar guarnição")} reduziu sabotagem.`;
+  }
+  if (kind === "aid") {
+    front.localSupport = clamp(front.localSupport + randomInt(8, 16), 0, 100);
+    front.stability = clamp(front.stability + randomInt(5, 12), 0, 100);
+    front.sabotageRisk = clamp(front.sabotageRisk - randomInt(4, 10), 0, 100);
+    front.resistance = clamp(front.resistance - randomInt(4, 9), 0, 100);
+    ensureSocietySystem().legitimacy = clamp(ensureSocietySystem().legitimacy + 1, 0, 100);
+    text = `${front.targetName}: ${t("occupation.aid", "Ajuda humanitária")} melhorou apoio local.`;
+  }
+  if (kind === "intel") {
+    const intel = ensureIntelSystem();
+    front.sabotageRisk = clamp(front.sabotageRisk - randomInt(8, 18) - Math.round((intel.confidence || 0) / 70), 0, 100);
+    front.resistance = clamp(front.resistance - randomInt(3, 8), 0, 100);
+    intel.confidence = clamp((intel.confidence || 0) + 2, 0, 160);
+    text = `${front.targetName}: ${t("occupation.intel", "Caçar células")} neutralizou redes clandestinas.`;
+  }
+  if (kind === "repair") {
+    front.infrastructure = clamp(front.infrastructure + randomInt(12, 24), 0, 100);
+    front.resourceYield = clamp(front.resourceYield + randomInt(6, 14), 0, 100);
+    front.stability = clamp(front.stability + randomInt(2, 6), 0, 100);
+    text = `${front.targetName}: ${t("occupation.repair", "Reconstruir infraestrutura")} recuperou produção local.`;
+  }
+  if (kind === "negotiate") {
+    const chance = front.localSupport + os.legitimacy + governanceScore() - front.resistance + randomInt(-20, 20);
+    if (chance > 45) {
+      front.localSupport = clamp(front.localSupport + randomInt(7, 14), 0, 100);
+      front.resistance = clamp(front.resistance - randomInt(8, 16), 0, 100);
+      front.stability = clamp(front.stability + randomInt(5, 10), 0, 100);
+      text = `${front.targetName}: ${t("occupation.negotiate", "Negociar lideranças")} reduziu resistência.`;
+    } else {
+      front.sabotageRisk = clamp(front.sabotageRisk + randomInt(4, 10), 0, 100);
+      front.control = clamp(front.control - randomInt(2, 6), 0, 100);
+      text = `${front.targetName}: negociação falhou e células locais ganharam fôlego.`;
+    }
+  }
+
+  front.status = "occupied";
+  recordOccupationHistory(kind, front, text);
+  g.events.push(eventText("sistema", text));
+  saveGame(); renderGame(); activatePanel("panelOccupation");
+}
+
+function progressOccupationSystem() {
+  const g = state.game;
+  const os = ensureOccupationSystem();
+  if (!os) return;
+  occupiedFronts().forEach(front => {
+    ensureOccupationFrontFields(front);
+    front.occupationMonths += 1;
+    const weather = regionWeather("border");
+    const weatherPressure = weather?.severity > 55 ? 2 : 0;
+    const governance = Math.round(governanceScore() / 45);
+    const social = Math.round(ensureSocietySystem().legitimacy / 55);
+    front.control = clamp(front.control + governance + Math.round(front.garrison / 45) - Math.round(front.resistance / 40) - weatherPressure, 0, 100);
+    front.stability = clamp(front.stability + social + Math.round(front.infrastructure / 60) + Math.round(front.localSupport / 55) - Math.round(front.sabotageRisk / 45), 0, 100);
+    front.sabotageRisk = clamp(front.sabotageRisk + Math.round(front.resistance / 35) - Math.round((front.control + front.garrison + front.localSupport) / 85) + weatherPressure, 0, 100);
+    front.resourceYield = clamp(front.resourceYield + Math.round(front.infrastructure / 55) + Math.round(front.control / 75) - (front.sabotageRisk > 65 ? 2 : 0), 0, 100);
+    front.resistance = clamp(front.resistance + randomInt(-3, 3) - Math.round(front.localSupport / 65) - Math.round(front.garrison / 80), 0, 100);
+
+    if (front.sabotageRisk > 70 && Math.random() < .32) {
+      const loss = randomInt(8, 24);
+      front.infrastructure = clamp(front.infrastructure - loss, 0, 100);
+      front.control = clamp(front.control - randomInt(3, 9), 0, 100);
+      g.finance = Math.max(0, g.finance - randomInt(8, 22));
+      g.events.push(eventText("danger", `${front.targetName}: sabotagem danificou infraestrutura ocupada.`));
+      recordOccupationHistory("sabotage", front, `${front.targetName}: sabotagem reduziu infraestrutura em ${loss}.`);
+    }
+
+    if (front.control > 62 && front.infrastructure > 48 && front.resourceYield > 25) {
+      const income = Math.round(front.resourceYield / 10);
+      g.finance += income;
+      g.industry += Math.max(1, Math.round(income / 2));
+      if (front.resourceYield > 55) g.energy += 1;
+    }
+
+    if (front.control < 22 || front.sabotageRisk > 92) {
+      front.status = "contested";
+      front.progress = 88;
+      g.events.push(eventText("warn", `${front.targetName}: controle de ocupação colapsou e a frente voltou a ficar contestada.`));
+    } else {
+      front.status = "occupied";
+      front.progress = 100;
+    }
+  });
+}
+
+function occupationBar(label, value) {
+  return `<div class="occupation-bar"><div><span>${label}</span><strong>${value}</strong></div><i><b style="width:${clamp(value,0,100)}%"></b></i></div>`;
+}
+
+function renderOccupationMapOverlays(player) {
+  const os = ensureOccupationSystem();
+  if (!state.map || !state.layers.occupation || !window.L || !os) return;
+  occupiedFronts().forEach(front => {
+    ensureOccupationFrontFields(front);
+    const target = getCountry(front.targetId);
+    const coords = front.coords || target?.coords || player.coords;
+    const risk = front.sabotageRisk > 62 || front.stability < 34;
+    const icon = L.divIcon({ className: "", html: `<div class="${risk ? "marker-occupation-risk" : "marker-occupation"}">🏛️</div>`, iconSize: [40, 40], iconAnchor: [20, 20] });
+    L.marker(coords, { icon }).addTo(state.layers.occupation).bindPopup(`<strong>${target?.flag || ""} ${front.targetName}</strong><br>${occupationLevelLabel(front)}<br>${t("occupation.control","Controle")}: ${front.control}% · ${t("occupation.sabotage","Sabotagem")}: ${front.sabotageRisk}%`);
+    L.circle(coords, { radius: 65000 + front.control * 900, color: risk ? "#ff784f" : "#67f0d0", fillColor: risk ? "#ff784f" : "#67f0d0", fillOpacity: .055, opacity: .34, weight: 2, className: risk ? "occupation-risk-ring" : "occupation-ring" }).addTo(state.layers.occupation);
+  });
+}
+
+function renderOccupationPanel() {
+  const panel = $("#occupationPanel");
+  if (!panel || !state.game) return;
+  const os = ensureOccupationSystem();
+  const fronts = occupiedFronts().map(ensureOccupationFrontFields).filter(Boolean);
+  const selected = selectedOccupiedFront();
+  panel.innerHTML = `
+    <div class="occupation-overview">
+      <div><small>${t("occupation.administration","Administração civil")}</small><strong>${os.administration}</strong></div>
+      <div><small>${t("occupation.localSupport","Apoio local")}</small><strong>${Math.round(fronts.reduce((s,f)=>s+f.localSupport,0)/Math.max(1,fronts.length))}</strong></div>
+      <div><small>${t("occupation.sabotage","Sabotagem")}</small><strong>${Math.round(fronts.reduce((s,f)=>s+f.sabotageRisk,0)/Math.max(1,fronts.length))}%</strong></div>
+    </div>
+    ${fronts.length ? `
+      <label class="occupation-target"><span>${t("occupation.mapLayer","Ocupação")}</span>
+        <select id="occupationFrontSelect">
+          ${fronts.map(f => `<option value="${f.id}" ${selected?.id === f.id ? "selected" : ""}>${f.targetName} · ${occupationLevelLabel(f)}</option>`).join("")}
+        </select>
+      </label>
+      ${selected ? `<section class="occupation-card">
+        <div class="occupation-title"><strong>${selected.targetName}</strong><span>${occupationLevelLabel(selected)}</span></div>
+        ${occupationBar(t("occupation.control","Controle"), selected.control)}
+        ${occupationBar(t("occupation.stability","Estabilidade"), selected.stability)}
+        ${occupationBar(t("occupation.resistance","Resistência"), selected.resistance)}
+        ${occupationBar(t("occupation.infrastructure","Infraestrutura"), selected.infrastructure)}
+        ${occupationBar(t("occupation.garrison","Guarnição"), selected.garrison)}
+        ${occupationBar(t("occupation.localSupport","Apoio local"), selected.localSupport)}
+        ${occupationBar(t("occupation.sabotage","Sabotagem"), selected.sabotageRisk)}
+        ${occupationBar(t("occupation.yield","Rendimento"), selected.resourceYield)}
+      </section>` : ""}
+      <div class="occupation-actions">
+        <button data-occupation-action="administration">🏛️ ${t("occupation.administration","Administração civil")}</button>
+        <button data-occupation-action="garrison">🪖 ${t("occupation.garrisonAction","Reforçar guarnição")}</button>
+        <button data-occupation-action="aid">🤲 ${t("occupation.aid","Ajuda humanitária")}</button>
+        <button data-occupation-action="intel">🛰️ ${t("occupation.intel","Caçar células")}</button>
+        <button data-occupation-action="repair">🏗️ ${t("occupation.repair","Reconstruir infraestrutura")}</button>
+        <button data-occupation-action="negotiate">🤝 ${t("occupation.negotiate","Negociar lideranças")}</button>
+      </div>` : `<p class="muted">${t("occupation.noZones","Nenhuma zona ocupada ainda. Avance uma frente terrestre até 100% para ocupar território.")}</p>`}
+    <section class="occupation-history">
+      <h3>${t("occupation.history","Histórico de ocupação")}</h3>
+      ${os.history.length ? os.history.slice(0,7).map(item => `<article><strong>${item.targetName || item.kind}</strong><span>${item.at} · ${item.text}</span><small>${t("occupation.control","Controle")}: ${item.control}% · ${t("occupation.sabotage","Sabotagem")}: ${item.sabotageRisk}%</small></article>`).join("") : `<p class="muted">${t("occupation.noHistory","Nenhuma ação de ocupação registrada.")}</p>`}
+    </section>`;
+  $("#occupationFrontSelect")?.addEventListener("change", e => { os.selectedFrontId = e.target.value; saveGame(); renderOccupationPanel(); });
+  $$("#occupationPanel [data-occupation-action]").forEach(btn => btn.addEventListener("click", () => occupationAction(btn.dataset.occupationAction)));
+}
+
+
+function makeHumanitarianSystem() {
+  return {
+    civiliansAffected: 0,
+    refugees: 0,
+    access: 52,
+    legalCompliance: 68,
+    legalRisk: 12,
+    ngoTrust: 46,
+    externalPressure: 18,
+    history: [],
+    incidents: []
+  };
+}
+
+function ensureHumanitarianSystem() {
+  if (!state.game) return null;
+  if (!state.game.humanitarianSystem) state.game.humanitarianSystem = makeHumanitarianSystem();
+  const hs = state.game.humanitarianSystem;
+  if (!Array.isArray(hs.history)) hs.history = [];
+  if (!Array.isArray(hs.incidents)) hs.incidents = [];
+  hs.civiliansAffected = Math.max(0, Math.round(hs.civiliansAffected || 0));
+  hs.refugees = Math.max(0, Math.round(hs.refugees || 0));
+  hs.access = clamp(hs.access ?? 52, 0, 140);
+  hs.legalCompliance = clamp(hs.legalCompliance ?? 68, 0, 100);
+  hs.legalRisk = clamp(hs.legalRisk ?? 12, 0, 100);
+  hs.ngoTrust = clamp(hs.ngoTrust ?? 46, 0, 100);
+  hs.externalPressure = clamp(hs.externalPressure ?? 18, 0, 100);
+  return hs;
+}
+
+function humanitarianRiskScore() {
+  const hs = ensureHumanitarianSystem();
+  if (!hs) return 0;
+  return clamp(Math.round(hs.legalRisk * .38 + hs.externalPressure * .28 + hs.refugees / 85 + hs.civiliansAffected / 120 - hs.access * .18 - hs.legalCompliance * .22 - hs.ngoTrust * .12), 0, 100);
+}
+
+function recordHumanitarianHistory(kind, text, coords = null, success = true) {
+  const hs = ensureHumanitarianSystem();
+  const item = {
+    id: cryptoId(),
+    kind,
+    text,
+    coords,
+    success,
+    at: `${monthNames[state.game.month % 12]}/${state.game.year}`
+  };
+  hs.history.unshift(item);
+  hs.history = hs.history.slice(0, 12);
+  if (coords) {
+    hs.incidents.unshift(item);
+    hs.incidents = hs.incidents.slice(0, 10);
+  }
+}
+
+function humanitarianCost(kind) {
+  return {
+    corridor: { finance: 48, industry: 10, energy: 10, food: 40 },
+    medical: { finance: 58, industry: 18, energy: 14, food: 30 },
+    refugeeCamp: { finance: 64, industry: 24, energy: 16, food: 70 },
+    observers: { finance: 24, industry: 4, energy: 4, food: 0 },
+    investigate: { finance: 34, industry: 6, energy: 6, food: 0 },
+    unAppeal: { finance: 42, industry: 2, energy: 4, food: 0 }
+  }[kind] || { finance: 30, industry: 4, energy: 4, food: 0 };
+}
+
+function canPayHumanitarian(cost) {
+  const g = state.game;
+  return g.finance >= (cost.finance || 0) && g.industry >= (cost.industry || 0) && g.energy >= (cost.energy || 0) && g.food >= (cost.food || 0);
+}
+
+function payHumanitarian(cost) {
+  const g = state.game;
+  g.finance -= cost.finance || 0;
+  g.industry -= cost.industry || 0;
+  g.energy -= cost.energy || 0;
+  g.food -= cost.food || 0;
+}
+
+function humanitarianAction(kind) {
+  const g = state.game;
+  const hs = ensureHumanitarianSystem();
+  const cost = humanitarianCost(kind);
+  if (!canPayHumanitarian(cost)) {
+    g.events.push(eventText("warn", currentLang === "en-US" ? "Insufficient resources for humanitarian action." : currentLang === "es-ES" ? "Recursos insuficientes para acción humanitaria." : "Recursos insuficientes para ação humanitária."));
+    saveGame(); renderGame(); return;
+  }
+  payHumanitarian(cost);
+  let text = "";
+  const crisisFront = occupiedFronts().sort((a,b) => (b.sabotageRisk || 0) - (a.sabotageRisk || 0))[0];
+  const crisisCoords = crisisFront?.coords || getRegion("border")?.coords || getPlayerCountry()?.coords;
+
+  if (kind === "corridor") {
+    hs.access = clamp(hs.access + randomInt(10, 20), 0, 140);
+    hs.refugees = Math.max(0, hs.refugees - randomInt(20, 55));
+    hs.externalPressure = clamp(hs.externalPressure - randomInt(4, 10), 0, 100);
+    if (crisisFront) crisisFront.localSupport = clamp(crisisFront.localSupport + randomInt(3, 8), 0, 100);
+    text = `${t("humanitarian.corridor", "Abrir corredor humanitário")}: evacuação e acesso de ajuda ampliados.`;
+  }
+  if (kind === "medical") {
+    hs.civiliansAffected = Math.max(0, hs.civiliansAffected - randomInt(35, 90));
+    hs.ngoTrust = clamp(hs.ngoTrust + randomInt(5, 12), 0, 100);
+    hs.legalCompliance = clamp(hs.legalCompliance + randomInt(2, 6), 0, 100);
+    ensureSocietySystem().legitimacy = clamp(ensureSocietySystem().legitimacy + 1, 0, 100);
+    text = `${t("humanitarian.medical", "Hospitais de campanha")}: civis afetados foram atendidos.`;
+  }
+  if (kind === "refugeeCamp") {
+    hs.refugees = Math.max(0, hs.refugees - randomInt(45, 120));
+    hs.ngoTrust = clamp(hs.ngoTrust + randomInt(4, 10), 0, 100);
+    ensureSocietySystem().protests = clamp(ensureSocietySystem().protests - randomInt(1, 4), 0, 100);
+    text = `${t("humanitarian.refugeeCamp", "Acolher refugiados")}: abrigo e registro reduziram pressão social.`;
+  }
+  if (kind === "observers") {
+    hs.legalCompliance = clamp(hs.legalCompliance + randomInt(7, 14), 0, 100);
+    hs.ngoTrust = clamp(hs.ngoTrust + randomInt(6, 12), 0, 100);
+    hs.legalRisk = clamp(hs.legalRisk - randomInt(5, 12), 0, 100);
+    ensureGovernanceSystem().legalRisk = clamp(ensureGovernanceSystem().legalRisk - randomInt(2, 6), 0, 100);
+    text = `${t("humanitarian.observers", "Convidar observadores")}: transparência reduziu risco jurídico.`;
+  }
+  if (kind === "investigate") {
+    hs.legalRisk = clamp(hs.legalRisk - randomInt(6, 14), 0, 100);
+    hs.legalCompliance = clamp(hs.legalCompliance + randomInt(4, 9), 0, 100);
+    hs.externalPressure = clamp(hs.externalPressure - randomInt(2, 6), 0, 100);
+    ensureGovernanceSystem().corruption = clamp(ensureGovernanceSystem().corruption - randomInt(1, 4), 0, 100);
+    text = `${t("humanitarian.investigate", "Investigar abusos")}: cadeia de responsabilidade foi reforçada.`;
+  }
+  if (kind === "unAppeal") {
+    hs.externalPressure = clamp(hs.externalPressure - randomInt(6, 14), 0, 100);
+    hs.access = clamp(hs.access + randomInt(3, 9), 0, 140);
+    ensureTradeSystem().marketAccess = clamp(ensureTradeSystem().marketAccess + randomInt(2, 6), 0, 180);
+    g.worldTension = clamp(g.worldTension - randomInt(1, 4), 0, 100);
+    text = `${t("humanitarian.unAppeal", "Apelo à ONU")}: canais multilaterais reduziram pressão externa.`;
+  }
+
+  recordHumanitarianHistory(kind, text, crisisCoords, true);
+  g.events.push(eventText("sistema", text));
+  saveGame(); renderGame(); activatePanel("panelHumanitarian");
+}
+
+function progressHumanitarianSystem() {
+  const g = state.game;
+  const hs = ensureHumanitarianSystem();
+  if (!hs) return;
+  const activeFronts = ensureGroundWar()?.fronts?.filter(f => f.status !== "withdrawn") || [];
+  const occupied = occupiedFronts();
+  const tension = Math.round((g.worldTension || 0) / 30);
+  const warPressure = activeFronts.length * 2 + occupied.length + tension;
+  const sabotagePressure = Math.round(occupied.reduce((sum,f)=>sum + (f.sabotageRisk || 0),0) / Math.max(1, occupied.length * 55));
+  const accessHelp = Math.round(hs.access / 55);
+  const lawHelp = Math.round(hs.legalCompliance / 55);
+
+  hs.civiliansAffected += Math.max(0, warPressure * randomInt(4, 13) + sabotagePressure * 10 - accessHelp * 5);
+  hs.refugees += Math.max(0, activeFronts.length * randomInt(2, 9) + occupied.length * randomInt(1, 5) - Math.round(hs.access / 28));
+  hs.externalPressure = clamp(hs.externalPressure + Math.round((hs.civiliansAffected / 400) + (hs.refugees / 260)) + sabotagePressure - accessHelp, 0, 100);
+  hs.legalRisk = clamp(hs.legalRisk + Math.round((hs.externalPressure + ensureGovernanceSystem().legalRisk) / 80) + (hs.legalCompliance < 45 ? 2 : 0) - lawHelp, 0, 100);
+  hs.ngoTrust = clamp(hs.ngoTrust + Math.round((hs.access + hs.legalCompliance) / 90) - Math.round(hs.legalRisk / 55) - (hs.externalPressure > 70 ? 1 : 0), 0, 100);
+  hs.access = clamp(hs.access - activeFronts.length + Math.round(ensureLogisticsSystem().supplyNetwork / 85) + (ensureTradeSystem().routeSecurity > 55 ? 1 : 0), 0, 140);
+
+  const society = ensureSocietySystem();
+  const gov = ensureGovernanceSystem();
+  if (humanitarianRiskScore() > 62) {
+    society.legitimacy = clamp(society.legitimacy - 1, 0, 100);
+    society.protests = clamp(society.protests + 1, 0, 100);
+    gov.legalRisk = clamp(gov.legalRisk + 1, 0, 100);
+  }
+  if (humanitarianRiskScore() > 78 && Math.random() < .25) {
+    ensureTradeSystem().marketAccess = clamp(ensureTradeSystem().marketAccess - randomInt(2, 7), 0, 180);
+    g.events.push(eventText("warn", currentLang === "en-US" ? "Humanitarian pressure increased sanction risk." : currentLang === "es-ES" ? "La presión humanitaria elevó riesgo de sanciones." : "Pressão humanitária elevou risco de sanções."));
+  }
+}
+
+function renderHumanitarianMapOverlays(player) {
+  const hs = ensureHumanitarianSystem();
+  if (!state.map || !state.layers.humanitarian || !window.L || !hs) return;
+  const origin = getPlayerCountry()?.coords || player.coords;
+  const points = [];
+  occupiedFronts().forEach(f => {
+    points.push({ coords: f.coords || getCountry(f.targetId)?.coords || origin, icon: (f.sabotageRisk || 0) > 60 ? "⚠️" : "⛑️", label: f.targetName, risk: (f.sabotageRisk || 0) > 60 });
+  });
+  if (!points.length) {
+    ["capital","border","industrial"].forEach(id => { const r = getRegion(id); if (r) points.push({ coords: r.coords, icon: id === "border" ? "🧳" : "⛑️", label: r.name, risk: hs.externalPressure > 60 }); });
+  }
+  points.slice(0, 8).forEach(p => {
+    const icon = L.divIcon({ className: "", html: `<div class="${p.risk ? "marker-humanitarian-risk" : "marker-humanitarian"}">${p.icon}</div>`, iconSize: [40, 40], iconAnchor: [20, 20] });
+    L.marker(jitter(p.coords, .22), { icon }).addTo(state.layers.humanitarian).bindPopup(`<strong>${p.label}</strong><br>${t("humanitarian.civilians","Civis afetados")}: ${hs.civiliansAffected}<br>${t("humanitarian.risk","Risco jurídico")}: ${hs.legalRisk}%`);
+    L.circle(p.coords, { radius: 42000 + humanitarianRiskScore() * 900, color: p.risk ? "#ff784f" : "#67f0d0", fillColor: p.risk ? "#ff784f" : "#67f0d0", fillOpacity: .05, opacity: .32, weight: 2, className: p.risk ? "humanitarian-risk-ring" : "humanitarian-ring" }).addTo(state.layers.humanitarian);
+  });
+}
+
+function renderHumanitarianPanel() {
+  const panel = $("#humanitarianPanel");
+  if (!panel || !state.game) return;
+  const hs = ensureHumanitarianSystem();
+  panel.innerHTML = `
+    <div class="humanitarian-status">
+      <div><small>${t("humanitarian.civilians","Civis afetados")}</small><strong>${hs.civiliansAffected}</strong><span>risk ${humanitarianRiskScore()}</span></div>
+      <div><small>${t("humanitarian.refugees","Refugiados")}</small><strong>${hs.refugees}</strong><span>${t("humanitarian.pressure","Pressão externa")}: ${hs.externalPressure}%</span></div>
+      <div><small>${t("humanitarian.access","Acesso humanitário")}</small><strong>${hs.access}</strong><i><b style="width:${clamp(hs.access,0,100)}%"></b></i></div>
+      <div><small>${t("humanitarian.law","Conformidade legal")}</small><strong>${hs.legalCompliance}%</strong><i><b style="width:${hs.legalCompliance}%"></b></i></div>
+      <div><small>${t("humanitarian.risk","Risco jurídico")}</small><strong>${hs.legalRisk}%</strong><i><b style="width:${hs.legalRisk}%"></b></i></div>
+      <div><small>${t("humanitarian.ngo","Confiança de ONGs")}</small><strong>${hs.ngoTrust}%</strong><i><b style="width:${hs.ngoTrust}%"></b></i></div>
+    </div>
+    <div class="humanitarian-actions">
+      <button data-humanitarian-action="corridor">🧭 ${t("humanitarian.corridor","Abrir corredor humanitário")}</button>
+      <button data-humanitarian-action="medical">⛑️ ${t("humanitarian.medical","Hospitais de campanha")}</button>
+      <button data-humanitarian-action="refugeeCamp">🧳 ${t("humanitarian.refugeeCamp","Acolher refugiados")}</button>
+      <button data-humanitarian-action="observers">👁️ ${t("humanitarian.observers","Convidar observadores")}</button>
+      <button data-humanitarian-action="investigate">⚖️ ${t("humanitarian.investigate","Investigar abusos")}</button>
+      <button data-humanitarian-action="unAppeal">🌐 ${t("humanitarian.unAppeal","Apelo à ONU")}</button>
+    </div>
+    <section class="humanitarian-history">
+      <h3>${t("humanitarian.history","Histórico humanitário")}</h3>
+      ${hs.history.length ? hs.history.slice(0,7).map(item => `<article class="${item.success ? "success" : "failure"}"><strong>${item.kind}</strong><span>${item.at} · ${item.text}</span></article>`).join("") : `<p class="muted">${t("humanitarian.noHistory","Nenhuma ação humanitária registrada.")}</p>`}
+    </section>`;
+  $$("#humanitarianPanel [data-humanitarian-action]").forEach(btn => btn.addEventListener("click", () => humanitarianAction(btn.dataset.humanitarianAction)));
+}
+
 function makeInitialGame(countryId) {
   const country = state.countries.find(c => c.id === countryId) || state.countries[0];
   const regions = makeRegions(country);
@@ -5417,6 +5935,8 @@ function renderGame() {
   ensureSocietySystem();
   ensureGovernanceSystem();
   ensureSpecialOpsSystem();
+  ensureOccupationSystem();
+  ensureHumanitarianSystem();
   ensureMapSettings();
   renderSummary();
   renderCommanderGuide();
@@ -5445,6 +5965,8 @@ function renderGame() {
   renderSocietyPanel();
   renderGovernancePanel();
   renderSpecialPanel();
+  renderOccupationPanel();
+  renderHumanitarianPanel();
   renderMapOpsPanel();
   renderGlobalWar();
   renderAiWorld();
@@ -5530,6 +6052,10 @@ function commanderRecommendation() {
   const specialOps = ensureSpecialOpsSystem();
   const highThreat = topAiThreats(1)[0];
   if (g.month > 2 && highThreat && highThreat.hostility > 72 && g.worldTension > 50 && specialOps.teams > 0 && specialOps.exposure < 70) return { title: t("rec.special", "Usar forças especiais"), text: t("rec.specialText", "Há ameaça alta, mas uma operação aberta pode escalar demais."), action: "special", panel: "panelSpecial" };
+  const occRisk = occupiedFronts().find(f => { ensureOccupationFrontFields(f); return f.sabotageRisk > 58 || f.stability < 38 || f.control < 42; });
+  if (g.month > 1 && occRisk) return { title: t("rec.occupation", "Administrar ocupação"), text: t("rec.occupationText", "Zona ocupada com baixa estabilidade ou alto risco de sabotagem."), action: "occupation", panel: "panelOccupation" };
+  const humanitarian = ensureHumanitarianSystem();
+  if (g.month > 1 && (humanitarianRiskScore() > 55 || humanitarian.legalRisk > 58 || humanitarian.externalPressure > 62 || humanitarian.refugees > 180)) return { title: t("rec.humanitarian", "Reduzir crise humanitária"), text: t("rec.humanitarianText", "Civis, refugiados ou risco jurídico estão altos."), action: "humanitarian", panel: "panelHumanitarian" };
   const cyberOps = ensureCyberOps();
   const mainThreat = topAiThreats(1)[0];
   const enemyOps = ensureEnemyOffensives();
@@ -5609,6 +6135,8 @@ function renderCommanderGuide() {
       <button id="quickSocietyBtn"><b>📣 ${t("guide.society", "Sociedade")}</b><span>${t("guide.societySub", "apoio e protestos")}</span></button>
       <button id="quickGovernanceBtn"><b>🏛️ ${t("guide.governance", "Governo")}</b><span>${t("guide.governanceSub", "leis e gabinete")}</span></button>
       <button id="quickSpecialBtn"><b>🪂 ${t("guide.special", "Especiais")}</b><span>${t("guide.specialSub", "missões sigilosas")}</span></button>
+      <button id="quickOccupationBtn"><b>🏛️ ${t("guide.occupation", "Ocupação")}</b><span>${t("guide.occupationSub", "controle territorial")}</span></button>
+      <button id="quickHumanitarianBtn"><b>⛑️ ${t("guide.humanitarian", "Humanitário")}</b><span>${t("guide.humanitarianSub", "civis e leis")}</span></button>
       <button id="quickBuildBtn"><b>🏗️ ${t("guide.build", "Construir")}</b><span>${t("guide.buildSub", "base recomendada")}</span></button>
       <button id="quickProduceBtn"><b>🪖 ${t("guide.produce", "Produzir")}</b><span>${t("guide.produceSub", "melhor unidade")}</span></button>
       <button id="quickLogisticsBtn"><b>🚚 ${t("guide.logistics", "Logística")}</b><span>${t("guide.logisticsSub", "suprir tropas")}</span></button>
@@ -6174,6 +6702,8 @@ function initMap() {
   state.layers.society = L.layerGroup().addTo(state.map);
   state.layers.governance = L.layerGroup().addTo(state.map);
   state.layers.special = L.layerGroup().addTo(state.map);
+  state.layers.occupation = L.layerGroup().addTo(state.map);
+  state.layers.humanitarian = L.layerGroup().addTo(state.map);
   state.map.dragging.enable();
   state.map.scrollWheelZoom.enable();
   state.map.doubleClickZoom.enable();
@@ -6254,6 +6784,8 @@ function updateMapLayers() {
   renderSocietyMapOverlays(player);
   renderGovernanceMapOverlays(player);
   renderSpecialMapOverlays(player);
+  renderOccupationMapOverlays(player);
+  renderHumanitarianMapOverlays(player);
   applyMapLayerVisibility();
   if (!state.mapUserMoved && !state.mapAutoCentered) {
     state.map.setView(player.coords, Math.max(state.map.getZoom(), 3), { animate: false });
@@ -6433,6 +6965,8 @@ function advanceMonth() {
   progressSocietySystem();
   progressGovernanceSystem();
   progressSpecialOpsSystem();
+  progressOccupationSystem();
+  progressHumanitarianSystem();
   progressConstruction();
   progressProduction();
   progressCyberOps();

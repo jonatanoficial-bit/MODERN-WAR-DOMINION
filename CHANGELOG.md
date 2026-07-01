@@ -396,3 +396,30 @@
 - Rotas e marcadores de operações especiais aparecem no mapa real.
 - Integração com inteligência, Estado-Maior, governo, sociedade, batalha visual e IA.
 - Save key mantida para preservar campanhas anteriores.
+
+
+## Fase 39 — Ocupação, Resistência e Controle Territorial
+
+- Novo painel Ocupação e Controle Territorial.
+- Zonas ocupadas passam a ter controle, estabilidade, infraestrutura, guarnição, apoio local, sabotagem e rendimento.
+- Ações: administração civil, reforçar guarnição, ajuda humanitária, caçar células, reconstruir infraestrutura e negociar lideranças.
+- Sabotagem pode danificar infraestrutura, reduzir controle e criar instabilidade.
+- Zonas ocupadas estabilizadas podem gerar finanças, indústria e energia.
+- Ocupação se integra com guerra terrestre, governo, sociedade, inteligência, clima e logística.
+- Nova camada Ocupação na Sala de Guerra.
+- Marcadores e anéis de ocupação aparecem no mapa real.
+- Save key mantida para preservar campanhas anteriores.
+
+
+## Fase 40 — Crises Humanitárias, Refugiados e Direito Internacional
+
+- Novo painel Humanitário e Direito Internacional.
+- Sistema de civis afetados, refugiados, acesso humanitário, conformidade legal, risco jurídico, confiança de ONGs e pressão externa.
+- Ações: abrir corredor humanitário, hospitais de campanha, acolher refugiados, convidar observadores, investigar abusos e apelo à ONU.
+- Crises humanitárias afetam sociedade, governo, comércio, sanções e legitimidade.
+- Guerra terrestre, ocupação e sabotagem podem aumentar civis afetados e refugiados.
+- Pressão humanitária alta pode reduzir acesso ao mercado e aumentar risco de sanções.
+- Nova camada Humanitário na Sala de Guerra.
+- Marcadores de crise humanitária aparecem no mapa real.
+- Integração com ocupação, logística, comércio, governo, sociedade e guerra longa.
+- Save key mantida para preservar campanhas anteriores.

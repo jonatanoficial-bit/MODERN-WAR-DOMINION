@@ -1671,3 +1671,89 @@ body:has(#screenWar.screen-active) .nation-confirm-tray{
   .special-actions{grid-template-columns:repeat(6,1fr);gap:6px}
   .special-actions button{min-height:40px;font-size:.53rem;padding:6px;border-radius:11px}
 }
+
+
+/* Fase 39 — Ocupação, resistência e controle territorial */
+.occupation-panel{display:grid;gap:12px}
+.occupation-overview{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.occupation-overview>div{border:1px solid rgba(103,240,208,.22);border-radius:16px;background:linear-gradient(145deg,rgba(24,82,70,.20),rgba(7,12,20,.48));padding:10px}
+.occupation-overview small{display:block;color:#67f0d0;text-transform:uppercase;letter-spacing:.11em;font-size:.58rem;font-weight:900}
+.occupation-overview strong{display:block;font-size:1rem;color:#67f0d0;margin-top:3px}
+.occupation-target{display:grid;gap:6px;border:1px solid rgba(255,255,255,.09);background:rgba(255,255,255,.035);padding:10px;border-radius:16px}
+.occupation-target span{font-size:.66rem;text-transform:uppercase;letter-spacing:.08em;color:#67f0d0;font-weight:900}
+.occupation-target select{width:100%;border:1px solid rgba(103,240,208,.24);background:rgba(4,10,18,.62);color:var(--text);border-radius:12px;padding:10px}
+.occupation-card{display:grid;gap:8px;border:1px solid rgba(103,240,208,.16);border-radius:18px;background:rgba(255,255,255,.035);padding:10px}
+.occupation-title{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.occupation-title strong{font-size:.95rem}
+.occupation-title span{font-size:.65rem;color:#67f0d0;text-transform:uppercase;letter-spacing:.08em}
+.occupation-bar{display:grid;gap:4px}
+.occupation-bar>div{display:flex;align-items:center;justify-content:space-between;font-size:.64rem;color:#d7e6f4}
+.occupation-bar i{display:block;height:7px;border-radius:999px;background:rgba(255,255,255,.08);overflow:hidden}
+.occupation-bar b{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,#ff784f,#ffd166,#67f0d0)}
+.occupation-actions{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.occupation-actions button{min-height:54px;text-align:left;border-radius:16px;background:rgba(7,12,20,.58);border:1px solid rgba(103,240,208,.20);padding:10px;color:var(--text);font-weight:900}
+.occupation-actions button:active{transform:scale(.98)}
+.occupation-history{display:grid;gap:8px}
+.occupation-history h3{font-size:.9rem;margin:2px 0}
+.occupation-history article{border:1px solid rgba(255,255,255,.08);border-radius:14px;background:rgba(255,255,255,.035);padding:9px}
+.occupation-history strong{display:block;font-size:.8rem}
+.occupation-history span,.occupation-history small{display:block;color:#d7e6f4;font-size:.64rem;margin-top:3px}
+.marker-occupation{display:grid;place-items:center;width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,#0d3d38,#67f0d0);color:#02110e;border:2px solid rgba(255,255,255,.68);box-shadow:0 0 28px rgba(103,240,208,.70),0 12px 26px rgba(0,0,0,.45);font-size:1.15rem;animation:occupationPulse 1.15s ease-in-out infinite alternate}
+.marker-occupation-risk{display:grid;place-items:center;width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,#4b120c,#ff784f);color:#fff;border:2px solid rgba(255,255,255,.68);box-shadow:0 0 28px rgba(255,120,79,.70),0 12px 26px rgba(0,0,0,.45);font-size:1.15rem;animation:occupationRiskPulse 1s ease-in-out infinite alternate}
+.leaflet-overlay-pane path.occupation-ring,.leaflet-overlay-pane path.occupation-risk-ring{animation:occupationRing 1.8s ease-in-out infinite;filter:drop-shadow(0 0 10px rgba(103,240,208,.48))}
+.leaflet-overlay-pane path.occupation-risk-ring{filter:drop-shadow(0 0 10px rgba(255,120,79,.58))}
+@keyframes occupationPulse{0%{transform:scale(.92)}100%{transform:scale(1.08)}}
+@keyframes occupationRiskPulse{0%{transform:scale(.92) rotate(-4deg)}100%{transform:scale(1.08) rotate(4deg)}}
+@keyframes occupationRing{0%,100%{opacity:.22}50%{opacity:.55}}
+@media(max-width:980px){
+  .occupation-overview{grid-template-columns:1fr}
+  .occupation-actions{grid-template-columns:1fr}
+}
+@media(max-height:560px){
+  .occupation-overview{grid-template-columns:repeat(3,1fr);gap:6px}
+  .occupation-overview>div{padding:7px;border-radius:12px}
+  .occupation-overview small{font-size:.48rem}
+  .occupation-overview strong{font-size:.72rem}
+  .occupation-actions{grid-template-columns:repeat(6,1fr);gap:6px}
+  .occupation-actions button{min-height:40px;font-size:.52rem;padding:6px;border-radius:11px}
+}
+
+
+/* Fase 40 — Crises humanitárias, refugiados e direito internacional */
+.humanitarian-panel{display:grid;gap:12px}
+.humanitarian-status{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.humanitarian-status>div{border:1px solid rgba(103,240,208,.22);border-radius:16px;background:linear-gradient(145deg,rgba(18,77,68,.20),rgba(7,12,20,.48));padding:10px}
+.humanitarian-status small{display:block;color:#67f0d0;text-transform:uppercase;letter-spacing:.11em;font-size:.58rem;font-weight:900}
+.humanitarian-status strong{display:block;font-size:1rem;color:#67f0d0;margin:3px 0}
+.humanitarian-status span{display:block;color:#d7e6f4;font-size:.64rem}
+.humanitarian-status i{display:block;height:7px;border-radius:999px;background:rgba(255,255,255,.08);overflow:hidden}
+.humanitarian-status b{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,#ff784f,#ffd166,#67f0d0)}
+.humanitarian-actions{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.humanitarian-actions button{min-height:54px;text-align:left;border-radius:16px;background:rgba(7,12,20,.58);border:1px solid rgba(103,240,208,.20);padding:10px;color:var(--text);font-weight:900}
+.humanitarian-actions button:active{transform:scale(.98)}
+.humanitarian-history{display:grid;gap:8px}
+.humanitarian-history h3{font-size:.9rem;margin:2px 0}
+.humanitarian-history article{border:1px solid rgba(255,255,255,.08);border-radius:14px;background:rgba(255,255,255,.035);padding:9px}
+.humanitarian-history article.success{border-color:rgba(103,240,208,.26)}
+.humanitarian-history article.failure{border-color:rgba(255,120,79,.30)}
+.humanitarian-history strong{display:block;font-size:.8rem}
+.humanitarian-history span{display:block;color:#d7e6f4;font-size:.64rem;margin-top:3px}
+.marker-humanitarian{display:grid;place-items:center;width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,#0d3d38,#67f0d0);color:#02110e;border:2px solid rgba(255,255,255,.68);box-shadow:0 0 28px rgba(103,240,208,.70),0 12px 26px rgba(0,0,0,.45);font-size:1.15rem;animation:humanitarianPulse 1.15s ease-in-out infinite alternate}
+.marker-humanitarian-risk{display:grid;place-items:center;width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,#4b120c,#ff784f);color:#fff;border:2px solid rgba(255,255,255,.68);box-shadow:0 0 28px rgba(255,120,79,.70),0 12px 26px rgba(0,0,0,.45);font-size:1.15rem;animation:humanitarianRiskPulse 1s ease-in-out infinite alternate}
+.leaflet-overlay-pane path.humanitarian-ring,.leaflet-overlay-pane path.humanitarian-risk-ring{animation:humanitarianRing 1.8s ease-in-out infinite;filter:drop-shadow(0 0 10px rgba(103,240,208,.48))}
+.leaflet-overlay-pane path.humanitarian-risk-ring{filter:drop-shadow(0 0 10px rgba(255,120,79,.58))}
+@keyframes humanitarianPulse{0%{transform:scale(.92)}100%{transform:scale(1.08)}}
+@keyframes humanitarianRiskPulse{0%{transform:scale(.92) rotate(-4deg)}100%{transform:scale(1.08) rotate(4deg)}}
+@keyframes humanitarianRing{0%,100%{opacity:.22}50%{opacity:.55}}
+@media(max-width:980px){
+  .humanitarian-status{grid-template-columns:1fr}
+  .humanitarian-actions{grid-template-columns:1fr}
+}
+@media(max-height:560px){
+  .humanitarian-status{grid-template-columns:repeat(3,1fr);gap:6px}
+  .humanitarian-status>div{padding:7px;border-radius:12px}
+  .humanitarian-status small{font-size:.48rem}
+  .humanitarian-status strong{font-size:.72rem}
+  .humanitarian-actions{grid-template-columns:repeat(6,1fr);gap:6px}
+  .humanitarian-actions button{min-height:40px;font-size:.52rem;padding:6px;border-radius:11px}
+}
